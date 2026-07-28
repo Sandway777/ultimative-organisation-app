@@ -335,6 +335,7 @@ function defaultData(){
   zettel.push({ id: uid(), title:'PETIVO Produktion', type:'checklist', bereich:'business', createdAt: now-2, items: [] });
   zettel.push({ id: uid(), title:'Trainingsübersicht', type:'checklist', bereich:'sport', createdAt: now-3, items: [] });
   zettel.push({ id: uid(), title:'Anträge', type:'checklist', bereich:'privat', createdAt: now-4, items: [] });
+  zettel.push({ id: uid(), title:'Monatsübersicht', type:'month', bereich:null, createdAt: now-5, columns:{privat:[],business:[],uni:[],sport:[]} });
   return {
     ideaBoard:{categories:[],items:[]},
     dailyNotes:{days:[]},
