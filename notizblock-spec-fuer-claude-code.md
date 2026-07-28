@@ -39,3 +39,4 @@ Jeder Typ funktioniert und sieht anders aus, alle teilen sich aber ein gemeinsam
 - Export/Import als JSON, jederzeit, komplett unabhängig vom Speicherort.
 - Leicht erweiterbar: neue Bereiche/Typen später ohne große Umbauten ergänzbar.
 - Zuverlässige Klick-/Touch-Bedienung auf Mobilgeräten (kein reines Hover, alles muss auch per Tippen funktionieren).
+
