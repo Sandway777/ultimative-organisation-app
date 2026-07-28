@@ -13,8 +13,8 @@
 :root{
   --paper:#F3EEE2; --card:#FAF7EF; --ink:#2B2A28; --ink-soft:#726C63; --line:#DFD7C4;
   --sidebar-bg:#201E1A; --sidebar-line:rgba(255,255,255,.1);
-  --privat:#B5563A; --business:#2B6E6B; --uni:#4A5A8C; --danger:#A8425A;
-  --privat-bg:#F3E2DA; --business-bg:#DEEAE8; --uni-bg:#E2E5EF;
+  --privat:#B5563A; --business:#2B6E6B; --uni:#4A5A8C; --sport:#4A7A3E; --danger:#A8425A;
+  --privat-bg:#F3E2DA; --business-bg:#DEEAE8; --uni-bg:#E2E5EF; --sport-bg:#DCE8D8;
 }
 *{box-sizing:border-box;}
 html,body{height:100%;margin:0;}
@@ -33,6 +33,7 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--ink);background:var(--si
 .chip.active.f-privat{background:var(--privat);color:#fff;}
 .chip.active.f-business{background:var(--business);color:#fff;}
 .chip.active.f-uni{background:var(--uni);color:#fff;}
+.chip.active.f-sport{background:var(--sport);color:#fff;}
 
 .pinned{margin:12px 12px 4px;padding:11px 12px;border-radius:9px;background:rgba(255,255,255,.06);
   cursor:pointer;border:1px solid var(--sidebar-line);transition:.15s;}
@@ -61,7 +62,8 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--ink);background:var(--si
   padding:5px 11px;font-size:0.76rem;font-family:inherit;cursor:pointer;transition:.15s;}
 .bp-btn.active{color:#fff;border-color:transparent;}
 .bp-btn.privat.active{background:var(--privat);} .bp-btn.business.active{background:var(--business);}
-.bp-btn.uni.active{background:var(--uni);} .bp-btn.none.active{background:rgba(255,255,255,.25);}
+.bp-btn.uni.active{background:var(--uni);} .bp-btn.sport.active{background:var(--sport);}
+.bp-btn.none.active{background:rgba(255,255,255,.25);}
 
 .zettel-list{flex:1;overflow-y:auto;padding:2px 8px 10px;}
 .zettel-item{padding:9px 10px;border-radius:8px;cursor:pointer;margin-bottom:2px;transition:.15s;
@@ -71,7 +73,7 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--ink);background:var(--si
 .dot-row{display:flex;gap:2px;flex-shrink:0;}
 .dot{width:8px;height:8px;border-radius:50%;}
 .dot.privat{background:var(--privat);} .dot.business{background:var(--business);} .dot.uni{background:var(--uni);}
-.dot.none{background:rgba(255,255,255,.3);}
+.dot.sport{background:var(--sport);} .dot.none{background:rgba(255,255,255,.3);}
 .zettel-info{flex:1;min-width:0;}
 .zettel-title{font-size:0.88rem;font-weight:600;color:rgba(255,255,255,.92);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .zettel-item.active .zettel-title{color:var(--ink);}
@@ -100,6 +102,7 @@ h1.zt{font-family:'Fraunces',serif;font-weight:600;font-size:1.9rem;margin:0;col
 .bereich-tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:0.68rem;font-weight:600;
   letter-spacing:.03em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;margin-left:8px;color:#fff;}
 .bereich-tag.privat{background:var(--privat);} .bereich-tag.business{background:var(--business);} .bereich-tag.uni{background:var(--uni);}
+.bereich-tag.sport{background:var(--sport);}
 
 .content.bereich-privat h1.zt{color:var(--privat);}
 .content.bereich-privat .input-row input:focus{border-bottom-color:var(--privat);}
@@ -118,6 +121,12 @@ h1.zt{font-family:'Fraunces',serif;font-weight:600;font-size:1.9rem;margin:0;col
 .content.bereich-uni .mini-checkbox svg{stroke:var(--uni);}
 .content.bereich-uni .mini-item.done .mini-checkbox{border-color:var(--uni);background:var(--uni-bg);}
 .content.bereich-uni .input-row button{background:var(--uni);}
+
+.content.bereich-sport h1.zt{color:var(--sport);}
+.content.bereich-sport .input-row input:focus{border-bottom-color:var(--sport);}
+.content.bereich-sport .mini-checkbox svg{stroke:var(--sport);}
+.content.bereich-sport .mini-item.done .mini-checkbox{border-color:var(--sport);background:var(--sport-bg);}
+.content.bereich-sport .input-row button{background:var(--sport);}
 .confirm-row{display:flex;align-items:center;gap:8px;font-size:0.82rem;flex-shrink:0;}
 .confirm-row button{border:none;border-radius:6px;padding:5px 11px;font-size:0.78rem;cursor:pointer;font-family:inherit;}
 .confirm-yes{background:var(--danger);color:#fff;} .confirm-no{background:#EDE2E5;color:var(--ink);}
@@ -158,10 +167,12 @@ ul.mini-list{list-style:none;margin:0;padding:0;}
 .footer-count{margin-top:14px;font-size:0.75rem;color:var(--ink-soft);}
 
 /* month view */
-.month-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.month-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
 .month-col{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;}
 .month-col h3{font-family:'Fraunces',serif;font-size:1rem;margin:0 0 10px;display:flex;align-items:center;gap:6px;}
-.month-col.privat h3{color:var(--privat);} .month-col.sport h3{color:var(--business);} .month-col.business h3{color:var(--uni);}
+.month-col.privat h3{color:var(--privat);} .month-col.business h3{color:var(--business);}
+.month-col.uni h3{color:var(--uni);} .month-col.sport h3{color:var(--sport);}
+@media(max-width:900px){.month-cols{grid-template-columns:1fr 1fr;}}
 @media(max-width:720px){.month-cols{grid-template-columns:1fr;}}
 
 /* trip view */
@@ -182,7 +193,7 @@ ul.mini-list{list-style:none;margin:0;padding:0;}
 .ib-status.err{color:var(--danger);}
 .ib-quick{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--card);border:1px solid var(--line);
   border-radius:10px;padding:12px 14px;margin-bottom:20px;}
-.ib-quick input[type=text]{flex:1;min-width:160px;border:1px solid var(--line);border-radius:7px;padding:8px 10px;
+.ib-quick input[type=text],.ib-quick input[type=date]{flex:1;min-width:160px;border:1px solid var(--line);border-radius:7px;padding:8px 10px;
   font-size:0.88rem;font-family:inherit;background:#fff;}
 .ib-quick select{border:1px solid var(--line);border-radius:7px;padding:8px 8px;font-family:inherit;font-size:0.85rem;background:#fff;}
 .ib-board{column-width:260px;column-gap:16px;}
@@ -229,6 +240,10 @@ ul.mini-list{list-style:none;margin:0;padding:0;}
       <div class="pinned-title">📇 Idee-Board</div>
       <div class="pinned-sub">automatisch einsortiert</div>
     </div>
+    <div class="pinned" id="pinned-daily">
+      <div class="pinned-title">🗓️ Täglicher Notizzettel</div>
+      <div class="pinned-sub">letzte 7 Tage</div>
+    </div>
     <div class="add-row"><button class="add-btn-full" id="show-new-form">+ Neuer Zettel</button></div>
     <div class="new-form" id="new-form">
       <input type="text" id="nf-title" placeholder="Titel" maxlength="50">
@@ -241,6 +256,7 @@ ul.mini-list{list-style:none;margin:0;padding:0;}
         <button type="button" class="bp-btn privat" data-val="privat">Privat</button>
         <button type="button" class="bp-btn business" data-val="business">Business</button>
         <button type="button" class="bp-btn uni" data-val="uni">Uni</button>
+        <button type="button" class="bp-btn sport" data-val="sport">Sport</button>
         <button type="button" class="bp-btn none active" data-val="">kein Bereich</button>
       </div>
       <div class="daterow" id="nf-daterow" style="display:none;">
@@ -272,7 +288,7 @@ window.storage = {
 };
 
 const STORAGE_KEY = 'ultimativer-notizblock-v1';
-const BEREICHE = {privat:{label:'Privat',color:'var(--privat)'},business:{label:'Business',color:'var(--business)'},uni:{label:'Uni',color:'var(--uni)'}};
+const BEREICHE = {privat:{label:'Privat',color:'var(--privat)'},business:{label:'Business',color:'var(--business)'},uni:{label:'Uni',color:'var(--uni)'},sport:{label:'Sport',color:'var(--sport)'}};
 const PALETTE = ['#2B6E6B','#4A5A8C','#C08A2E','#B5563A','#6B7A3A','#3E6B8C','#8A5A2E','#5A6B7A'];
 let data = null;
 let activeFilter = 'alle';
@@ -294,11 +310,25 @@ function defaultData(){
     id: uid(), title, type:'checklist', bereich:'uni', createdAt: now - (uniListen.length - i), items: []
   }));
   zettel.push({ id: uid(), title:'Nächste Schritte PETIVO', type:'checklist', bereich:'business', createdAt: now, items: [] });
+  zettel.push({ id: uid(), title:'PETIVO Finanzen', type:'checklist', bereich:'business', createdAt: now-1, items: [] });
+  zettel.push({ id: uid(), title:'PETIVO Produktion', type:'checklist', bereich:'business', createdAt: now-2, items: [] });
+  zettel.push({ id: uid(), title:'Trainingsübersicht', type:'checklist', bereich:'sport', createdAt: now-3, items: [] });
   return {
     ideaBoard:{categories:[],items:[]},
+    dailyNotes:{days:[]},
     zettel,
     activeId:'ideaboard'
   };
+}
+
+function migrateData(){
+  if(!data.dailyNotes) data.dailyNotes = {days:[]};
+  data.zettel.forEach(z=>{
+    if(z.type==='month'){
+      z.columns = z.columns || {};
+      ['privat','business','uni','sport'].forEach(col=>{ if(!z.columns[col]) z.columns[col]=[]; });
+    }
+  });
 }
 
 async function load(){
@@ -307,6 +337,8 @@ async function load(){
     data = res ? JSON.parse(res.value) : defaultData();
   }catch(e){ data = defaultData(); }
   if(!data.activeId) data.activeId = 'ideaboard';
+  migrateData();
+  pruneDailyNotes();
   renderAll();
 }
 async function persist(){
@@ -348,7 +380,7 @@ function renderSidebar(){
   // filter chips
   const chipsWrap = document.getElementById('filter-chips');
   chipsWrap.innerHTML = '';
-  const chipDefs = [{key:'alle',label:'Alle'},{key:'privat',label:'Privat'},{key:'business',label:'Business'},{key:'uni',label:'Uni'}];
+  const chipDefs = [{key:'alle',label:'Alle'},{key:'privat',label:'Privat'},{key:'business',label:'Business'},{key:'uni',label:'Uni'},{key:'sport',label:'Sport'}];
   chipDefs.forEach(c=>{
     const b = document.createElement('button');
     b.className = 'chip'+(activeFilter===c.key?' active f-'+c.key:'');
@@ -364,6 +396,8 @@ function renderSidebar(){
   // pinned idea board
   const pinned = document.getElementById('pinned-ideaboard');
   pinned.className = 'pinned'+(data.activeId==='ideaboard'?' active':'');
+  const pinnedDaily = document.getElementById('pinned-daily');
+  pinnedDaily.className = 'pinned'+(data.activeId==='daily'?' active':'');
 
   // list
   const wrap = document.getElementById('zettel-list');
@@ -399,6 +433,9 @@ function renderSidebar(){
 document.getElementById('pinned-ideaboard').addEventListener('click',()=>{
   data.activeId='ideaboard'; renderAll(); persist();
 });
+document.getElementById('pinned-daily').addEventListener('click',()=>{
+  data.activeId='daily'; renderAll(); persist();
+});
 
 /* ---------------- NEW ZETTEL FORM ---------------- */
 document.getElementById('show-new-form').addEventListener('click',()=>{
@@ -426,7 +463,7 @@ function createZettelFromForm(){
   if(!title) return;
   const base = { id: uid(), title, type, bereich, createdAt: Date.now() };
   if(type==='checklist'){ base.items = []; }
-  else if(type==='month'){ base.columns = {privat:[],sport:[],business:[]}; base.bereich=null; }
+  else if(type==='month'){ base.columns = {privat:[],business:[],uni:[],sport:[]}; base.bereich=null; }
   else if(type==='trip'){
     const from = document.getElementById('nf-datefrom').value;
     const to = document.getElementById('nf-dateto').value;
@@ -457,6 +494,7 @@ function buildTripDays(from, to){
 function renderMain(){
   const c = document.getElementById('main-content');
   if(data.activeId==='ideaboard'){ setContentBereichClass(null); renderIdeaBoard(c); return; }
+  if(data.activeId==='daily'){ pruneDailyNotes(); setContentBereichClass(null); renderDailyNotes(c); return; }
   if(typeof data.activeId==='string' && data.activeId.startsWith('bereich:')){
     const key = data.activeId.split(':')[1];
     setContentBereichClass(key);
@@ -591,16 +629,15 @@ function renderChecklist(c, z){
 }
 
 /* ---------------- MONTH VIEW ---------------- */
+const MONTH_COLS = [{key:'privat',label:'🏠 Privat'},{key:'business',label:'💼 Business'},{key:'uni',label:'🎓 Uni'},{key:'sport',label:'🏃 Sport'}];
 function renderMonth(c, z){
   c.innerHTML = renderHeadRow(z) + `
     <div class="month-cols">
-      ${monthColHtml('privat','🏠 Privat')}
-      ${monthColHtml('sport','🏃 Sport')}
-      ${monthColHtml('business','💼 Business')}
+      ${MONTH_COLS.map(mc=>monthColHtml(mc.key,mc.label)).join('')}
     </div>
   `;
   bindHeadRow(z);
-  ['privat','sport','business'].forEach(col=>{
+  MONTH_COLS.forEach(({key:col})=>{
     const ul = document.getElementById('mc-list-'+col);
     const refresh = ()=>{ renderMiniList(ul, z.columns[col]); persist(); };
     renderMiniList(ul, z.columns[col]);
@@ -615,7 +652,7 @@ function renderMonth(c, z){
   }
 }
 function monthColHtml(col,label){
-  return `<div class="month-col ${col==='sport'?'business':col==='business'?'uni':'privat'}">
+  return `<div class="month-col ${col}">
     <h3>${label}</h3>
     <div class="input-row"><input type="text" id="mc-input-${col}" placeholder="Fokus hinzufügen …" maxlength="150"><button id="mc-add-${col}">+</button></div>
     <ul class="mini-list" id="mc-list-${col}"></ul>
@@ -646,6 +683,72 @@ function renderTrip(c, z){
     bindMiniList(ul, day.items, refresh);
     addBtn.addEventListener('click',()=>{ const t=input.value.trim(); if(!t)return; day.items.unshift({id:uid(),text:t,done:false}); input.value=''; refresh(); });
     input.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ const t=input.value.trim(); if(!t)return; day.items.unshift({id:uid(),text:t,done:false}); input.value=''; refresh(); }});
+    wrap.appendChild(card);
+  });
+}
+
+/* ---------------- TÄGLICHER NOTIZZETTEL ---------------- */
+function pruneDailyNotes(){
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-7);
+  const cutoffIso = cutoff.toISOString().slice(0,10);
+  data.dailyNotes.days = data.dailyNotes.days.filter(d=>d.date>=cutoffIso);
+  const today = new Date().toISOString().slice(0,10);
+  if(!data.dailyNotes.days.find(d=>d.date===today)){
+    data.dailyNotes.days.push({date:today, items:[]});
+  }
+  data.dailyNotes.days.sort((a,b)=>b.date.localeCompare(a.date));
+}
+function renderDailyNotes(c){
+  c.innerHTML = `
+    <div class="head-row"><div><h1 class="zt">🗓️ Täglicher Notizzettel</h1><div class="head-meta">letzte 7 Tage, ältere Tage werden automatisch entfernt</div></div></div>
+    <div class="divider"></div>
+    <div class="ib-quick">
+      <input type="date" id="daily-date-input">
+      <button class="ib-btn primary" id="daily-date-add">Tag hinzufügen / öffnen</button>
+    </div>
+    <div id="daily-days"></div>
+  `;
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('daily-date-add').addEventListener('click',()=>{
+    const picked = document.getElementById('daily-date-input').value;
+    if(!picked) return;
+    if(!data.dailyNotes.days.find(d=>d.date===picked)){
+      data.dailyNotes.days.push({date:picked, items:[]});
+      data.dailyNotes.days.sort((a,b)=>b.date.localeCompare(a.date));
+      persist();
+    }
+    renderDailyNotes(c);
+  });
+  const wrap = document.getElementById('daily-days');
+  data.dailyNotes.days.forEach(day=>{
+    const card = document.createElement('div');
+    card.className='day-card';
+    const label = day.date===today ? 'Heute — '+fmtDay(day.date) : fmtDay(day.date);
+    card.innerHTML = `
+      <div class="head-row" style="margin-bottom:8px;">
+        <h4 style="margin:0;">${label}</h4>
+        <button class="del-btn day-del" aria-label="Tag löschen">🗑</button>
+      </div>
+      <div class="input-row"><input type="text" class="day-input" placeholder="Notiz für diesen Tag …" maxlength="200"><button class="day-add">+</button></div>
+      <ul class="mini-list"></ul>
+    `;
+    const input = card.querySelector('.day-input');
+    const addBtn = card.querySelector('.day-add');
+    const delBtn = card.querySelector('.day-del');
+    const ul = card.querySelector('ul');
+    const refresh = ()=>{ renderMiniList(ul, day.items); persist(); };
+    renderMiniList(ul, day.items);
+    bindMiniList(ul, day.items, refresh);
+    function addDayItem(){
+      const t = input.value.trim(); if(!t) return;
+      day.items.unshift({id:uid(),text:t,done:false}); input.value=''; refresh();
+    }
+    addBtn.addEventListener('click', addDayItem);
+    input.addEventListener('keydown',(e)=>{ if(e.key==='Enter') addDayItem(); });
+    delBtn.addEventListener('click',()=>{
+      data.dailyNotes.days = data.dailyNotes.days.filter(d=>d.date!==day.date);
+      persist(); pruneDailyNotes(); renderDailyNotes(c);
+    });
     wrap.appendChild(card);
   });
 }
