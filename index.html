@@ -15,6 +15,7 @@
   --sidebar-bg:#201E1A; --sidebar-line:rgba(255,255,255,.1);
   --privat:#B5563A; --business:#2B6E6B; --uni:#4A5A8C; --sport:#4A7A3E; --danger:#A8425A;
   --privat-bg:#F3E2DA; --business-bg:#DEEAE8; --uni-bg:#E2E5EF; --sport-bg:#DCE8D8;
+  --idea:#C08A2E; --daily:#7A4A6E;
 }
 *{box-sizing:border-box;}
 html,body{height:100%;margin:0;}
@@ -35,14 +36,22 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--ink);background:var(--si
 .chip.active.f-uni{background:var(--uni);color:#fff;}
 .chip.active.f-sport{background:var(--sport);color:#fff;}
 
-.pinned{margin:12px 12px 4px;padding:11px 12px;border-radius:9px;background:rgba(255,255,255,.06);
-  cursor:pointer;border:1px solid var(--sidebar-line);transition:.15s;}
-.pinned:hover{background:rgba(255,255,255,.12);}
-.pinned.active{background:var(--card);}
-.pinned.active .pinned-title{color:var(--ink);}
-.pinned-title{font-size:0.9rem;font-weight:600;color:#fff;}
-.pinned-sub{font-size:0.7rem;color:rgba(255,255,255,.5);margin-top:2px;}
-.pinned.active .pinned-sub{color:var(--ink-soft);}
+.main-actions{display:flex;flex-direction:column;gap:8px;padding:12px;border-top:1px solid var(--sidebar-line);flex-shrink:0;}
+.main-btn{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:12px;cursor:pointer;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);transition:.15s;}
+.main-btn:hover{background:rgba(255,255,255,.11);transform:translateY(-1px);}
+.main-btn-icon{width:32px;height:32px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  font-size:1rem;color:#fff;}
+.main-btn.idea .main-btn-icon{background:var(--idea);}
+.main-btn.daily .main-btn-icon{background:var(--daily);}
+.main-btn-text{min-width:0;}
+.main-btn-title{font-size:0.87rem;font-weight:600;color:rgba(255,255,255,.92);}
+.main-btn-sub{font-size:0.68rem;color:rgba(255,255,255,.48);margin-top:1px;}
+.main-btn.idea.active{background:var(--idea);border-color:transparent;}
+.main-btn.daily.active{background:var(--daily);border-color:transparent;}
+.main-btn.active .main-btn-icon{background:rgba(255,255,255,.25);}
+.main-btn.active .main-btn-title{color:#fff;}
+.main-btn.active .main-btn-sub{color:rgba(255,255,255,.75);}
 
 .add-row{padding:6px 12px 8px;}
 .add-btn-full{width:100%;border:1px dashed rgba(255,255,255,.3);background:none;color:rgba(255,255,255,.75);
@@ -65,21 +74,21 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--ink);background:var(--si
 .bp-btn.uni.active{background:var(--uni);} .bp-btn.sport.active{background:var(--sport);}
 .bp-btn.none.active{background:rgba(255,255,255,.25);}
 
-.zettel-list{flex:1;overflow-y:auto;padding:2px 8px 10px;}
-.zettel-item{padding:9px 10px;border-radius:8px;cursor:pointer;margin-bottom:2px;transition:.15s;
-  display:flex;align-items:center;gap:8px;}
+.zettel-list{flex:1;overflow-y:auto;padding:4px 8px 10px;}
+.zettel-item{position:relative;padding:9px 12px 9px 16px;border-radius:8px;cursor:pointer;margin-bottom:2px;transition:.15s;
+  display:flex;align-items:center;}
 .zettel-item:hover{background:rgba(255,255,255,.08);}
 .zettel-item.active{background:var(--card);}
-.dot-row{display:flex;gap:2px;flex-shrink:0;}
-.dot{width:8px;height:8px;border-radius:50%;}
-.dot.privat{background:var(--privat);} .dot.business{background:var(--business);} .dot.uni{background:var(--uni);}
-.dot.sport{background:var(--sport);} .dot.none{background:rgba(255,255,255,.3);}
+.zettel-accent{position:absolute;left:5px;top:8px;bottom:8px;width:3px;border-radius:3px;background:rgba(255,255,255,.22);}
+.zettel-accent.privat{background:var(--privat);} .zettel-accent.business{background:var(--business);}
+.zettel-accent.uni{background:var(--uni);} .zettel-accent.sport{background:var(--sport);}
+.zettel-accent.month{background:linear-gradient(180deg,var(--privat),var(--business),var(--uni),var(--sport));}
 .zettel-info{flex:1;min-width:0;}
 .zettel-title{font-size:0.88rem;font-weight:600;color:rgba(255,255,255,.92);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .zettel-item.active .zettel-title{color:var(--ink);}
-.zettel-meta{font-size:0.68rem;color:rgba(255,255,255,.5);margin-top:1px;}
+.zettel-meta{font-size:0.66rem;color:rgba(255,255,255,.48);margin-top:2px;display:flex;gap:5px;align-items:center;}
 .zettel-item.active .zettel-meta{color:var(--ink-soft);}
-.type-icon{font-size:0.85rem;flex-shrink:0;}
+.zettel-type{font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.04em;font-size:0.6rem;}
 .sidebar-empty{padding:10px 12px;font-size:0.78rem;color:rgba(255,255,255,.5);font-style:italic;}
 
 .sidebar-footer{flex-shrink:0;padding:10px 14px 14px;border-top:1px solid var(--sidebar-line);}
@@ -135,9 +144,11 @@ h1.zt{font-family:'Fraunces',serif;font-weight:600;font-size:1.9rem;margin:0;col
 .empty-lists button{margin-top:14px;border:none;background:var(--ink);color:#fff;padding:9px 18px;border-radius:8px;font-family:inherit;cursor:pointer;}
 
 .ov-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;}
-.ov-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;cursor:pointer;transition:.15s;}
+.ov-card{position:relative;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:10px;
+  padding:18px 16px 16px;cursor:pointer;transition:.15s;}
 .ov-card:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(0,0,0,.08);}
-.ov-card-icon{font-size:1.3rem;margin-bottom:6px;}
+.ov-card-bar{position:absolute;top:0;left:0;right:0;height:4px;}
+.ov-card-type{font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.04em;font-size:0.62rem;color:var(--ink-soft);margin-bottom:6px;}
 .ov-card-title{font-family:'Fraunces',serif;font-weight:600;font-size:1rem;margin-bottom:4px;}
 .ov-card-sub{font-size:0.76rem;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;}
 
@@ -236,14 +247,6 @@ ul.mini-list{list-style:none;margin:0;padding:0;}
   <aside class="sidebar">
     <div class="sidebar-header"><span class="sidebar-title">Notizblock</span></div>
     <div class="filter-chips" id="filter-chips"></div>
-    <div class="pinned" id="pinned-ideaboard">
-      <div class="pinned-title">📇 Idee-Board</div>
-      <div class="pinned-sub">automatisch einsortiert</div>
-    </div>
-    <div class="pinned" id="pinned-daily">
-      <div class="pinned-title">🗓️ Täglicher Notizzettel</div>
-      <div class="pinned-sub">letzte 7 Tage</div>
-    </div>
     <div class="add-row"><button class="add-btn-full" id="show-new-form">+ Neuer Zettel</button></div>
     <div class="new-form" id="new-form">
       <input type="text" id="nf-title" placeholder="Titel" maxlength="50">
@@ -266,6 +269,22 @@ ul.mini-list{list-style:none;margin:0;padding:0;}
       <button class="new-form-confirm" id="nf-confirm">Anlegen</button>
     </div>
     <div class="zettel-list" id="zettel-list"></div>
+    <div class="main-actions">
+      <div class="main-btn idea" id="pinned-ideaboard">
+        <div class="main-btn-icon">📇</div>
+        <div class="main-btn-text">
+          <div class="main-btn-title">Idee-Board</div>
+          <div class="main-btn-sub">automatisch einsortiert</div>
+        </div>
+      </div>
+      <div class="main-btn daily" id="pinned-daily">
+        <div class="main-btn-icon">🗓️</div>
+        <div class="main-btn-text">
+          <div class="main-btn-title">Täglicher Notizzettel</div>
+          <div class="main-btn-sub">letzte 7 Tage</div>
+        </div>
+      </div>
+    </div>
     <div class="sidebar-footer">
       <div class="backup-row">
         <button class="backup-btn" id="export-btn">⬇ Exportieren</button>
@@ -289,6 +308,8 @@ window.storage = {
 
 const STORAGE_KEY = 'ultimativer-notizblock-v1';
 const BEREICHE = {privat:{label:'Privat',color:'var(--privat)'},business:{label:'Business',color:'var(--business)'},uni:{label:'Uni',color:'var(--uni)'},sport:{label:'Sport',color:'var(--sport)'}};
+const TYPE_LABELS = {checklist:'Checkliste', month:'Monat', trip:'Reise'};
+const MONTH_GRADIENT = 'linear-gradient(90deg,var(--privat),var(--business),var(--uni),var(--sport))';
 const PALETTE = ['#2B6E6B','#4A5A8C','#C08A2E','#B5563A','#6B7A3A','#3E6B8C','#8A5A2E','#5A6B7A'];
 let data = null;
 let activeFilter = 'alle';
@@ -393,11 +414,11 @@ function renderSidebar(){
     chipsWrap.appendChild(b);
   });
 
-  // pinned idea board
+  // pinned idea board / daily notes
   const pinned = document.getElementById('pinned-ideaboard');
-  pinned.className = 'pinned'+(data.activeId==='ideaboard'?' active':'');
+  pinned.className = 'main-btn idea'+(data.activeId==='ideaboard'?' active':'');
   const pinnedDaily = document.getElementById('pinned-daily');
-  pinnedDaily.className = 'pinned'+(data.activeId==='daily'?' active':'');
+  pinnedDaily.className = 'main-btn daily'+(data.activeId==='daily'?' active':'');
 
   // list
   const wrap = document.getElementById('zettel-list');
@@ -410,19 +431,12 @@ function renderSidebar(){
   visible.forEach(z=>{
     const div = document.createElement('div');
     div.className = 'zettel-item'+(z.id===data.activeId?' active':'');
-    const icon = z.type==='checklist' ? '✅' : z.type==='month' ? '📅' : '✈️';
-    let dots;
-    if(z.type==='month'){
-      dots = '<span class="dot-row"><span class="dot privat"></span><span class="dot business"></span><span class="dot uni"></span></span>';
-    } else {
-      dots = `<span class="dot-row"><span class="dot ${z.bereich||'none'}"></span></span>`;
-    }
+    const accentClass = z.type==='month' ? 'month' : (z.bereich || '');
     div.innerHTML = `
-      <span class="type-icon">${icon}</span>
-      ${dots}
+      <span class="zettel-accent ${accentClass}"></span>
       <div class="zettel-info">
         <div class="zettel-title">${escapeHtml(z.title)}</div>
-        <div class="zettel-meta">${fmtDate(z.createdAt)}</div>
+        <div class="zettel-meta"><span class="zettel-type">${TYPE_LABELS[z.type]}</span> · ${fmtDate(z.createdAt)}</div>
       </div>
     `;
     div.addEventListener('click',()=>{ data.activeId=z.id; confirmingDeleteId=null; renderAll(); persist(); });
@@ -522,12 +536,13 @@ function renderBereichOverview(c, key){
     cardsHtml = `<div class="empty-lists">Noch keine Zettel für ${label}.<div><button id="ov-add-btn">+ Neuer ${label}-Zettel</button></div></div>`;
   } else {
     cardsHtml = '<div class="ov-grid">' + matching.map(z=>{
-      const icon = z.type==='checklist' ? '✅' : z.type==='month' ? '📅' : '✈️';
+      const barBg = z.type==='month' ? MONTH_GRADIENT : BEREICHE[key].color;
       const countTxt = z.type==='checklist' ? `${z.items.filter(i=>!i.done).length} offen`
         : z.type==='trip' ? `${z.days.length} Tag(e)`
         : 'Fokus des Monats';
       return `<div class="ov-card" data-id="${z.id}">
-        <div class="ov-card-icon">${icon}</div>
+        <div class="ov-card-bar" style="background:${barBg}"></div>
+        <div class="ov-card-type">${TYPE_LABELS[z.type]}</div>
         <div class="ov-card-title">${escapeHtml(z.title)}</div>
         <div class="ov-card-sub">${countTxt} · ${fmtDate(z.createdAt)}</div>
       </div>`;
