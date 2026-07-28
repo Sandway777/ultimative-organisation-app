@@ -629,8 +629,9 @@ function renderIdeaBoard(c){
     <div class="head-row"><div><h1 class="zt">📇 Idee-Board</h1><div class="head-meta">automatisch einsortiert</div></div></div>
     <div class="divider"></div>
     <div class="ib-inbox">
-      <textarea id="ib-raw" placeholder="Rohe Notizen / Diktat hier reinwerfen …"></textarea>
-      <div class="ib-row"><button class="ib-btn primary" id="ib-sort">Automatisch einsortieren</button><span class="ib-status" id="ib-sort-status"></span></div>
+      <div class="ib-status" style="margin-bottom:8px;">Rohtext in einer Claude-Unterhaltung sortieren lassen, JSON-Antwort hier einfügen:</div>
+      <textarea id="ib-import" placeholder='JSON-Antwort von Claude einfügen, z.B. [{"text":"...","category":"Steuern"}]'></textarea>
+      <div class="ib-row"><button class="ib-btn primary" id="ib-import-btn">Einfügen</button><span class="ib-status" id="ib-sort-status"></span></div>
     </div>
     <div class="ib-quick">
       <input type="text" id="ib-quick-text" placeholder="…oder einzelnen Punkt direkt hinzufügen">
@@ -646,7 +647,7 @@ function renderIdeaBoard(c){
   `;
   renderIbBoard();
   renderIbCatSelect();
-  document.getElementById('ib-sort').addEventListener('click', ibAutoSort);
+  document.getElementById('ib-import-btn').addEventListener('click', ibImportJson);
   document.getElementById('ib-quick-add').addEventListener('click', ibQuickAdd);
   document.getElementById('ib-quick-text').addEventListener('keydown',(e)=>{if(e.key==='Enter')ibQuickAdd();});
   document.getElementById('ib-quick-cat').addEventListener('change', ()=>{
@@ -753,56 +754,42 @@ function ibQuickAdd(){
   persist(); renderIbBoard();
 }
 
-async function ibAutoSort(){
-  const raw = document.getElementById('ib-raw').value.trim();
+function ibImportJson(){
+  const raw = document.getElementById('ib-import').value.trim();
   const statusEl = document.getElementById('ib-sort-status');
-  const btn = document.getElementById('ib-sort');
-  if(!raw){ statusEl.textContent='Erst Text einfügen.'; statusEl.className='ib-status err'; return; }
-  btn.disabled = true;
-  statusEl.className='ib-status';
-  statusEl.textContent='Sortiere ein …';
+  if(!raw){ statusEl.textContent='Erst JSON einfügen.'; statusEl.className='ib-status err'; return; }
   try{
-    const catList = data.ideaBoard.categories.map(c=>({id:c.id,title:c.title}));
-    const sys = "Du sortierst lose, unstrukturierte Notizen (oft Diktat vom Handy, mit Tippfehlern) in bestehende Kategorien ein. Antworte AUSSCHLIESSLICH mit einem validen JSON-Array, ohne Markdown-Codefences, ohne Erklärung.";
-    const usr = `Bestehende Kategorien:\n${JSON.stringify(catList)}\n\nRoher Notiztext:\n"""\n${raw}\n"""\n\nZerlege den Text in einzelne, eigenständige Punkte. Korrigiere nur offensichtliche Tipp-/Diktierfehler, ändere Inhalt/Bedeutung NICHT. Ordne jeden Punkt einer passenden vorhandenen category_id zu. Passt keine, schlage new_category mit title und emoji vor.\n\nAntworte NUR mit einem JSON-Array in exakt diesem Format:\n[{"text":"...", "category_id":"vorhandene-id"}, {"text":"...", "new_category":{"title":"...", "emoji":"..."}}]`;
-    const response = await fetch("/api/anthropic", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ model:"claude-sonnet-5", max_tokens:1000, system:sys, messages:[{role:"user",content:usr}] })
-    });
-    const json = await response.json();
-    const textBlocks = (json.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
-    const cleaned = textBlocks.replace(/```json|```/g,'').trim();
+    const cleaned = raw.replace(/```json|```/g,'').trim();
     const parsed = JSON.parse(cleaned);
+    if(!Array.isArray(parsed)) throw new Error('Erwartet ein JSON-Array.');
     let added=0;
     parsed.forEach(entry=>{
-      let catId = entry.category_id;
-      if(entry.new_category && entry.new_category.title){
-        const t = entry.new_category.title.trim();
-        const existing = data.ideaBoard.categories.find(c=>c.title.toLowerCase()===t.toLowerCase());
+      if(!entry || !entry.text) return;
+      let catId;
+      const title = (entry.category||'').trim();
+      if(title){
+        const existing = data.ideaBoard.categories.find(c=>c.title.toLowerCase()===title.toLowerCase());
         if(existing){ catId = existing.id; }
         else {
           catId = 'cat_'+uid();
-          data.ideaBoard.categories.push({id:catId,title:t,emoji:entry.new_category.emoji||'📌',color:PALETTE[data.ideaBoard.categories.length % PALETTE.length]});
+          data.ideaBoard.categories.push({id:catId,title,emoji:entry.emoji||'📌',color:PALETTE[data.ideaBoard.categories.length % PALETTE.length]});
         }
       }
-      if(!catId || !data.ideaBoard.categories.some(c=>c.id===catId)){
+      if(!catId){
         if(data.ideaBoard.categories.length===0) return;
         catId = data.ideaBoard.categories[0].id;
       }
       data.ideaBoard.items.push({id:uid(),categoryId:catId,text:entry.text,done:false});
       added++;
     });
-    await persist();
+    persist();
     renderIbBoard(); renderIbCatSelect();
-    document.getElementById('ib-raw').value='';
-    statusEl.textContent = `${added} Punkt(e) einsortiert.`;
+    document.getElementById('ib-import').value='';
+    statusEl.textContent = `${added} Punkt(e) übernommen.`;
     statusEl.className='ib-status';
   }catch(e){
-    console.error(e);
-    statusEl.textContent = 'Einsortieren fehlgeschlagen: ' + (e.message||e);
+    statusEl.textContent = 'Import fehlgeschlagen: ' + (e.message||e);
     statusEl.className='ib-status err';
-  }finally{
-    btn.disabled=false;
   }
 }
 
