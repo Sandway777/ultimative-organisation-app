@@ -336,6 +336,10 @@ function defaultData(){
   zettel.push({ id: uid(), title:'Trainingsübersicht', type:'checklist', bereich:'sport', createdAt: now-3, items: [] });
   zettel.push({ id: uid(), title:'Anträge', type:'checklist', bereich:'privat', createdAt: now-4, items: [] });
   zettel.push({ id: uid(), title:'Monatsübersicht', type:'month', bereich:null, createdAt: now-5, columns:{privat:[],business:[],uni:[],sport:[]} });
+  const tripFrom = new Date(now+86400000).toISOString().slice(0,10);
+  const tripTo = new Date(now+3*86400000).toISOString().slice(0,10);
+  zettel.push({ id: uid(), title:'Reiseplan', type:'trip', bereich:'privat', createdAt: now-6,
+    dateFrom: tripFrom, dateTo: tripTo, days: buildTripDays(tripFrom, tripTo) });
   return {
     ideaBoard:{categories:[],items:[]},
     dailyNotes:{days:[]},
