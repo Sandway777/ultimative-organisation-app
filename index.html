@@ -334,6 +334,7 @@ function defaultData(){
   zettel.push({ id: uid(), title:'PETIVO Finanzen', type:'checklist', bereich:'business', createdAt: now-1, items: [] });
   zettel.push({ id: uid(), title:'PETIVO Produktion', type:'checklist', bereich:'business', createdAt: now-2, items: [] });
   zettel.push({ id: uid(), title:'Trainingsübersicht', type:'checklist', bereich:'sport', createdAt: now-3, items: [] });
+  zettel.push({ id: uid(), title:'Anträge', type:'checklist', bereich:'privat', createdAt: now-4, items: [] });
   return {
     ideaBoard:{categories:[],items:[]},
     dailyNotes:{days:[]},
@@ -388,7 +389,7 @@ function getSortedZettel(){
 function getVisibleZettel(){
   const sorted = getSortedZettel();
   if(activeFilter==='alle') return sorted;
-  return sorted.filter(z=>z.bereich===activeFilter);
+  return sorted.filter(z=>z.bereich===activeFilter || z.bereich==null);
 }
 function getActiveZettel(){
   return data.zettel.find(z=>z.id===data.activeId) || null;
@@ -530,7 +531,7 @@ function renderMain(){
 
 function renderBereichOverview(c, key){
   const label = BEREICHE[key].label;
-  const matching = getSortedZettel().filter(z => z.bereich===key || z.type==='month');
+  const matching = getSortedZettel().filter(z => z.bereich===key || z.bereich==null);
   let cardsHtml = '';
   if(matching.length===0){
     cardsHtml = `<div class="empty-lists">Noch keine Zettel für ${label}.<div><button id="ov-add-btn">+ Neuer ${label}-Zettel</button></div></div>`;
