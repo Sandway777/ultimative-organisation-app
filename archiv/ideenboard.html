@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Ideen-Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #F3EEE2;
+    --card: #FAF7EF;
+    --ink: #2B2A28;
+    --ink-soft: #726C63;
+    --line: #DFD7C4;
+    --accent: #2B6E6B;
+    --accent-ink: #F3EEE2;
+    --danger: #A8425A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;}
+  body{padding:32px 24px 80px;}
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  header{margin-bottom:28px;}
+  header h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:clamp(28px,4vw,40px);
+    margin:0 0 4px;
+    letter-spacing:-0.01em;
+  }
+  header p{margin:0;color:var(--ink-soft);font-size:14px;}
+
+  .inbox{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:18px 20px;
+    margin-bottom:20px;
+  }
+  .inbox-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+    display:flex;align-items:center;gap:6px;
+  }
+  textarea{
+    width:100%;
+    min-height:90px;
+    resize:vertical;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:12px 14px;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:14.5px;
+    color:var(--ink);
+    background:#fff;
+    line-height:1.5;
+  }
+  textarea:focus{outline:2px solid var(--accent);outline-offset:1px;}
+
+  .row{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap;}
+  button{
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:14px;
+    font-weight:500;
+    border:none;
+    border-radius:7px;
+    padding:9px 16px;
+    cursor:pointer;
+    transition:opacity .15s ease, transform .1s ease;
+  }
+  button:active{transform:scale(0.97);}
+  button:disabled{opacity:.5;cursor:default;}
+  .btn-primary{background:var(--accent);color:var(--accent-ink);}
+  .btn-primary:hover:not(:disabled){opacity:.88;}
+  .btn-ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line);}
+  .btn-ghost:hover{background:#00000008;}
+  .status{font-size:13px;color:var(--ink-soft);font-style:italic;}
+  .status.err{color:var(--danger);font-style:normal;}
+
+  .quickadd{
+    display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+    background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;margin-bottom:28px;
+  }
+  .quickadd input[type=text]{
+    flex:1;min-width:180px;
+    border:1px solid var(--line);border-radius:7px;padding:9px 12px;
+    font-size:14.5px;font-family:'IBM Plex Sans',sans-serif;
+    background:#fff;color:var(--ink);
+  }
+  .quickadd select{
+    border:1px solid var(--line);border-radius:7px;padding:9px 10px;
+    font-family:'IBM Plex Sans',sans-serif;font-size:14px;background:#fff;color:var(--ink);
+  }
+
+  .board{
+    column-width:300px;
+    column-gap:18px;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:2px 10px 10px 10px;
+    padding:16px 16px 14px;
+    margin:0 0 18px;
+    break-inside:avoid;
+    position:relative;
+    box-shadow:0 1px 2px rgba(0,0,0,.04);
+  }
+  .tab{
+    position:absolute;top:-11px;left:14px;
+    padding:3px 10px;border-radius:6px 6px 0 0;
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.05em;
+    color:#fff;
+  }
+  .card-head{
+    display:flex;justify-content:space-between;align-items:baseline;
+    margin:6px 0 10px;padding-bottom:8px;border-bottom:1px dashed var(--line);
+  }
+  .card-title{font-family:'Fraunces',serif;font-weight:600;font-size:16.5px;}
+  .card-count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);}
+  .card-del{
+    background:none;border:none;color:var(--ink-soft);font-size:13px;cursor:pointer;padding:0 0 0 8px;
+  }
+  .card-del:hover{color:var(--danger);}
+
+  .item{
+    display:flex;align-items:flex-start;gap:9px;
+    padding:6px 0;font-size:14.5px;line-height:1.45;
+  }
+  .item input[type=checkbox]{
+    margin-top:3px;width:15px;height:15px;accent-color:var(--accent);flex-shrink:0;cursor:pointer;
+  }
+  .item span{flex:1;}
+  .item.done span{color:var(--ink-soft);text-decoration:line-through;}
+  .item-del{
+    background:none;border:none;color:#c9c2b2;font-size:14px;cursor:pointer;padding:0 2px;flex-shrink:0;
+  }
+  .item-del:hover{color:var(--danger);}
+  .empty{color:var(--ink-soft);font-size:13px;font-style:italic;padding:4px 0;}
+
+  .newcat-box{display:none;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .newcat-box input{border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:14px;background:#fff;}
+  .newcat-box input.emoji{width:56px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>📇 Ideen-Board</h1>
+    <p>Wirf rohe Notizen rein — sortiert automatisch ein. Häkchen setzen, wenn erledigt.</p>
+    <div class="row" style="margin-top:10px;">
+      <button class="btn-ghost" onclick="testStorage()">🔧 Speicher testen</button>
+      <span class="status" id="globalStatus"></span>
+    </div>
+  </header>
+
+  <div class="inbox">
+    <div class="inbox-label">📥 Rohe Notizen einfügen</div>
+    <textarea id="rawInput" placeholder="Hier einfach unsortiert reinkopieren, z.B. wie es aus der Handy-Notiz kommt..."></textarea>
+    <div class="row">
+      <button class="btn-primary" id="sortBtn" onclick="autoSort()">Automatisch einsortieren</button>
+      <span class="status" id="sortStatus"></span>
+    </div>
+  </div>
+
+  <div class="quickadd">
+    <input type="text" id="quickText" placeholder="…oder einzelnen Punkt direkt hinzufügen" onkeydown="if(event.key==='Enter')quickAdd()">
+    <select id="quickCat" onchange="onQuickCatChange()"></select>
+    <button class="btn-primary" onclick="quickAdd()">Hinzufügen</button>
+    <div class="newcat-box" id="newcatBox">
+      <input type="text" class="emoji" id="newcatEmoji" placeholder="📌" maxlength="2">
+      <input type="text" id="newcatTitle" placeholder="Name der neuen Kategorie">
+      <button class="btn-ghost" onclick="confirmNewCat()">Kategorie anlegen</button>
+    </div>
+  </div>
+
+  <div class="board" id="board"></div>
+</div>
+
+<script>
+const PALETTE = ['#2B6E6B','#4A5A8C','#C08A2E','#7A4A6B','#6B7A3A','#3E6B8C','#A8566B','#3C6B4A','#8A5A2E','#5A6B7A'];
+const STORAGE_KEY = 'ideas-board-v1';
+let data = null;
+
+function seedData(){
+  const mk = (t,d=false)=>({id:uid(),text:t,done:d});
+  const cats = [
+    {id:'anthropic',title:'Anthropic / Claude',emoji:'🤖',color:PALETTE[0]},
+    {id:'studium',title:'Studium / Uni',emoji:'🎓',color:PALETTE[1]},
+    {id:'petivo',title:'PETIVO / Business',emoji:'🐾',color:PALETTE[2]},
+    {id:'steuern',title:'Steuern / Finanzen',emoji:'💰',color:PALETTE[3]},
+    {id:'meta',title:'Meta / Claude-Projekte',emoji:'📋',color:PALETTE[4]},
+    {id:'organisatorisches',title:'Organisatorisches',emoji:'🏠',color:PALETTE[5]},
+    {id:'freizeit',title:'Freizeit / Persönliches',emoji:'🎉',color:PALETTE[6]},
+    {id:'vision',title:'Große Vision / Traum',emoji:'🌟',color:PALETTE[7]},
+  ];
+  const items = [
+    mk2('anthropic','MidJourney 8.1 versuchen'),
+    mk2('anthropic','Anthropic: echte Kurse machen + Zertifikate (Screenshot vom 12.07.26)'),
+    mk2('anthropic','Neues Claude-Modell testen'),
+    mk2('anthropic','Claude Design ausprobieren'),
+    mk2('anthropic','Token-Vorwarnsystem für Claude bauen'),
+    mk2('anthropic','Prüfen, ob Claude z.B. auch GPT nutzen kann (mehrere Zugänge, Wechsel bei leerem Kontingent)'),
+    mk2('studium','Zeitmanagement wegen Uni klären (Fahrtzeit + Online-Modell)'),
+    mk2('studium','Motivationszeilen schreiben: warum das Studium, was bringt es mir'),
+    mk2('studium','Prüfen, was als Student günstiger wird (Steuer-Tricks, Programme, Kleidung, Essen, Reisen)'),
+    mk2('petivo','Petivo-Daten erfassen (wegen Steuererklärung)'),
+    mk2('petivo','Rechtliches bei Petivo klären: Dokument für Einnahmen/Ausgaben (Etsy-Belege reichen nicht aus)'),
+    mk2('petivo','Projekt: alles sauber für die Steuererklärung aufbereiten'),
+    mk2('petivo','Neue Projektidee: KI-Kunst / GPT / Etsy-Shop für digitale Produkte, ggf. zum Selbstdrucken'),
+    mk2('petivo','Rechnungs-Tool (PDF, Cowork-Projekt)'),
+    mk2('steuern','Steuer-Podcast fertig schauen, letzten Teil fixieren für KI-Analyse'),
+    mk2('steuern','Steuergesetze kennenlernen (wichtig für später)'),
+    mk2('steuern','Trading erst ab 50k Investition, auch als Rentenoption'),
+    mk2('steuern','GmbH gründen für eigenes Gehalt (60k brutto → ca. 4-6k netto, gegenrechnen)'),
+    mk2('meta','Claude-Projekt "Business Thinker"'),
+    mk2('meta','Claude-Projekt "Plan to the Dream"'),
+    mk2('meta','Neues Projekt: Steuern (Struktur/Ordnung)'),
+    mk2('meta','Neues Projekt: Ideen-Liste für spontane Einfälle'),
+    mk2('organisatorisches','Bewerbungsmappe am Wochenende nochmal anschauen und analysieren'),
+    mk2('freizeit','Sitzplätze für Konzert googeln + Düsseldorf-Trip planen'),
+    mk2('freizeit','Idee: Gruppen-Urlaub organisieren (kein Alkohol, Leute kennenlernen)'),
+    mk2('vision','Firma, die Probleme im Gesundheitswesen mit eigenen Tools löst (inkl. Installation/Integration)'),
+    mk2('vision','Im Studium Kontakte knüpfen, v.a. Werkstudenten-Jobs, um Branchenprobleme zu verstehen'),
+  ];
+  function mk2(catId,text){return {id:uid(),categoryId:catId,text,done:false};}
+  return {categories:cats, items};
+}
+
+function uid(){return Math.random().toString(36).slice(2,10)+Date.now().toString(36);}
+
+function errText(e){
+  if(!e) return 'Unbekannter Fehler';
+  if(typeof e === 'string') return e;
+  if(e.message) return e.message;
+  try{ return JSON.stringify(e); }catch(_){ return String(e); }
+}
+
+function showGlobalStatus(msg, isErr){
+  const el = document.getElementById('globalStatus');
+  el.textContent = msg;
+  el.className = 'status' + (isErr ? ' err' : '');
+}
+
+window.addEventListener('error', function(ev){
+  showGlobalStatus('Skriptfehler: ' + errText(ev.error || ev.message), true);
+});
+window.addEventListener('unhandledrejection', function(ev){
+  showGlobalStatus('Fehler: ' + errText(ev.reason), true);
+});
+
+async function testStorage(){
+  showGlobalStatus('Teste Speicher…', false);
+  try{
+    await window.storage.set('diag-test-key', JSON.stringify({t:Date.now()}), false);
+    const res = await window.storage.get('diag-test-key', false);
+    if(!res) throw new Error('Speicher hat null zurückgegeben (kein Wert erhalten)');
+    await window.storage.delete('diag-test-key', false);
+    showGlobalStatus('Speichertest erfolgreich ✓ — Speichern funktioniert.', false);
+  }catch(e){
+    showGlobalStatus('Speichertest fehlgeschlagen: ' + errText(e), true);
+  }
+}
+
+async function loadData(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    if(!res) throw new Error('kein gespeicherter Stand gefunden');
+    data = JSON.parse(res.value);
+  }catch(e){
+    data = seedData();
+    try{
+      await saveData();
+    }catch(e2){
+      showGlobalStatus('Konnte Startdaten nicht speichern: ' + errText(e2), true);
+    }
+  }
+  render();
+}
+
+async function saveData(){
+  await window.storage.set(STORAGE_KEY, JSON.stringify(data), false);
+}
+
+function render(){
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  data.categories.forEach(cat=>{
+    const items = data.items.filter(i=>i.categoryId===cat.id);
+    const card = document.createElement('div');
+    card.className = 'card';
+    const openCount = items.filter(i=>!i.done).length;
+    card.innerHTML = `
+      <div class="tab" style="background:${cat.color}">${cat.emoji} ${cat.title.toUpperCase()}</div>
+      <div class="card-head">
+        <span class="card-title">${cat.emoji} ${escapeHtml(cat.title)}</span>
+        <span class="card-count">${openCount} offen <button class="card-del" title="Kategorie löschen" onclick="deleteCategory('${cat.id}')">✕</button></span>
+      </div>
+      <div class="items"></div>
+    `;
+    const itemsWrap = card.querySelector('.items');
+    if(items.length===0){
+      itemsWrap.innerHTML = '<div class="empty">Noch keine Einträge</div>';
+    } else {
+      items.sort((a,b)=>(a.done===b.done)?0:(a.done?1:-1));
+      items.forEach(it=>{
+        const row = document.createElement('div');
+        row.className = 'item'+(it.done?' done':'');
+        row.innerHTML = `
+          <input type="checkbox" ${it.done?'checked':''} onchange="toggleItem('${it.id}')">
+          <span>${escapeHtml(it.text)}</span>
+          <button class="item-del" title="löschen" onclick="deleteItem('${it.id}')">✕</button>
+        `;
+        itemsWrap.appendChild(row);
+      });
+    }
+    board.appendChild(card);
+  });
+  renderCatSelect();
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function renderCatSelect(){
+  const sel = document.getElementById('quickCat');
+  const current = sel.value;
+  sel.innerHTML = '';
+  data.categories.forEach(c=>{
+    const opt = document.createElement('option');
+    opt.value = c.id; opt.textContent = c.emoji+' '+c.title;
+    sel.appendChild(opt);
+  });
+  const newOpt = document.createElement('option');
+  newOpt.value = '__new__'; newOpt.textContent = '+ Neue Kategorie…';
+  sel.appendChild(newOpt);
+  if([...sel.options].some(o=>o.value===current)) sel.value = current;
+}
+
+function onQuickCatChange(){
+  const box = document.getElementById('newcatBox');
+  box.style.display = document.getElementById('quickCat').value === '__new__' ? 'flex' : 'none';
+}
+
+async function toggleItem(id){
+  const it = data.items.find(i=>i.id===id);
+  if(!it) return;
+  const prev = it.done;
+  it.done = !it.done;
+  try{
+    await saveData();
+    showGlobalStatus('Gespeichert ✓', false);
+  }catch(e){
+    it.done = prev;
+    showGlobalStatus('Konnte nicht speichern: ' + errText(e), true);
+  }
+  render();
+}
+
+async function deleteItem(id){
+  const backup = data.items;
+  data.items = data.items.filter(i=>i.id!==id);
+  try{
+    await saveData();
+    showGlobalStatus('Gelöscht ✓', false);
+  }catch(e){
+    data.items = backup;
+    showGlobalStatus('Konnte nicht löschen: ' + errText(e), true);
+  }
+  render();
+}
+
+let pendingDeleteCat = null;
+async function deleteCategory(id){
+  if(pendingDeleteCat !== id){
+    pendingDeleteCat = id;
+    showGlobalStatus('Nochmal auf ✕ tippen, um die Kategorie wirklich zu löschen.', true);
+    setTimeout(()=>{ if(pendingDeleteCat===id) pendingDeleteCat=null; }, 4000);
+    return;
+  }
+  pendingDeleteCat = null;
+  const backupCats = data.categories, backupItems = data.items;
+  data.categories = data.categories.filter(c=>c.id!==id);
+  data.items = data.items.filter(i=>i.categoryId!==id);
+  try{
+    await saveData();
+    showGlobalStatus('Kategorie gelöscht ✓', false);
+  }catch(e){
+    data.categories = backupCats; data.items = backupItems;
+    showGlobalStatus('Konnte Kategorie nicht löschen: ' + errText(e), true);
+  }
+  render();
+}
+
+async function confirmNewCat(){
+  const emoji = document.getElementById('newcatEmoji').value.trim() || '📌';
+  const title = document.getElementById('newcatTitle').value.trim();
+  if(!title) return;
+  const color = PALETTE[data.categories.length % PALETTE.length];
+  const id = 'cat_'+uid();
+  const backup = data.categories;
+  data.categories = [...data.categories, {id, title, emoji, color}];
+  try{
+    await saveData();
+    document.getElementById('newcatEmoji').value='';
+    document.getElementById('newcatTitle').value='';
+    document.getElementById('newcatBox').style.display='none';
+    render();
+    document.getElementById('quickCat').value = id;
+    showGlobalStatus('Kategorie angelegt ✓', false);
+  }catch(e){
+    data.categories = backup;
+    showGlobalStatus('Konnte Kategorie nicht anlegen: ' + errText(e), true);
+  }
+}
+
+async function quickAdd(){
+  const textEl = document.getElementById('quickText');
+  const text = textEl.value.trim();
+  const catSel = document.getElementById('quickCat').value;
+  if(!text) return;
+  if(catSel === '__new__'){ showGlobalStatus('Erst Kategorie-Namen anlegen (Feld darunter).', true); return; }
+  const backup = data.items;
+  data.items = [...data.items, {id:uid(), categoryId:catSel, text, done:false}];
+  try{
+    await saveData();
+    textEl.value='';
+    showGlobalStatus('Hinzugefügt ✓', false);
+  }catch(e){
+    data.items = backup;
+    showGlobalStatus('Konnte nicht hinzufügen: ' + errText(e), true);
+  }
+  render();
+}
+
+async function autoSort(){
+  const raw = document.getElementById('rawInput').value.trim();
+  const statusEl = document.getElementById('sortStatus');
+  const btn = document.getElementById('sortBtn');
+  if(!raw){ statusEl.textContent = 'Erst Text einfügen.'; statusEl.className='status err'; return; }
+  btn.disabled = true;
+  statusEl.className = 'status';
+  statusEl.textContent = 'Sortiere ein…';
+  try{
+    const catList = data.categories.map(c=>({id:c.id, title:c.title})); 
+    const sys = "Du sortierst lose, unstrukturierte Notizen (oft Diktat vom Handy, mit Tippfehlern) in bestehende Kategorien ein. Antworte AUSSCHLIESSLICH mit einem validen JSON-Array, ohne Markdown-Codefences, ohne Erklärung, ohne Vorspann.";
+    const usr = `Bestehende Kategorien:
+${JSON.stringify(catList)}
+
+Roher Notiztext:
+"""
+${raw}
+"""
+
+Zerlege den Text in einzelne, eigenständige Punkte. Korrigiere nur offensichtliche Tipp-/Diktierfehler, ändere aber Inhalt und Bedeutung NICHT und fasse nicht stark zusammen - bleib nah am Original. Ordne jeden Punkt einer passenden vorhandenen category_id zu. Passt keine bestehende Kategorie thematisch, schlage stattdessen new_category mit title und einem passenden emoji vor.
+
+Antworte NUR mit einem JSON-Array in exakt diesem Format (keine Kommentare, keine Codefences):
+[{"text":"...", "category_id":"vorhandene-id"}, {"text":"...", "new_category":{"title":"...", "emoji":"..."}}]`;
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1000,
+        system: sys,
+        messages: [{ role: "user", content: usr }]
+      })
+    });
+    const json = await response.json();
+    const textBlocks = (json.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+    const cleaned = textBlocks.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(cleaned);
+
+    let added = 0;
+    parsed.forEach(entry=>{
+      let catId = entry.category_id;
+      if(entry.new_category && entry.new_category.title){
+        const t = entry.new_category.title.trim();
+        const existing = data.categories.find(c=>c.title.toLowerCase()===t.toLowerCase());
+        if(existing){
+          catId = existing.id;
+        } else {
+          catId = 'cat_'+uid();
+          data.categories.push({
+            id: catId,
+            title: t,
+            emoji: entry.new_category.emoji || '📌',
+            color: PALETTE[data.categories.length % PALETTE.length]
+          });
+        }
+      }
+      if(!catId || !data.categories.some(c=>c.id===catId)) catId = data.categories[0].id;
+      data.items.push({id:uid(), categoryId:catId, text:entry.text, done:false});
+      added++;
+    });
+
+    await saveData();
+    render();
+    document.getElementById('rawInput').value='';
+    statusEl.textContent = `${added} Punkt(e) einsortiert.`;
+    statusEl.className = 'status';
+  }catch(e){
+    console.error(e);
+    statusEl.textContent = 'Einsortieren fehlgeschlagen: ' + errText(e);
+    statusEl.className = 'status err';
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>
