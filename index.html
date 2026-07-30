@@ -2528,6 +2528,11 @@ function migrateData(){
           if(typeof m.pruefraum!=='string')  m.pruefraum  = '';
           if(typeof m.fokus!=='string') m.fokus = '';
         });
+      } else if(def.type==='moving'){
+        /* Umzug fuehrt Gruppen statt einer flachen items-Liste - der Zweig
+           unten wuerde ihm sonst ein leeres items zurueckgeben, das nie
+           jemand liest. Der eigentliche Umbau steckt weiter oben. */
+        if(!Array.isArray(n.gruppen)) n.gruppen = [];
       } else {
         if(!Array.isArray(n.items)) n.items = [];
         if(def.type==='exams'){
