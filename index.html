@@ -1659,9 +1659,18 @@ let data = null;
 let pendingDeleteCat = null;
 /* Welcher Eintrag ist innerhalb eines Unterpunkts geoeffnet: {nodeId: entryId} */
 let selectedEntry = {};
-/* Eingeklappte Saeulen in der Navigation (bleibt ueber Neuladen erhalten) */
-let collapsedSaeulen = {};
-try{ collapsedSaeulen = JSON.parse(localStorage.getItem('notizblock-collapsed')||'{}'); }catch(e){}
+/* Eingeklappte Saeulen in der Navigation (bleibt ueber Neuladen erhalten).
+   Beim allerersten Start sind alle vier zu - offen wird nur, was man selbst
+   aufklappt. Alles gleichzeitig offen ist am Handy eine Wand aus Punkten. */
+let collapsedSaeulen = null;
+try{
+  const g = localStorage.getItem('notizblock-collapsed');
+  if(g) collapsedSaeulen = JSON.parse(g);
+}catch(e){}
+if(!collapsedSaeulen || typeof collapsedSaeulen!=='object'){
+  collapsedSaeulen = {};
+  Object.keys(STRUKTUR).forEach(b=>{ collapsedSaeulen[b] = true; });
+}
 function saveCollapsed(){
   try{ localStorage.setItem('notizblock-collapsed', JSON.stringify(collapsedSaeulen)); }catch(e){}
 }
@@ -2892,8 +2901,13 @@ function renderSidebar(){
   /* Die vier Saeulen mit ihren festen Unterpunkten */
   const wrap = document.getElementById('saeulen');
   wrap.innerHTML = '';
+  /* Die Saeule, in der man gerade steckt, ist immer offen - man soll sehen,
+     wo man ist, ohne erst aufklappen zu muessen. */
+  const aktiveSaeule = (data.activeId||'').startsWith('bereich:')
+    ? data.activeId.slice(8)
+    : ((data.activeId||'').includes(':') ? data.activeId.split(':')[0] : null);
   Object.keys(STRUKTUR).forEach(bereich=>{
-    const zu = !!collapsedSaeulen[bereich];
+    const zu = !!collapsedSaeulen[bereich] && bereich !== aktiveSaeule;
     const sec = document.createElement('div');
     sec.className = 'saeule '+bereich+(zu?' collapsed':'');
     /* Offene Punkte der ganzen Saeule - sichtbar auch wenn eingeklappt */
@@ -2911,7 +2925,13 @@ function renderSidebar(){
       collapsedSaeulen[bereich] = !collapsedSaeulen[bereich];
       saveCollapsed(); renderSidebar();
     });
-    head.addEventListener('click',()=>{ data.activeId='bereich:'+bereich; renderAll(); persist(); });
+    /* Auf die Saeule tippen zeigt ihre Uebersicht und klappt sie auf - sonst
+       muesste man zweimal tippen, um an die Unterpunkte zu kommen. */
+    head.addEventListener('click',()=>{
+      data.activeId='bereich:'+bereich;
+      collapsedSaeulen[bereich] = false;
+      saveCollapsed(); renderAll(); persist();
+    });
     sec.appendChild(head);
 
     const body = document.createElement('div');

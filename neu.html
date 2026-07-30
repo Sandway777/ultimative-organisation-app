@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notizblock auffrischen</title>
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:#141517;color:#E8E4DC;font-family:system-ui,-apple-system,sans-serif;
+    padding:24px;text-align:center;}
+  .box{max-width:340px;}
+  h1{font-size:1.25rem;margin:0 0 10px;font-weight:600;}
+  p{font-size:0.92rem;line-height:1.5;color:#9A948A;margin:0 0 20px;}
+  .stand{font-family:ui-monospace,monospace;font-size:0.8rem;color:#4FA8A2;
+    margin-bottom:18px;min-height:1.2em;}
+  a.knopf{display:inline-block;background:#4FA8A2;color:#fff;text-decoration:none;
+    padding:13px 26px;border-radius:9px;font-size:0.95rem;font-weight:500;}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>Notizblock wird aufgefrischt</h1>
+  <p>Der alte Zwischenspeicher wird entfernt, damit die neueste Fassung
+     geladen wird. Deine Notizen bleiben davon unberührt.</p>
+  <div class="stand" id="stand">Räume auf …</div>
+  <a class="knopf" id="weiter" href="./index.html">Notizblock öffnen</a>
+</div>
+<script>
+/* Raeumt Service Worker und Caches weg und schickt danach zur App.
+   Gedacht fuer den Fall, dass ein Geraet an einer alten Fassung haengt -
+   auf dem iPhone kommt man sonst nur ueber die Safari-Einstellungen dran.
+   An den Notizen aendert sich nichts: die liegen in localStorage und in der
+   Cloud-Datei, nicht im Cache. */
+(async () => {
+  const stand = document.getElementById('stand');
+  let weg = 0;
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const r of regs) { await r.unregister(); weg++; }
+    }
+    if (window.caches) {
+      const namen = await caches.keys();
+      for (const n of namen) { await caches.delete(n); weg++; }
+    }
+    stand.textContent = weg ? weg + ' alte Einträge entfernt ✓' : 'Nichts zu tun – alles aktuell ✓';
+  } catch (e) {
+    stand.textContent = 'Konnte nicht aufräumen: ' + (e.message || e);
+  }
+  /* Mit Zeitstempel weiter, damit Safari die Seite nicht doch aus dem
+     eigenen Speicher zieht. */
+  const ziel = './index.html?frisch=' + Date.now();
+  document.getElementById('weiter').href = ziel;
+  setTimeout(() => { location.replace(ziel); }, 1200);
+})();
+</script>
+</body>
+</html>
