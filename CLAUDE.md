@@ -36,7 +36,7 @@ Die Unterpunkte sind **fest** – sie werden aus dem Bauplan erzeugt und können
 gelöscht werden. Angelegt und gelöscht wird immer nur *innerhalb* eines Unterpunkts.
 Neue Unterpunkte ergänzt man in `STRUKTUR`; bestehende Daten bleiben erhalten.
 
-- **Privat** – Reisen, Anträge, Ausgaben
+- **Privat** – Reisen, Anträge, Ausgaben, Umzug
 - **Business** (PETIVO) – Nächste Schritte, Optimierungen, Marge
 - **Uni** – Vor dem Start, Stundenplan, Prüfungstermine, Lernplan, Module & Noten
 - **Sport und Gesundheit** – Trainingsübersicht, Kuren
