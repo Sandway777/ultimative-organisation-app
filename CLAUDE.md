@@ -99,9 +99,19 @@ die App soll klein bleiben, die Tabelle bleibt die Wahrheit.
 
 **Wahlpflichtmodule** (`wahl:true`) stehen als Platzhalter drin – „WPF I–III"
 und zweimal „WP Studium Generale" mit ihren 5 CP, damit die Rechnung von Anfang
-an stimmt. Sobald Leon weiß, welches Modul es wird, tippt er den Namen in die
-Zelle; erkennt der Code dort keinen Platzhalter mehr, fällt `wahl` automatisch
-auf `false` und die Markierung verschwindet. Kein eigener Bereich dafür.
+an stimmt. Ein Klick auf die „Wahl"-Marke klappt das Angebot aus `WPF_ANGEBOT`
+auf, ein Klick wählt aus – Name **und CP** werden gesetzt, `wahl` fällt auf
+`false`. Kein eigener Bereich, keine Parallelliste.
+
+Zwei getrennte Töpfe: `fach` (10 Module, alle 5 CP) und `generale` (8 Module).
+`wtopf` am Modul merkt sich die Herkunft, damit nach der Wahl noch erkennbar
+ist, woher es stammt; `wpfTopf()` leitet sie beim Anlegen aus dem Namen ab.
+
+**Falle:** Im Studium Generale haben die meisten Module nur **2,5 CP** – wählt
+Leon dort eines, fehlen ihm 2,5 CP und er bräuchte ein zweites. Die
+Semester-Leiste prüft darum die **Gesamtsumme gegen `zielCp`** und blendet einen
+Hinweis ein, sobald sie darunter fällt. Nicht je Semester prüfen: im Regelplan
+hat das 1. Semester 29 CP und das 3. hat 31, das ist korrekt.
 
 Dubletten werden über **Semester + Name** erkannt, mit Zähler – „WP Studium
 Generale" kommt im 5. Semester zweimal vor und darf nicht zusammenfallen.

@@ -561,13 +561,33 @@ tr.is-done .mini-checkbox svg{stroke-dashoffset:0;}
 .mod-sem-bar>div{height:100%;background:var(--uni);border-radius:2px;}
 .mod-sem-fuss{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;
   color:var(--ink-soft);margin-top:5px;}
+.mod-sem-hinweis{font-size:0.76rem;color:var(--ink-soft);margin:-12px 0 20px;
+  padding-left:2px;}
 @media(max-width:720px){.mod-semleiste{grid-template-columns:repeat(3,1fr);}}
 
-/* Wahlpflicht-Platzhalter: steht da, bis der echte Modulname eingetragen wird. */
-.mod-wahl{display:inline-block;margin-left:7px;padding:1px 6px;border-radius:5px;
-  background:rgba(255,255,255,.07);border:1px dashed var(--line);
+/* Wahlpflicht-Platzhalter: Knopf, der das Angebot aufklappt. */
+.mod-wahl{display:inline-block;margin-left:7px;padding:2px 7px;border-radius:5px;
+  background:rgba(255,255,255,.07);border:1px dashed var(--line);cursor:pointer;
   font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:.05em;
   color:var(--ink-soft);text-transform:uppercase;vertical-align:middle;}
+.mod-wahl:hover{border-color:var(--uni);color:var(--uni);border-style:solid;}
+.mod-wahl-row>td{padding:0 !important;background:none !important;}
+.mod-wahl-box{background:var(--card);border:1px solid var(--uni);border-radius:9px;
+  padding:12px 14px;margin:2px 0 8px;}
+.mod-wahl-label{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;
+  text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:9px;}
+.mod-wahl-liste{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:6px;}
+.mod-wahl-opt{display:flex;justify-content:space-between;align-items:center;gap:8px;
+  text-align:left;border:1px solid var(--line);background:none;border-radius:7px;
+  color:var(--ink);font-family:inherit;font-size:0.8rem;padding:7px 10px;cursor:pointer;}
+.mod-wahl-opt:hover:not(:disabled){border-color:var(--uni);color:var(--uni);}
+.mod-wahl-opt span{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;
+  color:var(--ink-soft);flex-shrink:0;}
+.mod-wahl-opt.belegt{opacity:.35;cursor:default;text-decoration:line-through;}
+.mod-wahl-fuss{margin-top:9px;}
+.mod-wahl-frei{border:none;background:none;color:var(--ink-soft);font-family:inherit;
+  font-size:0.72rem;cursor:pointer;text-decoration:underline;padding:3px 0;}
+.mod-wahl-frei:hover{color:var(--uni);}
 tr.row-done .tt-title{color:var(--ink-soft);}
 
 /* ---- Business: Optimierungen ---- */
@@ -1496,6 +1516,41 @@ function fmtDay(dateStr){
   return d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'short'});
 }
 
+/* Angebot an Wahlpflichtmodulen (TH Brandenburg, Medizininformatik).
+   Zwei getrennte Toepfe: die fachlichen WPF I-III und das Studium Generale.
+   Ein Platzhalter zeigt nur den Topf an, aus dem er stammt - so steht in der
+   Auswahl nie etwas Falsches. Die CP haengen am Modul und werden beim Waehlen
+   mitgesetzt: im Studium Generale haben die meisten nur 2,5 CP, ein
+   5-CP-Platzhalter braucht dort also zwei Module. */
+const WPF_ANGEBOT = {
+  fach: [
+    {t:'Bildverarbeitung', cp:5},
+    {t:'Cloud Computing: Grundlagen', cp:5},
+    {t:'Digitale Signalverarbeitung', cp:5},
+    {t:'Formale Sprachen und Automatentheorie', cp:5},
+    {t:'Foundations of Machine Learning', cp:5},
+    {t:'Grundlagen der evidenzbasierten Medizin', cp:5},
+    {t:'Konzeption und Auswertung medizinischer Studien', cp:5},
+    {t:'Objektorientierte Skriptsprachen', cp:5},
+    {t:'Telemedizin', cp:5},
+    {t:'Wissensverarbeitung 2', cp:5}
+  ],
+  generale: [
+    {t:'Betriebswirtschaftslehre', cp:5},
+    {t:'Communicative Competence', cp:2.5},
+    {t:'Funpreneurship', cp:2.5},
+    {t:'Gremienarbeit und Selbstverwaltung', cp:2.5},
+    {t:'Grundlagen des Projektmanagements', cp:2.5},
+    {t:'Informatik und Gesellschaft', cp:2.5},
+    {t:'Organisation und Prozessmanagement', cp:2.5},
+    {t:'Recht', cp:2.5}
+  ]
+};
+/* Aus welchem Topf stammt ein Platzhalter? */
+function wpfTopf(text){
+  return /studium generale/i.test(text||'') ? 'generale' : 'fach';
+}
+
 /* Die drei Phasen eines Umzugs. Fest, weil sie den zeitlichen Ablauf abbilden -
    die Gruppen DARIN legt man frei an (Technik, Klamotten, Dokumente ...). */
 const UMZUG_PHASEN = [
@@ -1844,6 +1899,9 @@ function studiumUebernehmen(){
     n.items.push({
       id:uid(), text:titel, cp, note:'', status:'offen', semester:semLabel,
       wahl: !!wahl,
+      /* Topf merken - nach der Wahl steht der echte Name da und man koennte
+         sonst nicht mehr erkennen, woher das Modul stammt. */
+      wtopf: wahl ? wpfTopf(titel) : '',
       pruefform:'', pruefdatum:'', pruefzeit:'', pruefraum:'', fokus:'',
       topics:[], tips:[]
     });
@@ -2394,6 +2452,7 @@ function migrateData(){
           if(!m.status) m.status = 'offen';
           if(typeof m.semester!=='string') m.semester = '';
           if(typeof m.wahl!=='boolean') m.wahl = false;   /* Wahlpflicht-Platzhalter */
+          if(typeof m.wtopf!=='string') m.wtopf = m.wahl ? wpfTopf(m.text) : '';
           /* Lernplan-Felder direkt am Modul - eine Quelle fuer alles */
           if(!Array.isArray(m.topics)) m.topics = [];
           if(!Array.isArray(m.tips))   m.tips   = [];
@@ -4584,17 +4643,25 @@ function modSemesterLeiste(z){
   });
   const keys = Object.keys(sem).sort();
   if(keys.length===0) return '';
+  /* Nicht je Semester pruefen - im Regelplan hat das 1. Semester 29 CP und das
+     3. hat 31, das ist so richtig. Nur die Gesamtsumme muss stimmen: faellt sie
+     unter 180, fehlt etwas - meist ein Studium-Generale-Modul, die haben oft
+     nur 2,5 CP, da braucht es dann zwei. */
+  const summe = keys.reduce((s,k)=>s+sem[k].cp, 0);
+  const luecke = summe < (z.zielCp||180);
   return `<div class="mod-semleiste">` + keys.map(k=>{
     const s = sem[k];
     const proz = s.cp>0 ? Math.round(s.hab/s.cp*100) : 0;
     const kurz = k.replace('. Semester','. Sem.');
     return `<div class="mod-sem${s.hab>0&&s.hab===s.cp?' fertig':''}">
       <div class="mod-sem-kopf">${escapeHtml(kurz)}</div>
-      <div class="mod-sem-cp">${s.cp} CP</div>
+      <div class="mod-sem-cp">${String(s.cp).replace('.',',')} CP</div>
       <div class="mod-sem-bar"><div style="width:${proz}%"></div></div>
       <div class="mod-sem-fuss">${s.offen} offen${s.wahl?` · ${s.wahl}× Wahl`:''}</div>
     </div>`;
-  }).join('') + `</div>`;
+  }).join('') + `</div>` + (luecke ? `<div class="mod-sem-hinweis">
+    Ein Semester liegt unter 30 CP – im Studium Generale haben die meisten Module
+    nur 2,5 CP, da braucht es dann zwei.</div>` : '');
 }
 
 function renderModules(c, def){
@@ -4660,8 +4727,8 @@ function renderModules(c, def){
     tbody.innerHTML = sorted.map(m=>{
       const st = modulStatusDef(m.status);
       return `<tr data-mid="${m.id}"${m.status==='bestanden'?' class="row-done"':''}>
-        <td class="tt-title mg-cell editable" data-mf="text">${escapeHtml(m.text)}${
-          m.wahl ? '<span class="mod-wahl" title="Wahlpflicht – Namen eintragen, sobald die Wahl steht">Wahl</span>' : ''}</td>
+        <td class="tt-title mg-cell${m.wahl?'':' editable'}" data-mf="text">${escapeHtml(m.text)}${
+          m.wahl ? `<button class="mod-wahl" data-mwahl="${m.id}" title="Modul auswählen">Wahl ▾</button>` : ''}</td>
         <td class="mg-cell editable mg-groesse" data-mf="semester">${escapeHtml(m.semester||'—')}</td>
         <td class="tt-num mg-cell editable" data-mf="cp">${m.cp||'—'}</td>
         <td class="tt-num mg-cell editable mod-note" data-mf="note">${
@@ -4673,6 +4740,43 @@ function renderModules(c, def){
     }).join('');
   }
   const refresh = ()=>{ persist(); renderModules(c, def); renderSidebar(); };
+  /* Wahlpflicht: Angebot aus dem passenden Topf, schon gewaehlte ausgegraut. */
+  tbody.querySelectorAll('[data-mwahl]').forEach(b=>b.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    const m = z.items.find(x=>x.id===b.dataset.mwahl); if(!m) return;
+    const tr = b.closest('tr');
+    const offen = tbody.querySelector('.mod-wahl-row');
+    if(offen){ const war = offen.dataset.fuer; offen.remove(); if(war===m.id) return; }
+
+    const topf = m.wtopf || wpfTopf(m.text);
+    const schon = new Set(z.items.filter(x=>x.id!==m.id).map(x=>x.text));
+    const liste = WPF_ANGEBOT[topf] || [];
+    const row = document.createElement('tr');
+    row.className = 'mod-wahl-row';
+    row.dataset.fuer = m.id;
+    row.innerHTML = `<td colspan="6"><div class="mod-wahl-box">
+      <div class="mod-wahl-label">${topf==='generale'?'Studium Generale':'Wahlpflichtmodul'}
+        · ${m.cp} CP im Plan</div>
+      <div class="mod-wahl-liste">${liste.map(w=>`
+        <button class="mod-wahl-opt${schon.has(w.t)?' belegt':''}"
+          data-t="${escapeHtml(w.t)}" data-cp="${w.cp}"${schon.has(w.t)?' disabled':''}>
+          ${escapeHtml(w.t)} <span>${String(w.cp).replace('.',',')} CP</span></button>`).join('')}</div>
+      <div class="mod-wahl-fuss">
+        <button class="mod-wahl-frei">Anderes Modul eintragen …</button>
+      </div>
+    </div></td>`;
+    tr.insertAdjacentElement('afterend', row);
+
+    row.querySelectorAll('.mod-wahl-opt').forEach(o=>o.addEventListener('click',()=>{
+      m.text = o.dataset.t;
+      m.cp   = Number(o.dataset.cp) || m.cp;
+      m.wahl = false;
+      refresh();
+    }));
+    row.querySelector('.mod-wahl-frei').addEventListener('click',()=>{
+      m.wahl = false; refresh();     /* Zelle wird dadurch normal editierbar */
+    });
+  }));
   tbody.querySelectorAll('[data-mdel]').forEach(b=>b.addEventListener('click',(e)=>{
     e.stopPropagation();
     z.items = z.items.filter(x=>x.id!==b.dataset.mdel); refresh();
