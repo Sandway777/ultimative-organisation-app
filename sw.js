@@ -2,7 +2,7 @@
 // aendert er sich, wirft "activate" alle alten Caches weg und das Geraet holt
 // alles neu. Ohne das haelt vor allem Safari am iPhone die alte Fassung fest,
 // egal wie oft man neu laedt.
-const VERSION = 'v3-2026-07-31';
+const VERSION = 'v4-2026-07-31-handylogo';
 const CACHE = 'notizblock-' + VERSION;
 
 // Relative Pfade: unter GitHub Pages liegt die App in einem Unterordner,

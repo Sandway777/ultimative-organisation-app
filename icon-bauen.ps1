@@ -1,4 +1,8 @@
-# Erzeugt notizblock.ico aus icon-512.png.
+# Erzeugt notizblock.ico fuer die Desktop-Verknuepfung.
+#
+# Quelle ist icon-desktop.png, nicht icon-512.png: Leon nutzt am Rechner ein
+# anderes Logo als am Handy. icon-512.png gehoert der PWA (Homescreen-Icon am
+# iPhone) und darf hier nicht durchschlagen.
 #
 # Warum eigenes Skript und nicht inline im .bat: Windows-Verknuepfungen koennen
 # kein PNG als Icon, es muss eine .ico sein. Und die .ico muss im klassischen
@@ -9,10 +13,11 @@ Add-Type -AssemblyName System.Drawing
 
 $dir  = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ico  = Join-Path $dir "notizblock.ico"
-$png  = Join-Path $dir "icon-512.png"
+$png  = Join-Path $dir "icon-desktop.png"
+if (-not (Test-Path $png)) { $png = Join-Path $dir "icon-512.png" }   # Rueckfall
 $size = 128
 
-if (-not (Test-Path $png)) { Write-Host "  icon-512.png fehlt"; exit 1 }
+if (-not (Test-Path $png)) { Write-Host "  Kein Logo gefunden"; exit 1 }
 
 $src = New-Object System.Drawing.Bitmap($png)
 $bmp = New-Object System.Drawing.Bitmap($size, $size, ([System.Drawing.Imaging.PixelFormat]::Format32bppArgb))
