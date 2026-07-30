@@ -58,14 +58,17 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--ink);background:var(--si
   z-index:50;align-items:center;gap:12px;padding:0 14px;
   padding-top:env(safe-area-inset-top);height:calc(50px + env(safe-area-inset-top));
   background:var(--sidebar-bg);border-bottom:1px solid var(--sidebar-line);}
-/* Menue-Knopf: die drei Balken bekommen eine eigene Breite statt sich auf
-   align-items:stretch zu verlassen - Safari am iPhone gab ihnen sonst Breite
-   null, der Knopf war unsichtbar. */
+/* Menue-Knopf. Die Balken brauchen eine eigene Breite - auf align-items zu
+   bauen ging schief, Safari am iPhone gab ihnen Breite null und der Knopf war
+   unsichtbar, aber anklickbar. Deshalb feste Masse, heller Rahmen und
+   kraeftiges Weiss statt einer halbdurchsichtigen Farbe. */
 .nav-auf{display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:4px;width:40px;height:38px;padding:0;border:none;background:none;
-  cursor:pointer;flex-shrink:0;}
-.nav-auf span{display:block;width:22px;height:2px;border-radius:1px;
-  background:#fff;opacity:.9;}
+  gap:4px;width:42px;height:36px;padding:0;cursor:pointer;flex-shrink:0;
+  border:1px solid rgba(255,255,255,.3);border-radius:8px;
+  background:rgba(255,255,255,.08);-webkit-appearance:none;appearance:none;}
+.nav-auf span{display:block;width:20px;min-width:20px;height:2px;
+  border-radius:1px;background:#fff;opacity:1;}
+.nav-auf:active{background:rgba(255,255,255,.18);}
 .handy-titel{font-family:'Fraunces',serif;font-size:1.02rem;color:#fff;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;}
 /* Cloud-Knopf rechts in der Kopfzeile. Rot, solange nicht verbunden -
@@ -2769,7 +2772,15 @@ async function load(){
     const res = await window.storage.get(STORAGE_KEY, false);
     data = res ? JSON.parse(res.value) : defaultData();
   }catch(e){ data = defaultData(); }
-  if(!data.activeId) data.activeId = 'ideaboard';
+  /* Startbereich: der taegliche Zettel, nicht das Idee-Board. Das Board ist
+     eine Sammlung zum Nachschlagen - was heute ansteht, gehoert nach vorne.
+     Der Schnitt setzt das einmal um, auch auf Geraeten, die noch das Board
+     gespeichert hatten; danach bleibt wieder stehen, wo Leon zuletzt war. */
+  if(!data.activeId) data.activeId = 'daily';
+  if(!data.startUmgestellt){
+    if(data.activeId === 'ideaboard') data.activeId = 'daily';
+    data.startUmgestellt = true;
+  }
   migrateData();
   pruneDailyNotes();
   renderAll();
@@ -6605,7 +6616,7 @@ cloudAbgleich();
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 13;
+const APP_FASSUNG = 14;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
