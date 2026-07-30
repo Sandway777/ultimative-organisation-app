@@ -1831,16 +1831,80 @@ function beispieleEinfuegen(){
   return dazu;
 }
 
-/* Der Studienverlauf Medizininformatik (TH Brandenburg, Stand 24.06.2025).
+/* Einmalige Uebernahme alter Notizen (Stand 30.07.2026).
+   Die Punkte lagen vorher in einer separaten Listen-App und werden hier einmal
+   eingespielt - danach merkt sich der Schluessel, dass es passiert ist, und die
+   Uebernahme laeuft nie wieder. Bereits vorhandene Texte werden uebersprungen,
+   damit nichts doppelt landet, wenn Leon einen Punkt schon selbst angelegt hat. */
+const UEBERNAHME_KEY = 'uebernahme-2026-07-30';
+function alteNotizenUebernehmen(){
+  if(data.uebernommen && data.uebernommen[UEBERNAHME_KEY]) return 0;
+  let dazu = 0;
 
-   Steht als einzige Uebernahme noch im Code, weil er oeffentlich ist - ein
-   Lehrplan, keine persoenliche Notiz. Leons eigene Eintraege (Umzug, Antraege,
-   Ideen, PETIVO) wurden nach der Uebernahme hier entfernt: sie liegen in seinem
-   Datenstand und in der privaten Cloud-Datei, nicht im oeffentlichen Repo.
-   Die Merker in data.uebernommen bleiben erhalten, damit nichts doppelt kommt.
+  /* --- PETIVO: naechste Schritte ------------------------------------------ */
+  const petivo = [
+    'Buchhaltung verbessern mit Claude',
+    'Marge erhöhen – Taktik und Optionen durchgehen',
+    'Ablauf Etsy und Shopify allgemein optimieren',
+    'Prozesse mit GPT vereinfachen – Optimierung überlegen',
+    'Video abwägen: wo wirklich sinnvoll',
+    'Vor dem 22.08.26: Shopify-Abo beenden und auf Building umsteigen – oder neuer Shop mit Übertrag und wieder 3 Monate für 1 €',
+    'Shopify: alle Einstellungen und Probleme durchgehen',
+    'Bilder verbessern',
+    'Alle Texte richtig verbessern',
+    'Rechtliche Aspekte: was fehlt noch (Rechnungstool für Shopify …)',
+    'Buchhaltung und Steuererklärung vereinfachen',
+    'Wichtige Petivo-Ordner auf beiden Rechnern synchron halten (Kunden …)'
+  ];
+  const ziel = data.nodes['business:schritte'];
+  if(ziel){
+    if(!Array.isArray(ziel.items)) ziel.items = [];
+    const da = new Set(ziel.items.map(i=>(i.text||'').toLowerCase().trim()));
+    petivo.forEach(t=>{
+      if(da.has(t.toLowerCase().trim())) return;
+      ziel.items.push({id:uid(), text:t, done:false});
+      dazu++;
+    });
+  }
 
-   Alle sechs Semester, damit von Anfang an sichtbar ist, was kommt -
-   Credits und Notenschnitt rechnen sich daraus mit.
+  /* --- Taegliche Notizzettel: 31.07. und 01.08. --------------------------- */
+  const tage = {
+    '2026-07-31': [
+      'Fragen beantworten (wer bin ich, wohin will ich) + Ziele 2026 +++',
+      'Uni-Portal mit Account angucken',
+      'Alles packen',
+      'Clara-Vertrag drucken',
+      'Frau Purohit anrufen/fragen – vielleicht auch erst im August (Fragen nochmal checken)',
+      'Uni-Vorbereitung synchronisieren'
+    ],
+    '2026-08-01': [
+      'Arbeitslosengeld und ALG 1 beantragen',
+      'Deutschlandticket holen',
+      'Stundenzettel an Kühn schicken'
+    ]
+  };
+  if(!data.dailyNotes) data.dailyNotes = {days:[]};
+  if(!Array.isArray(data.dailyNotes.days)) data.dailyNotes.days = [];
+  Object.keys(tage).forEach(datum=>{
+    let tag = data.dailyNotes.days.find(d=>d.date===datum);
+    if(!tag){ tag = {date:datum, items:[]}; data.dailyNotes.days.push(tag); }
+    const da = new Set(tag.items.map(i=>(i.text||'').toLowerCase().trim()));
+    tage[datum].forEach(t=>{
+      if(da.has(t.toLowerCase().trim())) return;
+      tag.items.push({id:uid(), text:t, done:false});
+      dazu++;
+    });
+  });
+  data.dailyNotes.days.sort((a,b)=>b.date.localeCompare(a.date));
+
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[UEBERNAHME_KEY] = true;
+  return dazu;
+}
+
+/* Fuenfte Uebernahme: der komplette Studienverlauf Medizininformatik (TH
+   Brandenburg, Stand 24.06.2025). Alle sechs Semester, damit Leon von Anfang an
+   sieht, was kommt - Credits und Notenschnitt rechnen sich daraus mit.
 
    Wahlpflichtmodule: welche er nimmt, steht noch nicht fest (haengt auch am
    Angebot). Sie stehen darum als Platzhalter drin - "WPF I" usw. mit ihren
@@ -1933,6 +1997,224 @@ function studiumUebernehmen(){
   return dazu;
 }
 
+/* Vierte Uebernahme: zwei Antraege fuer August. Beide fangen mit einem Anruf an -
+   solange nicht klar ist, was die Stelle ueberhaupt braucht, kann man keine
+   Unterlagen sammeln. Darum steht der Anruf jeweils als erster Schritt. */
+const AUGUST_KEY = 'august-antraege-2026-07-30';
+function augustAntraegeUebernehmen(){
+  if(data.uebernommen && data.uebernommen[AUGUST_KEY]) return 0;
+  const n = data.nodes['privat:antraege'];
+  if(!n) return 0;
+  if(!Array.isArray(n.items)) n.items = [];
+
+  const neu = [
+    {text:'Kindergeld klären', due:'2026-08-31', note:'Zuerst anrufen: läuft es bei Studienbeginn weiter, was wird gebraucht?',
+     steps:['Bei der Familienkasse anrufen und Fragen klären',
+            'Benötigte Unterlagen zusammenstellen',
+            'Antrag bzw. Nachweis einreichen'],
+     docs:['Immatrikulationsbescheinigung', 'Steuer-ID']},
+    {text:'BAföG-Antrag', due:'2026-08-31', note:'Anrufen und fragen, was für den Erstantrag nötig ist und bis wann.',
+     steps:['Beim BAföG-Amt anrufen und Fragen klären',
+            'Formulare besorgen und ausfüllen',
+            'Nachweise sammeln',
+            'Antrag abschicken'],
+     docs:['Immatrikulationsbescheinigung', 'Einkommensnachweis der Eltern', 'Kontoauszüge / Vermögensnachweis']}
+  ];
+
+  let dazu = 0;
+  const da = new Set(n.items.map(i=>(i.text||'').toLowerCase().trim()));
+  neu.forEach(a=>{
+    if(da.has(a.text.toLowerCase().trim())) return;
+    n.items.push({
+      id:uid(), text:a.text, due:a.due, status:'vorbereiten', done:false, note:a.note,
+      steps:a.steps.map(t=>({id:uid(), text:t, done:false})),
+      docs: a.docs.map(t=>({id:uid(), text:t, done:false}))
+    });
+    dazu++;
+  });
+
+  /* Dieselben zwei Sachen auch auf den Monatszettel August - dort sieht Leon,
+     was der Monat bringt; der Antrags-Bereich haelt den Ablauf dahinter fest. */
+  if(!Array.isArray(data.months)) data.months = [];
+  let aug = data.months.find(m=>m.ym==='2026-08');
+  if(!aug){
+    aug = {id:uid(), ym:'2026-08', open:true,
+           columns:{privat:[], business:[], uni:[], sport:[]}};
+    data.months.push(aug);
+  }
+  aug.columns = aug.columns || {};
+  ['privat','business','uni','sport'].forEach(k=>{ if(!aug.columns[k]) aug.columns[k]=[]; });
+  const augDa = new Set(aug.columns.privat.map(i=>(i.text||'').toLowerCase().trim()));
+  ['Kindergeld: Familienkasse anrufen', 'BAföG: Amt anrufen'].forEach(t=>{
+    if(augDa.has(t.toLowerCase().trim())) return;
+    aug.columns.privat.push({id:uid(), text:t, done:false});
+    dazu++;
+  });
+
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[AUGUST_KEY] = true;
+  return dazu;
+}
+
+/* Dritte Uebernahme: das Idee-Board aus dem alten Artefakt (8 Kategorien,
+   27 Punkte) plus die drei neuen Einfaelle vom 30.07. Kategorien werden am
+   Titel wiedererkannt, damit nichts doppelt entsteht. */
+const IDEEN_KEY = 'ideen-2026-07-30';
+function ideenUebernehmen(){
+  if(data.uebernommen && data.uebernommen[IDEEN_KEY]) return 0;
+  if(!data.ideaBoard) data.ideaBoard = {categories:[], items:[]};
+  if(!Array.isArray(data.ideaBoard.categories)) data.ideaBoard.categories = [];
+  if(!Array.isArray(data.ideaBoard.items))      data.ideaBoard.items      = [];
+
+  const board = [
+    ['Anthropic / Claude', '🤖', [
+      'MidJourney 8.1 versuchen',
+      'Anthropic: echte Kurse machen + Zertifikate (Screenshot vom 12.07.26)',
+      'Neues Claude-Modell testen',
+      'Claude Design ausprobieren',
+      'Token-Vorwarnsystem für Claude bauen',
+      'Prüfen, ob Claude z.B. auch GPT nutzen kann (mehrere Zugänge, Wechsel bei leerem Kontingent)',
+      'Claude Design = MidJourney-Loop (siehe Video)',
+      'Eigene lokale KI aufsetzen – Bildgenerierung (letzter GPT-Chat)'
+    ]],
+    ['Studium / Uni', '🎓', [
+      'Zeitmanagement wegen Uni klären (Fahrtzeit + Online-Modell)',
+      'Motivationszeilen schreiben: warum das Studium, was bringt es mir',
+      'Prüfen, was als Student günstiger wird (Steuer-Tricks, Programme, Kleidung, Essen, Reisen)'
+    ]],
+    ['PETIVO / Business', '🐾', [
+      'Petivo-Daten erfassen (wegen Steuererklärung)',
+      'Rechtliches bei Petivo klären: Dokument für Einnahmen/Ausgaben (Etsy-Belege reichen nicht aus)',
+      'Projekt: alles sauber für die Steuererklärung aufbereiten',
+      'Neue Projektidee: KI-Kunst / GPT / Etsy-Shop für digitale Produkte, ggf. zum Selbstdrucken',
+      'Rechnungs-Tool (PDF, Cowork-Projekt)',
+      'Cloudflare für Petivo prüfen'
+    ]],
+    ['Steuern / Finanzen', '💰', [
+      'Steuer-Podcast fertig schauen, letzten Teil fixieren für KI-Analyse',
+      'Steuergesetze kennenlernen (wichtig für später)',
+      'Trading erst ab 50k Investition, auch als Rentenoption',
+      'GmbH gründen für eigenes Gehalt (60k brutto ≈ 4–6k netto, gegenrechnen)'
+    ]],
+    ['Meta / Claude-Projekte', '🧠', [
+      'Claude-Projekt "Business Thinker"',
+      'Claude-Projekt "Plan to the Dream"',
+      'Neues Projekt: Steuern (Struktur/Ordnung)',
+      'Neues Projekt: Ideen-Liste für spontane Einfälle'
+    ]],
+    ['Organisatorisches', '🗂️', [
+      'Bewerbungsmappe am Wochenende nochmal anschauen und analysieren'
+    ]],
+    ['Freizeit / Persönliches', '🎧', [
+      'Sitzplätze für Konzert googeln + Düsseldorf-Trip planen',
+      'Idee: Gruppen-Urlaub organisieren (kein Alkohol, Leute kennenlernen)'
+    ]],
+    ['Große Vision / Traum', '🌅', [
+      'Firma, die Probleme im Gesundheitswesen mit eigenen Tools löst (inkl. Installation/Integration)',
+      'Im Studium Kontakte knüpfen, v.a. Werkstudenten-Jobs, um Branchenprobleme zu verstehen'
+    ]]
+  ];
+
+  let dazu = 0;
+  board.forEach(([titel, emoji, punkte])=>{
+    let cat = data.ideaBoard.categories.find(c=>
+      (c.title||'').toLowerCase().trim() === titel.toLowerCase().trim());
+    if(!cat){
+      cat = {id:uid(), title:titel, emoji,
+             color: PALETTE[data.ideaBoard.categories.length % PALETTE.length]};
+      data.ideaBoard.categories.push(cat);
+    }
+    const da = new Set(data.ideaBoard.items
+      .filter(i=>i.categoryId===cat.id)
+      .map(i=>(i.text||'').toLowerCase().trim()));
+    punkte.forEach(t=>{
+      if(da.has(t.toLowerCase().trim())) return;
+      data.ideaBoard.items.push({id:uid(), categoryId:cat.id, text:t, done:false});
+      dazu++;
+    });
+  });
+
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[IDEEN_KEY] = true;
+  return dazu;
+}
+
+/* Zweite Uebernahme: die Umzugs-Notizen. Eigener Schluessel, damit sie auch
+   greift, wenn die erste Uebernahme schon gelaufen war. */
+const UMZUG_KEY = 'umzug-2026-07-30';
+function umzugUebernehmen(){
+  if(data.uebernommen && data.uebernommen[UMZUG_KEY]) return 0;
+  const n = data.nodes['privat:umzug'];
+  if(!n) return 0;
+  if(!Array.isArray(n.gruppen)) n.gruppen = [];
+
+  n.datum   = n.datum   || '2026-07-31';
+  n.packVon = n.packVon || '2026-07-30';
+  n.packBis = n.packBis || '2026-07-31';
+
+  const neu = [
+    ['vorher', 'Vor der Fahrt', [
+      'Packen',
+      'Klamotten aussortieren',
+      'Dokumente aussortieren',
+      'Arbeitslos melden + ALG 1 beantragen (31.07.) – oder früher zum 03.08. (Adresse beachten, Nika fragt am 30.07.)',
+      'Clara Geld bringen + Vertrag unterschreiben',
+      'Letzte dreckige Wäsche waschen',
+      'Frau Purohit anrufen wegen Uni-Fragen'
+    ]],
+    ['packen', 'Technik', [
+      'Computer (alles) – Grafikkarte separat',
+      'Verlängerungskabel', 'Ladekabel', 'Handy', 'JBL Box', 'Laptop',
+      'Osmofresh', 'Swirl', 'O2 Reiniger', 'Controller', 'Rasierer'
+    ]],
+    ['packen', 'Klamotten', [
+      'Schuhe (alle)', 'Unterwäsche + Badesachen', 'Schmuck', 'Jacken'
+    ]],
+    ['packen', 'Dokumente', ['Privat', 'Gewerblich']],
+    ['packen', 'Pflegeprodukte', ['Seife', 'Medizin', 'Haare', 'Parfüm']],
+    ['packen', 'Bettzeug', ['Bettbezüge', 'Kissen', 'Decken']],
+    ['packen', 'Alles andere', [
+      'Hanteln (nur Kurzhantel)',
+      'Kleinigkeiten: Kuscheltiere, Geschenke, Werkzeug, Sonnenbrillen',
+      'Alles aus den Minischränken',
+      'Haram Zeug – you know what'
+    ]],
+    ['nachher', 'Erste Woche', [
+      'Einkaufen', 'Finanzen aufteilen', 'Wichtigste Sachen nachkaufen'
+    ]],
+    ['nachher', 'Termine', [
+      'Wohnungssuche',
+      'Agentur-Termin wahrnehmen',
+      'Alex-Termin',
+      'Fahrrad von Papa abholen',
+      'Papa wegen 300 € fragen'
+    ]],
+    ['nachher', 'Später', [
+      'August organisieren (Uni, privat, gewerblich)',
+      'Vielleicht Gym-Probemonat',
+      'The Odyssey gucken',
+      'Kleidung reklamieren wo möglich (sonst: alte neu kaufen und in passender Größe tauschen, ASOS)',
+      'September: Uni-Organisation und Claude-Projekte für schnellere Notiz-Zusammenfassung und Lerntaktiken'
+    ]]
+  ];
+
+  let dazu = 0;
+  neu.forEach(([phase, titel, punkte])=>{
+    let g = n.gruppen.find(x=>x.phase===phase && x.title===titel);
+    if(!g){ g = {id:uid(), phase, title:titel, items:[]}; n.gruppen.push(g); }
+    const da = new Set(g.items.map(i=>(i.text||'').toLowerCase().trim()));
+    punkte.forEach(t=>{
+      if(da.has(t.toLowerCase().trim())) return;
+      g.items.push({id:uid(), text:t, done:false});
+      dazu++;
+    });
+  });
+
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[UMZUG_KEY] = true;
+  return dazu;
+}
+
 /* Entfernt alle Eintraege mit beispiel:true - egal in welcher Liste sie stecken.
    Laeuft rekursiv, damit auch verschachtelte Sachen (Reise-Punkte, Modul-Themen)
    erwischt werden. Echte Eintraege haben die Markierung nie. */
@@ -1968,15 +2250,10 @@ function defaultData(){
   });
   const months = beispielDaten(nodes);
   return {
-    /* Vier Startkategorien passend zu den Saeulen - ein leeres Board haette
-       gar keine, und ohne Kategorie laesst sich kein Punkt anlegen.
-       Umbenennen und loeschen geht jederzeit. */
-    ideaBoard:{categories:[
-      {id:uid(), title:'Privat',   emoji:'🏠', color:PALETTE[0]},
-      {id:uid(), title:'Business', emoji:'💼', color:PALETTE[1]},
-      {id:uid(), title:'Uni',      emoji:'🎓', color:PALETTE[2]},
-      {id:uid(), title:'Ideen',    emoji:'💡', color:PALETTE[3]}
-    ], items:[]},
+    /* Leer - die echten Kategorien legt ideenUebernehmen() an. Frueher stand
+       hier eine Beispiel-Kategorie samt Punkt, der Punkt trug aber cat:null
+       statt categoryId und wurde darum nie angezeigt. */
+    ideaBoard:{categories:[], items:[]},
     dailyNotes:{days:[]},
     nodes,
     months,
@@ -2343,9 +2620,13 @@ function migrateData(){
     ['privat','business','uni','sport'].forEach(c=>{ if(!m.columns[c]) m.columns[c]=[]; });
   });
 
-  /* Zum Schluss, wenn die Struktur steht: der Studienverlauf.
-     Steht hier und nicht in load(), damit er auch greift, wenn der Stand aus der
+  /* Zum Schluss, wenn die Struktur steht: einmalige Uebernahme der alten Notizen.
+     Steht hier und nicht in load(), damit sie auch greift, wenn der Stand aus der
      Cloud oder aus einer Sicherung kommt - der Merker reist im JSON mit. */
+  alteNotizenUebernehmen();
+  umzugUebernehmen();
+  ideenUebernehmen();
+  augustAntraegeUebernehmen();
   studiumUebernehmen();
 }
 
