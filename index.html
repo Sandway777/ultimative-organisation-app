@@ -63,6 +63,22 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--ink);background:var(--si
 .nav-schatten{display:none;position:fixed;inset:0;z-index:55;
   background:rgba(0,0,0,.5);}
 
+/* Hinweis auf eine neue Fassung - unten, damit er nichts verdeckt. */
+.update-hinweis{position:fixed;left:12px;right:12px;z-index:70;
+  bottom:calc(12px + env(safe-area-inset-bottom));
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--card);border:1px solid var(--business);border-radius:10px;
+  padding:11px 14px;box-shadow:0 6px 22px rgba(0,0,0,.45);
+  font-size:0.84rem;color:var(--ink);}
+.update-hinweis span{flex:1;min-width:120px;}
+.update-hinweis .ib-btn{padding:7px 13px;font-size:0.8rem;}
+.update-spaeter{border:none;background:none;color:var(--ink-soft);
+  font-family:inherit;font-size:0.78rem;cursor:pointer;text-decoration:underline;}
+.update-spaeter:hover{color:var(--ink);}
+@media(min-width:821px){
+  .update-hinweis{left:auto;right:20px;bottom:20px;max-width:340px;}
+}
+
 .sidebar-header{padding:18px 16px 10px;}
 .sidebar-title{font-family:'Fraunces',serif;font-weight:600;font-style:italic;font-size:1.3rem;}
 .main-actions{display:flex;flex-direction:column;gap:8px;padding:12px;border-top:1px solid var(--sidebar-line);flex-shrink:0;}
@@ -6517,7 +6533,54 @@ cloudAbgleich();
 
 if('serviceWorker' in navigator){
   /* Relativer Pfad - unter GitHub Pages liegt die App in einem Unterordner. */
-  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(e=>console.error('SW-Registrierung fehlgeschlagen', e)); });
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').then((reg)=>{
+      /* Beim Start und bei jeder Rueckkehr nach Updates schauen. Ohne das
+         behaelt vor allem Safari am iPhone die alte Fassung, auch nach dem
+         Neuladen. */
+      reg.update();
+      document.addEventListener('visibilitychange',()=>{
+        if(document.visibilityState==='visible') reg.update();
+      });
+      reg.addEventListener('updatefound',()=>{
+        const neu = reg.installing;
+        if(!neu) return;
+        neu.addEventListener('statechange',()=>{
+          /* Nur melden, wenn schon eine Fassung lief - beim allerersten
+             Besuch waere der Hinweis sinnlos. */
+          if(neu.state==='installed' && navigator.serviceWorker.controller){
+            updateHinweisZeigen(neu);
+          }
+        });
+      });
+    }).catch(e=>console.error('SW-Registrierung fehlgeschlagen', e));
+
+    /* Uebernimmt der neue Worker, laedt die Seite einmal neu - danach ist
+       ueberall der frische Stand aktiv. */
+    let neuGeladen = false;
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(neuGeladen) return;
+      neuGeladen = true;
+      window.location.reload();
+    });
+  });
+}
+
+/* Kleiner Balken unten: eine neue Fassung liegt bereit. Kein Zwang - Leon
+   entscheidet, wann er wechselt, damit ihm nichts mitten im Tippen wegspringt. */
+function updateHinweisZeigen(neuerWorker){
+  if(document.getElementById('update-hinweis')) return;
+  const bar = document.createElement('div');
+  bar.id = 'update-hinweis';
+  bar.className = 'update-hinweis';
+  bar.innerHTML = `<span>Neue Fassung verfügbar</span>
+    <button class="ib-btn primary" id="update-jetzt">Jetzt laden</button>
+    <button class="update-spaeter" id="update-spaeter">Später</button>`;
+  document.body.appendChild(bar);
+  document.getElementById('update-jetzt').addEventListener('click',()=>{
+    neuerWorker.postMessage('skipWaiting');   /* loest controllerchange aus */
+  });
+  document.getElementById('update-spaeter').addEventListener('click',()=>bar.remove());
 }
 </script>
 </body>
