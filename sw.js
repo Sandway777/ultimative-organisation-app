@@ -2,12 +2,13 @@
 // aendert er sich, wirft "activate" alle alten Caches weg und das Geraet holt
 // alles neu. Ohne das haelt vor allem Safari am iPhone die alte Fassung fest,
 // egal wie oft man neu laedt.
-const VERSION = 'v4-2026-07-31-handylogo';
+const VERSION = 'v5-2026-07-31-iconnamen';
 const CACHE = 'notizblock-' + VERSION;
 
 // Relative Pfade: unter GitHub Pages liegt die App in einem Unterordner,
 // absolute Pfade wuerden dort ins Leere zeigen.
-const APP_SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const APP_SHELL = ['./', './index.html', './manifest.json',
+                   './app-icon-180-v2.png', './app-icon-192-v2.png', './app-icon-512-v2.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(APP_SHELL)));
