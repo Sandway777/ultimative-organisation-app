@@ -2368,6 +2368,14 @@ function migrateData(){
   if(!data.dailyNotes) data.dailyNotes = {days:[]};
   if(!data.ideaBoard)  data.ideaBoard = {categories:[],items:[]};
   if(!data.ideaBoard.zu || typeof data.ideaBoard.zu!=='object') data.ideaBoard.zu = {};
+  /* Kategorien starten zugeklappt - alle acht offen ist am Handy eine Wand
+     aus Punkten, in der man nichts findet. Einmaliger Schnitt, damit es auch
+     auf Geraeten greift, die die App schon vorher offen hatten; danach zaehlt
+     wieder, was Leon selbst einstellt. */
+  if(!data.ideaBoard.zu.__zuGesetzt){
+    (data.ideaBoard.categories||[]).forEach(c=>{ data.ideaBoard.zu[c.id] = true; });
+    data.ideaBoard.zu.__zuGesetzt = true;
+  }
   if(!data.nodes)      data.nodes = {};
   if(!Array.isArray(data.months)) data.months = [];
 
