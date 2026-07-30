@@ -1660,12 +1660,16 @@ function beispieleEinfuegen(){
     if(!data.months.some(x=>x.ym===m.ym)){ data.months.push(m); dazu++; }
   });
 
-  /* Idee-Board: eine Musterkarte, falls das Board leer ist */
+  /* Idee-Board: ein Musterpunkt in der ersten Kategorie. Muss an einer echten
+     categoryId haengen - das Board filtert danach, ein Punkt ohne waere
+     unsichtbar. */
   if(data.ideaBoard && Array.isArray(data.ideaBoard.items)
+     && Array.isArray(data.ideaBoard.categories) && data.ideaBoard.categories.length
      && !data.ideaBoard.items.some(i=>i.beispiel===true)){
     data.ideaBoard.items.push({id:uid(), beispiel:true,
-      text:'Beispiel: Rohtext hier einwerfen, Kategorien lassen sich frei anlegen',
-      cat:null});
+      categoryId: data.ideaBoard.categories[0].id,
+      text:'Beispiel: Rohtext oben einwerfen – Kategorien lassen sich frei anlegen',
+      done:false});
     dazu++;
   }
   return dazu;
@@ -1739,6 +1743,89 @@ function alteNotizenUebernehmen(){
 
   if(!data.uebernommen) data.uebernommen = {};
   data.uebernommen[UEBERNAHME_KEY] = true;
+  return dazu;
+}
+
+/* Dritte Uebernahme: das Idee-Board aus dem alten Artefakt (8 Kategorien,
+   27 Punkte) plus die drei neuen Einfaelle vom 30.07. Kategorien werden am
+   Titel wiedererkannt, damit nichts doppelt entsteht. */
+const IDEEN_KEY = 'ideen-2026-07-30';
+function ideenUebernehmen(){
+  if(data.uebernommen && data.uebernommen[IDEEN_KEY]) return 0;
+  if(!data.ideaBoard) data.ideaBoard = {categories:[], items:[]};
+  if(!Array.isArray(data.ideaBoard.categories)) data.ideaBoard.categories = [];
+  if(!Array.isArray(data.ideaBoard.items))      data.ideaBoard.items      = [];
+
+  const board = [
+    ['Anthropic / Claude', '🤖', [
+      'MidJourney 8.1 versuchen',
+      'Anthropic: echte Kurse machen + Zertifikate (Screenshot vom 12.07.26)',
+      'Neues Claude-Modell testen',
+      'Claude Design ausprobieren',
+      'Token-Vorwarnsystem für Claude bauen',
+      'Prüfen, ob Claude z.B. auch GPT nutzen kann (mehrere Zugänge, Wechsel bei leerem Kontingent)',
+      'Claude Design = MidJourney-Loop (siehe Video)',
+      'Eigene lokale KI aufsetzen – Bildgenerierung (letzter GPT-Chat)'
+    ]],
+    ['Studium / Uni', '🎓', [
+      'Zeitmanagement wegen Uni klären (Fahrtzeit + Online-Modell)',
+      'Motivationszeilen schreiben: warum das Studium, was bringt es mir',
+      'Prüfen, was als Student günstiger wird (Steuer-Tricks, Programme, Kleidung, Essen, Reisen)'
+    ]],
+    ['PETIVO / Business', '🐾', [
+      'Petivo-Daten erfassen (wegen Steuererklärung)',
+      'Rechtliches bei Petivo klären: Dokument für Einnahmen/Ausgaben (Etsy-Belege reichen nicht aus)',
+      'Projekt: alles sauber für die Steuererklärung aufbereiten',
+      'Neue Projektidee: KI-Kunst / GPT / Etsy-Shop für digitale Produkte, ggf. zum Selbstdrucken',
+      'Rechnungs-Tool (PDF, Cowork-Projekt)',
+      'Cloudflare für Petivo prüfen'
+    ]],
+    ['Steuern / Finanzen', '💰', [
+      'Steuer-Podcast fertig schauen, letzten Teil fixieren für KI-Analyse',
+      'Steuergesetze kennenlernen (wichtig für später)',
+      'Trading erst ab 50k Investition, auch als Rentenoption',
+      'GmbH gründen für eigenes Gehalt (60k brutto ≈ 4–6k netto, gegenrechnen)'
+    ]],
+    ['Meta / Claude-Projekte', '🧠', [
+      'Claude-Projekt "Business Thinker"',
+      'Claude-Projekt "Plan to the Dream"',
+      'Neues Projekt: Steuern (Struktur/Ordnung)',
+      'Neues Projekt: Ideen-Liste für spontane Einfälle'
+    ]],
+    ['Organisatorisches', '🗂️', [
+      'Bewerbungsmappe am Wochenende nochmal anschauen und analysieren'
+    ]],
+    ['Freizeit / Persönliches', '🎧', [
+      'Sitzplätze für Konzert googeln + Düsseldorf-Trip planen',
+      'Idee: Gruppen-Urlaub organisieren (kein Alkohol, Leute kennenlernen)'
+    ]],
+    ['Große Vision / Traum', '🌅', [
+      'Firma, die Probleme im Gesundheitswesen mit eigenen Tools löst (inkl. Installation/Integration)',
+      'Im Studium Kontakte knüpfen, v.a. Werkstudenten-Jobs, um Branchenprobleme zu verstehen'
+    ]]
+  ];
+
+  let dazu = 0;
+  board.forEach(([titel, emoji, punkte])=>{
+    let cat = data.ideaBoard.categories.find(c=>
+      (c.title||'').toLowerCase().trim() === titel.toLowerCase().trim());
+    if(!cat){
+      cat = {id:uid(), title:titel, emoji,
+             color: PALETTE[data.ideaBoard.categories.length % PALETTE.length]};
+      data.ideaBoard.categories.push(cat);
+    }
+    const da = new Set(data.ideaBoard.items
+      .filter(i=>i.categoryId===cat.id)
+      .map(i=>(i.text||'').toLowerCase().trim()));
+    punkte.forEach(t=>{
+      if(da.has(t.toLowerCase().trim())) return;
+      data.ideaBoard.items.push({id:uid(), categoryId:cat.id, text:t, done:false});
+      dazu++;
+    });
+  });
+
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[IDEEN_KEY] = true;
   return dazu;
 }
 
@@ -1853,11 +1940,10 @@ function defaultData(){
   });
   const months = beispielDaten(nodes);
   return {
-    ideaBoard:{categories:[
-      {id:uid(), title:'Beispiel-Kategorie', emoji:'💡', color:'var(--idea)'}
-    ], items:[
-      {id:uid(), beispiel:true, text:'Beispiel: Rohtext hier einwerfen, Kategorien lassen sich frei anlegen', cat:null}
-    ]},
+    /* Leer - die echten Kategorien legt ideenUebernehmen() an. Frueher stand
+       hier eine Beispiel-Kategorie samt Punkt, der Punkt trug aber cat:null
+       statt categoryId und wurde darum nie angezeigt. */
+    ideaBoard:{categories:[], items:[]},
     dailyNotes:{days:[]},
     nodes,
     months,
@@ -2221,6 +2307,7 @@ function migrateData(){
      Cloud oder aus einer Sicherung kommt - der Merker reist im JSON mit. */
   alteNotizenUebernehmen();
   umzugUebernehmen();
+  ideenUebernehmen();
 }
 
 async function load(){
