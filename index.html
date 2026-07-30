@@ -543,27 +543,49 @@ tr.is-done .mini-checkbox svg{stroke-dashoffset:0;}
 @media(max-width:820px){.sp-cols{grid-template-columns:1fr;gap:20px;}}
 
 /* ---- Uni: Module ---- */
-.mod-table{min-width:640px;}
 .mod-ziel{font-size:0.62em;color:var(--ink-soft);font-weight:400;}
 .mod-bar{height:6px;border-radius:3px;background:rgba(255,255,255,.1);margin:8px 0 6px;overflow:hidden;}
 .mod-bar-fill{height:100%;border-radius:3px;background:var(--uni);transition:width .3s;}
 .mod-note{font-weight:600;}
-/* Semester-Leiste: der ganze Studienverlauf auf einen Blick, ueber der Tabelle. */
-.mod-semleiste{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));
-  gap:8px;margin:0 0 20px;}
-.mod-sem{background:var(--card);border:1px solid var(--line);border-radius:9px;
-  padding:9px 10px;}
-.mod-sem.fertig{border-color:var(--uni);}
-.mod-sem-kopf{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;
-  letter-spacing:.05em;color:var(--ink-soft);text-transform:uppercase;}
-.mod-sem-cp{font-family:'Fraunces',serif;font-size:1.05rem;color:var(--ink);margin:3px 0 6px;}
-.mod-sem-bar{height:3px;background:var(--line-soft);border-radius:2px;overflow:hidden;}
-.mod-sem-bar>div{height:100%;background:var(--uni);border-radius:2px;}
-.mod-sem-fuss{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;
-  color:var(--ink-soft);margin-top:5px;}
-.mod-sem-hinweis{font-size:0.76rem;color:var(--ink-soft);margin:-12px 0 20px;
-  padding-left:2px;}
-@media(max-width:720px){.mod-semleiste{grid-template-columns:repeat(3,1fr);}}
+/* Semester als Oberpunkt, Module darin eingebettet - keine Spalte "Semester".
+   Zugeklappt bleibt die Kopfzeile mit CP, Balken und Zustand stehen. */
+.mod-cp-hinweis{font-size:0.78rem;color:var(--danger);background:rgba(224,112,140,.09);
+  border:1px solid rgba(224,112,140,.3);border-radius:8px;padding:9px 12px;margin-bottom:18px;}
+.modsem{background:var(--card);border:1px solid var(--line);border-radius:11px;
+  margin-bottom:10px;overflow:hidden;}
+.modsem.laeuft{border-color:var(--uni);}
+.modsem.fertig{border-color:rgba(127,177,105,.5);}
+.modsem-kopf{display:flex;align-items:center;gap:10px;width:100%;border:none;
+  background:none;cursor:pointer;padding:12px 14px;text-align:left;font-family:inherit;}
+.modsem-kopf:hover{background:rgba(255,255,255,.02);}
+.modsem-klapp{color:var(--ink-soft);font-size:0.8rem;flex-shrink:0;}
+.modsem-titel{font-family:'Fraunces',serif;font-size:1rem;color:var(--ink);flex-shrink:0;}
+.modsem.fertig .modsem-titel{color:var(--ink-soft);}
+.modsem-cp{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--uni);
+  flex-shrink:0;}
+.modsem-bar{flex:1;min-width:40px;height:3px;background:var(--line-soft);
+  border-radius:2px;overflow:hidden;}
+.modsem-bar>span{display:block;height:100%;background:var(--uni);border-radius:2px;}
+.modsem.fertig .modsem-bar>span{background:var(--sport);}
+.modsem-meta{font-family:'IBM Plex Mono',monospace;font-size:0.64rem;
+  color:var(--ink-soft);flex-shrink:0;}
+.modsem-body{padding:0 14px 8px;}
+.modsem.zu .modsem-body{display:none;}
+
+.modrow{display:flex;align-items:center;gap:10px;padding:7px 0;
+  border-top:1px solid var(--line-soft);}
+.modrow-status{flex-shrink:0;cursor:pointer;padding:2px;display:flex;}
+.modrow-text{flex:1;font-size:0.88rem;color:var(--ink);min-width:0;}
+.modrow.done .modrow-text{color:var(--ink-soft);text-decoration:line-through;}
+.modrow-cp{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;
+  color:var(--ink-soft);flex-shrink:0;min-width:34px;text-align:right;}
+.modrow-note{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;font-weight:600;
+  color:var(--ink);flex-shrink:0;min-width:30px;text-align:right;}
+.modrow .mini-del{flex-shrink:0;}
+@media(max-width:600px){
+  .modsem-titel{font-size:0.9rem;}
+  .modsem-bar{display:none;}      /* am Handy zaehlt der Text, nicht der Balken */
+}
 
 /* Wahlpflicht-Platzhalter: Knopf, der das Angebot aufklappt. */
 .mod-wahl{display:inline-block;margin-left:7px;padding:2px 7px;border-radius:5px;
@@ -571,9 +593,8 @@ tr.is-done .mini-checkbox svg{stroke-dashoffset:0;}
   font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:.05em;
   color:var(--ink-soft);text-transform:uppercase;vertical-align:middle;}
 .mod-wahl:hover{border-color:var(--uni);color:var(--uni);border-style:solid;}
-.mod-wahl-row>td{padding:0 !important;background:none !important;}
-.mod-wahl-box{background:var(--card);border:1px solid var(--uni);border-radius:9px;
-  padding:12px 14px;margin:2px 0 8px;}
+.mod-wahl-box{background:rgba(132,148,204,.06);border:1px solid var(--uni);
+  border-radius:9px;padding:12px 14px;margin:4px 0 8px;}
 .mod-wahl-label{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;
   text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:9px;}
 .mod-wahl-liste{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:6px;}
@@ -1568,7 +1589,7 @@ function emptyNodeContent(type){
   if(type==='ideas')      return {items: []};
   if(type==='timetable')  return {slots: []};
   if(type==='exams')      return {items: []};
-  if(type==='modules')    return {items: [], zielCp: 180};
+  if(type==='modules')    return {items: [], zielCp: 180, zu: {}};
   if(type==='study')      return {};   /* arbeitet auf uni:module */
   if(type==='margin'){
     /* rows: eine Zeile je Produkt+Groesse. plats: Gebuehren je Plattform. */
@@ -2446,6 +2467,7 @@ function migrateData(){
       } else if(def.type==='modules'){
         if(!Array.isArray(n.items)) n.items = [];
         if(typeof n.zielCp!=='number') n.zielCp = 180;
+        if(!n.zu || typeof n.zu!=='object') n.zu = {};   /* zugeklappte Semester */
         n.items.forEach(m=>{
           if(typeof m.cp!=='number') m.cp = Number(m.cp)||0;
           if(typeof m.note!=='string') m.note = '';
@@ -4629,39 +4651,17 @@ const MODUL_STATUS = [
 ];
 function modulStatusDef(k){ return MODUL_STATUS.find(s=>s.key===k) || MODUL_STATUS[0]; }
 
-/* Eine Zeile pro Semester: wie viele CP darin stecken und wie viel schon
-   bestanden ist. Gibt den Ueberblick ueber die ganze Studienzeit, ohne eine
-   zweite Ansicht zu bauen - die Tabelle darunter bleibt die Wahrheit. */
-function modSemesterLeiste(z){
-  const sem = {};
-  z.items.forEach(m=>{
-    const k = m.semester || 'ohne Semester';
-    if(!sem[k]) sem[k] = {cp:0, hab:0, offen:0, wahl:0};
-    sem[k].cp += m.cp||0;
-    if(m.status==='bestanden') sem[k].hab += m.cp||0; else sem[k].offen++;
-    if(m.wahl) sem[k].wahl++;
-  });
-  const keys = Object.keys(sem).sort();
-  if(keys.length===0) return '';
-  /* Nicht je Semester pruefen - im Regelplan hat das 1. Semester 29 CP und das
-     3. hat 31, das ist so richtig. Nur die Gesamtsumme muss stimmen: faellt sie
-     unter 180, fehlt etwas - meist ein Studium-Generale-Modul, die haben oft
-     nur 2,5 CP, da braucht es dann zwei. */
-  const summe = keys.reduce((s,k)=>s+sem[k].cp, 0);
-  const luecke = summe < (z.zielCp||180);
-  return `<div class="mod-semleiste">` + keys.map(k=>{
-    const s = sem[k];
-    const proz = s.cp>0 ? Math.round(s.hab/s.cp*100) : 0;
-    const kurz = k.replace('. Semester','. Sem.');
-    return `<div class="mod-sem${s.hab>0&&s.hab===s.cp?' fertig':''}">
-      <div class="mod-sem-kopf">${escapeHtml(kurz)}</div>
-      <div class="mod-sem-cp">${String(s.cp).replace('.',',')} CP</div>
-      <div class="mod-sem-bar"><div style="width:${proz}%"></div></div>
-      <div class="mod-sem-fuss">${s.offen} offen${s.wahl?` · ${s.wahl}× Wahl`:''}</div>
-    </div>`;
-  }).join('') + `</div>` + (luecke ? `<div class="mod-sem-hinweis">
-    Ein Semester liegt unter 30 CP – im Studium Generale haben die meisten Module
-    nur 2,5 CP, da braucht es dann zwei.</div>` : '');
+/* Warnt, wenn die Summe aller Module unter das Ziel faellt. Nicht je Semester
+   pruefen - im Regelplan hat das 1. Semester 29 CP und das 3. hat 31, das ist
+   so richtig. Faellt die Gesamtsumme, fehlt wirklich etwas: meist nach der Wahl
+   eines Studium-Generale-Moduls, die haben oft nur 2,5 statt 5 CP. */
+function modCpHinweis(z){
+  const summe = z.items.reduce((s,m)=>s+(m.cp||0), 0);
+  const ziel  = z.zielCp||180;
+  if(summe >= ziel) return '';
+  const fehlt = String(Math.round((ziel-summe)*10)/10).replace('.',',');
+  return `<div class="mod-cp-hinweis">Es fehlen ${fehlt} CP zum Ziel –
+    im Studium Generale haben die meisten Module nur 2,5 CP, da braucht es zwei.</div>`;
 }
 
 function renderModules(c, def){
@@ -4704,15 +4704,8 @@ function renderModules(c, def){
         <div class="exp-sum-note">${z.items.filter(m=>m.status==='laeuft').length} laufen gerade</div>
       </div>
     </div>
-    ${modSemesterLeiste(z)}
-    <div class="tt-wrap mg-table-wrap">
-      <table class="trip-table mod-table">
-        <thead><tr>
-          <th>Modul</th><th>Semester</th><th>CP</th><th>Note</th><th>Status</th><th></th>
-        </tr></thead>
-        <tbody id="mod-rows"></tbody>
-      </table>
-    </div>
+    ${modCpHinweis(z)}
+    <div id="mod-semester"></div>
     <div class="mg-newrow">
       <input type="text" class="mod-n-text" placeholder="Modul, z. B. Mathematik I" maxlength="60">
       <input type="text" class="mod-n-sem" placeholder="Sem." maxlength="8">
@@ -4720,52 +4713,84 @@ function renderModules(c, def){
       <button class="ib-btn primary mod-n-add">Hinzufügen</button>
     </div>
   `;
-  const tbody = document.getElementById('mod-rows');
+  const tbody = document.getElementById('mod-semester');
   if(sorted.length===0){
-    tbody.innerHTML = `<tr><td colspan="6" class="mg-empty">Noch kein Modul eingetragen.</td></tr>`;
+    tbody.innerHTML = `<div class="empty-mini">Noch kein Modul eingetragen.</div>`;
   } else {
-    tbody.innerHTML = sorted.map(m=>{
-      const st = modulStatusDef(m.status);
-      return `<tr data-mid="${m.id}"${m.status==='bestanden'?' class="row-done"':''}>
-        <td class="tt-title mg-cell${m.wahl?'':' editable'}" data-mf="text">${escapeHtml(m.text)}${
-          m.wahl ? `<button class="mod-wahl" data-mwahl="${m.id}" title="Modul auswählen">Wahl ▾</button>` : ''}</td>
-        <td class="mg-cell editable mg-groesse" data-mf="semester">${escapeHtml(m.semester||'—')}</td>
-        <td class="tt-num mg-cell editable" data-mf="cp">${m.cp||'—'}</td>
-        <td class="tt-num mg-cell editable mod-note" data-mf="note">${
-          m.note ? String(m.note).replace('.',',') : '—'}</td>
-        <td class="ex-status" data-mcycle="${m.id}" title="Status wechseln">
-          <span class="tt-dot ${st.dot}"></span>${st.label}</td>
-        <td class="dl-del-cell"><button class="mini-del" data-mdel="${m.id}" aria-label="Löschen">×</button></td>
-      </tr>`;
+    /* Semester ist der Oberpunkt, die Module stecken darin - nicht als Spalte
+       daneben. Zugeklappt bleibt nur die Kopfzeile mit CP und Fortschritt. */
+    const gruppen = {};
+    sorted.forEach(m=>{
+      const k = m.semester || 'Ohne Semester';
+      (gruppen[k] = gruppen[k] || []).push(m);
+    });
+    if(!z.zu) z.zu = {};
+    tbody.innerHTML = Object.keys(gruppen).sort().map(k=>{
+      const ms  = gruppen[k];
+      const cp  = ms.reduce((s,m)=>s+(m.cp||0),0);
+      const hab = ms.filter(m=>m.status==='bestanden').reduce((s,m)=>s+(m.cp||0),0);
+      const off = ms.filter(m=>m.status!=='bestanden').length;
+      const wahl= ms.filter(m=>m.wahl).length;
+      const proz= cp>0 ? Math.round(hab/cp*100) : 0;
+      const fertig = hab>0 && hab===cp;
+      const laeuft = ms.some(m=>m.status==='laeuft');
+      const zu = !!z.zu[k];
+      return `<section class="modsem${fertig?' fertig':''}${laeuft?' laeuft':''}${zu?' zu':''}">
+        <button class="modsem-kopf" data-semzu="${escapeHtml(k)}">
+          <span class="modsem-klapp">${zu?'▸':'▾'}</span>
+          <span class="modsem-titel">${escapeHtml(k)}</span>
+          <span class="modsem-cp">${String(cp).replace('.',',')} CP</span>
+          <span class="modsem-bar"><span style="width:${proz}%"></span></span>
+          <span class="modsem-meta">${fertig?'✓ fertig':off+' offen'}${wahl?` · ${wahl}× Wahl`:''}</span>
+        </button>
+        <div class="modsem-body">${ms.map(m=>{
+          const st = modulStatusDef(m.status);
+          return `<div class="modrow${m.status==='bestanden'?' done':''}" data-mid="${m.id}">
+            <span class="modrow-status" data-mcycle="${m.id}" title="${st.label} – tippen zum Wechseln">
+              <span class="tt-dot ${st.dot}"></span></span>
+            <span class="modrow-text mg-cell${m.wahl?'':' editable'}" data-mf="text">${escapeHtml(m.text)}${
+              m.wahl ? `<button class="mod-wahl" data-mwahl="${m.id}" title="Modul auswählen">Wahl ▾</button>` : ''}</span>
+            <span class="modrow-cp mg-cell editable" data-mf="cp" title="Credits">${
+              m.cp ? String(m.cp).replace('.',',') : '—'}</span>
+            <span class="modrow-note mg-cell editable" data-mf="note" title="Note">${
+              m.note ? String(m.note).replace('.',',') : '–'}</span>
+            <button class="mini-del" data-mdel="${m.id}" aria-label="Löschen">×</button>
+          </div>`;
+        }).join('')}</div>
+      </section>`;
     }).join('');
   }
   const refresh = ()=>{ persist(); renderModules(c, def); renderSidebar(); };
+  tbody.querySelectorAll('[data-semzu]').forEach(b=>b.addEventListener('click',(e)=>{
+    if(e.target.closest('.modrow')) return;
+    const k = b.dataset.semzu;
+    z.zu[k] = !z.zu[k]; refresh();
+  }));
   /* Wahlpflicht: Angebot aus dem passenden Topf, schon gewaehlte ausgegraut. */
   tbody.querySelectorAll('[data-mwahl]').forEach(b=>b.addEventListener('click',(e)=>{
     e.stopPropagation();
     const m = z.items.find(x=>x.id===b.dataset.mwahl); if(!m) return;
-    const tr = b.closest('tr');
-    const offen = tbody.querySelector('.mod-wahl-row');
+    const zeile = b.closest('.modrow');
+    const offen = tbody.querySelector('.mod-wahl-box');
     if(offen){ const war = offen.dataset.fuer; offen.remove(); if(war===m.id) return; }
 
     const topf = m.wtopf || wpfTopf(m.text);
     const schon = new Set(z.items.filter(x=>x.id!==m.id).map(x=>x.text));
     const liste = WPF_ANGEBOT[topf] || [];
-    const row = document.createElement('tr');
-    row.className = 'mod-wahl-row';
+    const row = document.createElement('div');
+    row.className = 'mod-wahl-box';
     row.dataset.fuer = m.id;
-    row.innerHTML = `<td colspan="6"><div class="mod-wahl-box">
+    row.innerHTML = `
       <div class="mod-wahl-label">${topf==='generale'?'Studium Generale':'Wahlpflichtmodul'}
-        · ${m.cp} CP im Plan</div>
+        · ${String(m.cp).replace('.',',')} CP im Plan</div>
       <div class="mod-wahl-liste">${liste.map(w=>`
         <button class="mod-wahl-opt${schon.has(w.t)?' belegt':''}"
           data-t="${escapeHtml(w.t)}" data-cp="${w.cp}"${schon.has(w.t)?' disabled':''}>
           ${escapeHtml(w.t)} <span>${String(w.cp).replace('.',',')} CP</span></button>`).join('')}</div>
       <div class="mod-wahl-fuss">
         <button class="mod-wahl-frei">Anderes Modul eintragen …</button>
-      </div>
-    </div></td>`;
-    tr.insertAdjacentElement('afterend', row);
+      </div>`;
+    zeile.insertAdjacentElement('afterend', row);
 
     row.querySelectorAll('.mod-wahl-opt').forEach(o=>o.addEventListener('click',()=>{
       m.text = o.dataset.t;

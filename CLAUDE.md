@@ -167,6 +167,35 @@ den täglichen Notizzettel betroffen (behoben am 30.07.2026).
 - Fraunces (Serife) für Überschriften, IBM Plex Sans/Mono für Text und Labels
 - Warmer Papier-Hintergrund, dunkle Seitenleiste
 
+## Verschachteln statt auflisten – die wichtigste Regel
+
+**Alles wird so weit eingebettet wie möglich.** Das ist keine Stilfrage, sondern
+die Grundregel der App: Leon soll auf einen Blick verstehen, was zusammengehört,
+ohne Spalten zu vergleichen.
+
+Steckt in den Daten eine Hierarchie, muss sie **in der Ansicht sichtbar** sein –
+als Gruppe mit Überschrift, in die die Einträge eingebettet sind. Eine flache
+Liste mit einer Spalte „Semester" oder „Kategorie" ist genau das Falsche: die
+Zugehörigkeit steht dann nur als Text daneben, statt sichtbar zu sein.
+
+| Statt | Richtig |
+|---|---|
+| Tabelle mit Spalte „Semester" | Block „1. Semester" mit den Modulen darin |
+| Liste mit Spalte „Bereich" | Gruppe je Bereich |
+| alles untereinander | zusammengehörige Blöcke, einzeln zuklappbar |
+
+Vorbilder im Code: `renderMoving` (Phasen → Gruppen → Punkte) und
+`renderModules` (Semester → Module). Beide klappen pro Block zu – lange Listen
+sollen am Handy nicht am Stück scrollen.
+
+**Farbe gehört dazu, sparsam und mit Bedeutung.** Jede Säule hat ihre Akzentfarbe;
+sie markiert Überschriften, Fortschritt und Zustände (offen / läuft / fertig).
+Kein Schmuck ohne Aussage, aber auch kein farbloses Grau-in-Grau: Wo ein Zustand
+wichtig ist, muss man ihn sehen, nicht lesen.
+
+Anfängerfreundlich heißt hier: ruhig, wenig gleichzeitig sichtbar, klare
+Überschriften, und das Wichtigste zuerst.
+
 ## Nicht verhandelbar
 
 - **Export/Import als JSON**, jederzeit, unabhängig vom Speicherort – das
