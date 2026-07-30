@@ -61,11 +61,29 @@ Jede Säule hat eine eigene Akzentfarbe, die sich konsequent durchs ganze UI zie
 (Titel, Häkchen, Tags) – nicht nur als kleiner Punkt irgendwo.
 
 Inhaltstypen: `checklist`, `trips`, `deadlines`, `expenses`, `ideas`, `margin`,
-`timetable`, `exams`, `study`, `modules`, `training`, `cures`.
+`timetable`, `exams`, `study`, `modules`, `training`, `cures`, `moving`.
 
 Ein neuer Typ braucht vier Dinge: Eintrag in `STRUKTUR`, Default in
 `emptyNodeContent`, ein Zweig im Dispatch von `renderMain`, plus Absicherung in
 `migrateData` – sonst verlieren bestehende Nutzerdaten beim Typwechsel ihren Inhalt.
+
+### Privat: Umzug
+
+`moving` – war ursprünglich eine flache `checklist`, das trug die Notizen nicht:
+ein Umzug hat einen Termin, Sachen die vorher erledigt sein müssen, das Packgut
+und alles was danach ansteht. Deshalb **drei feste Phasen** (`UMZUG_PHASEN`:
+vorher / packen / nachher) mit **frei benennbaren Gruppen** darin
+(`gruppen: [{id, phase, title, items, zu}]`). Die Phasen bilden den zeitlichen
+Ablauf ab und stehen fest; die Gruppen legt Leon selbst an – seine Notizen waren
+schon so gegliedert (Technik, Klamotten, Dokumente …).
+
+Oben stehen drei Datumsfelder (`datum`, `packVon`, `packBis`); aus `datum`
+entsteht der Countdown in der Kopfzeile. Gruppen sind einzeln zuklappbar (`zu`) –
+eine Packliste mit 30 Punkten will man nicht am Stück sehen. Gruppe löschen
+braucht zwei Klicks.
+
+`migrateData` wandelt eine alte flache Liste in eine Gruppe „Übernommen" unter
+*Vor dem Umzug* um, Häkchen bleiben erhalten.
 
 ### Sport: Training und Kuren
 

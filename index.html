@@ -726,6 +726,35 @@ tr.row-off .tt-num{text-decoration:line-through;}
 @media(max-width:720px){ .month-card .month-cols{grid-template-columns:1fr;}}
 .trip-new input[type=month]{border:1px solid var(--line);border-radius:7px;background:var(--field);font-family:inherit;
   font-size:0.85rem;color:var(--ink);padding:7px 9px;outline:none;}
+/* ---- Umzug ---- */
+.umzug-termine{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:20px;}
+.umzug-termine label{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;
+  text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);
+  display:flex;align-items:center;gap:7px;}
+.umzug-termine input[type=date]{background:var(--card);border:1px solid var(--line);
+  border-radius:7px;color:var(--ink);font-family:inherit;font-size:0.8rem;
+  padding:6px 9px;text-transform:none;letter-spacing:0;}
+.um-phase{margin-bottom:26px;}
+.um-phase-head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;}
+.um-phase-head h3{font-family:'Fraunces',serif;font-size:1.05rem;margin:0;color:var(--ink);}
+.um-phase-count{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;
+  color:var(--ink-soft);letter-spacing:.05em;}
+.um-gruppe{background:var(--card);border:1px solid var(--line);border-radius:10px;
+  padding:11px 14px;margin-bottom:9px;}
+.um-gruppe-head{display:flex;align-items:center;gap:9px;}
+.um-klapp{border:none;background:none;color:var(--ink-soft);cursor:pointer;
+  font-size:0.85rem;padding:2px 3px;flex-shrink:0;}
+.um-gruppe-title{font-weight:600;font-size:0.9rem;color:var(--ink);flex:1;}
+.um-gruppe-title.fertig{color:var(--ink-soft);}
+.um-gruppe-count{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;
+  color:var(--ink-soft);flex-shrink:0;}
+.um-gruppe-del{flex-shrink:0;}
+.um-gruppe-del.confirm{color:var(--danger);font-size:0.68rem;
+  font-family:'IBM Plex Mono',monospace;}
+.um-gruppe-body{margin-top:9px;}
+.um-gruppe.zu .um-gruppe-body{display:none;}
+.um-neu input{font-size:0.82rem;}
+
 .day-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
 .day-card h4{font-family:'Fraunces',serif;font-size:0.98rem;margin:0 0 8px;color:var(--ink);}
 
@@ -1363,7 +1392,7 @@ const STRUKTUR = {
     {key:'reisen',    title:'Reisen',   icon:'✈️', type:'trips'},
     {key:'antraege',  title:'Anträge',  icon:'📄', type:'deadlines'},
     {key:'ausgaben',  title:'Ausgaben', icon:'💶', type:'expenses'},
-    {key:'umzug',     title:'Umzug',    icon:'📦', type:'checklist'}
+    {key:'umzug',     title:'Umzug',    icon:'📦', type:'moving'}
   ],
   business: [
     {key:'schritte',    title:'Nächste Schritte', icon:'🎯', type:'checklist'},
@@ -1448,8 +1477,17 @@ function fmtDay(dateStr){
   return d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'short'});
 }
 
+/* Die drei Phasen eines Umzugs. Fest, weil sie den zeitlichen Ablauf abbilden -
+   die Gruppen DARIN legt man frei an (Technik, Klamotten, Dokumente ...). */
+const UMZUG_PHASEN = [
+  {key:'vorher',  title:'Vor dem Umzug', icon:'📌'},
+  {key:'packen',  title:'Mitnehmen',     icon:'📦'},
+  {key:'nachher', title:'Nach dem Umzug',icon:'🔑'}
+];
+
 /* Leerer Inhalt passend zum Typ eines festen Unterpunkts. */
 function emptyNodeContent(type){
+  if(type==='moving')     return {datum:'', packVon:'', packBis:'', gruppen: []};
   if(type==='checklist')  return {items: []};
   if(type==='trips')      return {trips: []};
   if(type==='deadlines')  return {items: []};
@@ -1704,6 +1742,82 @@ function alteNotizenUebernehmen(){
   return dazu;
 }
 
+/* Zweite Uebernahme: die Umzugs-Notizen. Eigener Schluessel, damit sie auch
+   greift, wenn die erste Uebernahme schon gelaufen war. */
+const UMZUG_KEY = 'umzug-2026-07-30';
+function umzugUebernehmen(){
+  if(data.uebernommen && data.uebernommen[UMZUG_KEY]) return 0;
+  const n = data.nodes['privat:umzug'];
+  if(!n) return 0;
+  if(!Array.isArray(n.gruppen)) n.gruppen = [];
+
+  n.datum   = n.datum   || '2026-07-31';
+  n.packVon = n.packVon || '2026-07-30';
+  n.packBis = n.packBis || '2026-07-31';
+
+  const neu = [
+    ['vorher', 'Vor der Fahrt', [
+      'Packen',
+      'Klamotten aussortieren',
+      'Dokumente aussortieren',
+      'Arbeitslos melden + ALG 1 beantragen (31.07.) – oder früher zum 03.08. (Adresse beachten, Nika fragt am 30.07.)',
+      'Clara Geld bringen + Vertrag unterschreiben',
+      'Letzte dreckige Wäsche waschen',
+      'Frau Purohit anrufen wegen Uni-Fragen'
+    ]],
+    ['packen', 'Technik', [
+      'Computer (alles) – Grafikkarte separat',
+      'Verlängerungskabel', 'Ladekabel', 'Handy', 'JBL Box', 'Laptop',
+      'Osmofresh', 'Swirl', 'O2 Reiniger', 'Controller', 'Rasierer'
+    ]],
+    ['packen', 'Klamotten', [
+      'Schuhe (alle)', 'Unterwäsche + Badesachen', 'Schmuck', 'Jacken'
+    ]],
+    ['packen', 'Dokumente', ['Privat', 'Gewerblich']],
+    ['packen', 'Pflegeprodukte', ['Seife', 'Medizin', 'Haare', 'Parfüm']],
+    ['packen', 'Bettzeug', ['Bettbezüge', 'Kissen', 'Decken']],
+    ['packen', 'Alles andere', [
+      'Hanteln (nur Kurzhantel)',
+      'Kleinigkeiten: Kuscheltiere, Geschenke, Werkzeug, Sonnenbrillen',
+      'Alles aus den Minischränken',
+      'Haram Zeug – you know what'
+    ]],
+    ['nachher', 'Erste Woche', [
+      'Einkaufen', 'Finanzen aufteilen', 'Wichtigste Sachen nachkaufen'
+    ]],
+    ['nachher', 'Termine', [
+      'Wohnungssuche',
+      'Agentur-Termin wahrnehmen',
+      'Alex-Termin',
+      'Fahrrad von Papa abholen',
+      'Papa wegen 300 € fragen'
+    ]],
+    ['nachher', 'Später', [
+      'August organisieren (Uni, privat, gewerblich)',
+      'Vielleicht Gym-Probemonat',
+      'The Odyssey gucken',
+      'Kleidung reklamieren wo möglich (sonst: alte neu kaufen und in passender Größe tauschen, ASOS)',
+      'September: Uni-Organisation und Claude-Projekte für schnellere Notiz-Zusammenfassung und Lerntaktiken'
+    ]]
+  ];
+
+  let dazu = 0;
+  neu.forEach(([phase, titel, punkte])=>{
+    let g = n.gruppen.find(x=>x.phase===phase && x.title===titel);
+    if(!g){ g = {id:uid(), phase, title:titel, items:[]}; n.gruppen.push(g); }
+    const da = new Set(g.items.map(i=>(i.text||'').toLowerCase().trim()));
+    punkte.forEach(t=>{
+      if(da.has(t.toLowerCase().trim())) return;
+      g.items.push({id:uid(), text:t, done:false});
+      dazu++;
+    });
+  });
+
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[UMZUG_KEY] = true;
+  return dazu;
+}
+
 /* Entfernt alle Eintraege mit beispiel:true - egal in welcher Liste sie stecken.
    Laeuft rekursiv, damit auch verschachtelte Sachen (Reise-Punkte, Modul-Themen)
    erwischt werden. Echte Eintraege haben die Markierung nie. */
@@ -1829,6 +1943,26 @@ function migrateData(){
       if(it.note) neu.push({id:uid(), text:'  📝 '+it.note.replace(/\n+/g,' · '), done:false});
     });
     n.items = neu;
+  })();
+
+  /* Umzug war frueher eine flache Checkliste. Vorhandene Punkte wandern in eine
+     Gruppe "Übernommen" unter "Vor dem Umzug" - sortieren kann man danach selbst,
+     verloren geht nichts. */
+  (function(){
+    const n = data.nodes['privat:umzug'];
+    if(!n) return;
+    if(!Array.isArray(n.gruppen)) n.gruppen = [];
+    ['datum','packVon','packBis'].forEach(f=>{ if(typeof n[f]!=='string') n[f]=''; });
+    if(Array.isArray(n.items) && n.items.length){
+      n.gruppen.push({id:uid(), phase:'vorher', title:'Übernommen',
+        items:n.items.map(it=>({id:it.id||uid(), text:it.text||'', done:!!it.done}))});
+    }
+    delete n.items;
+    n.gruppen.forEach(g=>{
+      if(!Array.isArray(g.items)) g.items = [];
+      if(typeof g.title!=='string') g.title = 'Ohne Namen';
+      if(!UMZUG_PHASEN.some(p=>p.key===g.phase)) g.phase = 'vorher';
+    });
   })();
 
   /* Business-Umbau: alte Finanzen-/Produktions-Listen wandern nach "Nächste Schritte",
@@ -2086,6 +2220,7 @@ function migrateData(){
      Steht hier und nicht in load(), damit sie auch greift, wenn der Stand aus der
      Cloud oder aus einer Sicherung kommt - der Merker reist im JSON mit. */
   alteNotizenUebernehmen();
+  umzugUebernehmen();
 }
 
 async function load(){
@@ -2126,6 +2261,9 @@ function nodeOpenCount(nodeId, def){
     return (n.trips||[]).reduce((sum,t)=>
       sum + (t.undated||[]).filter(i=>!i.done).length
           + (t.dated  ||[]).filter(i=>!i.done).length, 0);
+  }
+  if(def.type==='moving'){
+    return (n.gruppen||[]).reduce((s,g)=>s + (g.items||[]).filter(i=>!i.done).length, 0);
   }
   if(def.type==='expenses') return 0;   /* Ausgaben zeigen Betrag statt Anzahl */
   if(def.type==='margin')    return 0;   /* Marge ebenso */
@@ -2304,7 +2442,8 @@ function renderMain(){
     return;
   }
   setContentBereichClass(def.bereich);
-  if(def.type==='checklist')      renderChecklist(c, def);
+  if(def.type==='moving')         renderMoving(c, def);
+  else if(def.type==='checklist') renderChecklist(c, def);
   else if(def.type==='trips')     renderTrips(c, def);
   else if(def.type==='deadlines') renderDeadlines(c, def);
   else if(def.type==='expenses')  renderExpenses(c, def);
@@ -2325,7 +2464,12 @@ function renderBereichOverview(c, key){
     const n = data.nodes[nodeId] || {};
     const open = nodeOpenCount(nodeId, def);
     let sub;
-    if(def.type==='trips')          sub = `${(n.trips||[]).length} Reise(n) · ${open} offen`;
+    if(def.type==='moving'){
+      const g = (n.gruppen||[]).length;
+      sub = n.datum ? `Umzug ${fmtDay(n.datum)} · ${open} offen`
+                    : (g ? `${g} Gruppe(n) · ${open} offen` : 'noch kein Termin');
+    }
+    else if(def.type==='trips')     sub = `${(n.trips||[]).length} Reise(n) · ${open} offen`;
     else if(def.type==='expenses'){
       const ym = new Date().toISOString().slice(0,7);
       const s = expenseSums(n.months ? n.months[ym] : null);
@@ -2460,6 +2604,129 @@ function bindMiniList(ul, items, onChanged){
     if(cb){ const it=items.find(i=>i.id===cb.dataset.id); if(it){it.done=!it.done; onChanged();} }
     else if(del){ const idx=items.findIndex(i=>i.id===del.dataset.id); if(idx>-1){items.splice(idx,1); onChanged();} }
   });
+}
+
+/* ---------------- UMZUG ----------------
+   Ein Umzug ist keine flache Liste: es gibt einen Termin, Sachen die vorher
+   erledigt sein muessen, das Packgut selbst und alles was danach ansteht.
+   Darum drei feste Phasen (zeitlicher Ablauf) mit frei benennbaren Gruppen
+   darin (Technik, Klamotten, Dokumente ...). */
+function renderMoving(c, def){
+  const z = data.nodes[def.nodeId];
+  const alle = z.gruppen.reduce((s,g)=>s+g.items.length, 0);
+  const offen = z.gruppen.reduce((s,g)=>s+g.items.filter(i=>!i.done).length, 0);
+
+  let meta = alle===0 ? 'Noch nichts eingetragen' : `${offen} von ${alle} offen`;
+  if(z.datum){
+    const tage = Math.ceil((new Date(z.datum+'T00:00:00') - new Date(isoToday()+'T00:00:00'))/86400000);
+    const wann = tage>1 ? `noch ${tage} Tage` : tage===1 ? 'morgen' :
+                 tage===0 ? 'heute' : `vor ${Math.abs(tage)} Tagen`;
+    meta = `Umzug ${fmtDay(z.datum)} · ${wann} · ${meta}`;
+  }
+
+  c.innerHTML = renderNodeHead(def, meta) + `
+    <div class="umzug-termine">
+      <label>Umzug am <input type="date" id="um-datum" value="${z.datum||''}"></label>
+      <label>Packen von <input type="date" id="um-von" value="${z.packVon||''}"></label>
+      <label>bis <input type="date" id="um-bis" value="${z.packBis||''}"></label>
+    </div>
+    <div id="um-phasen"></div>
+  `;
+  ['datum','von','bis'].forEach((f,i)=>{
+    document.getElementById('um-'+f).addEventListener('change',(e)=>{
+      z[['datum','packVon','packBis'][i]] = e.target.value;
+      persist(); renderMoving(c, def);
+    });
+  });
+
+  const wrap = document.getElementById('um-phasen');
+  UMZUG_PHASEN.forEach(ph=>{
+    const gruppen = z.gruppen.filter(g=>g.phase===ph.key);
+    const pOffen = gruppen.reduce((s,g)=>s+g.items.filter(i=>!i.done).length, 0);
+    const block = document.createElement('div');
+    block.className = 'um-phase';
+    block.innerHTML = `
+      <div class="um-phase-head">
+        <h3>${ph.icon} ${ph.title}</h3>
+        <span class="um-phase-count">${pOffen} offen</span>
+      </div>
+      <div class="um-gruppen"></div>
+      <div class="input-row um-neu">
+        <input type="text" placeholder="Neue Gruppe (z.B. Technik) …" maxlength="60">
+        <button>+ Gruppe</button>
+      </div>
+    `;
+    const gw = block.querySelector('.um-gruppen');
+    if(gruppen.length===0){
+      gw.innerHTML = '<div class="empty-mini">Noch keine Gruppe hier.</div>';
+    }
+    gruppen.forEach(g=>gw.appendChild(umzugGruppeKarte(g, z, c, def)));
+
+    const inp = block.querySelector('.um-neu input');
+    const btn = block.querySelector('.um-neu button');
+    const neu = ()=>{
+      const t = inp.value.trim(); if(!t) return;
+      z.gruppen.push({id:uid(), phase:ph.key, title:t, items:[]});
+      inp.value=''; persist(); renderMoving(c, def);
+    };
+    btn.addEventListener('click', neu);
+    inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') neu(); });
+    wrap.appendChild(block);
+  });
+}
+
+/* Eine Gruppe: Titel mit Zaehler, Punkte darunter, Eingabe am Ende.
+   Zugeklappt wird pro Gruppe - bei einer langen Packliste will man nicht
+   alles gleichzeitig sehen. */
+function umzugGruppeKarte(g, z, c, def){
+  const karte = document.createElement('div');
+  karte.className = 'um-gruppe' + (g.zu ? ' zu' : '');
+  const offen = g.items.filter(i=>!i.done).length;
+  const fertig = g.items.length>0 && offen===0;
+  karte.innerHTML = `
+    <div class="um-gruppe-head">
+      <button class="um-klapp" aria-label="Auf-/zuklappen">${g.zu?'▸':'▾'}</button>
+      <span class="um-gruppe-title${fertig?' fertig':''}">${escapeHtml(g.title)}</span>
+      <span class="um-gruppe-count">${fertig?'✓ komplett':offen+' offen'}</span>
+      <button class="del-btn um-gruppe-del" aria-label="Gruppe löschen">🗑</button>
+    </div>
+    <div class="um-gruppe-body">
+      <ul class="mini-list"></ul>
+      <div class="input-row"><input type="text" placeholder="Punkt hinzufügen …" maxlength="200"><button>+</button></div>
+    </div>
+  `;
+  const ul = karte.querySelector('ul');
+  const refresh = ()=>{ persist(); renderMoving(c, def); };
+  renderMiniList(ul, g.items);
+  bindMiniList(ul, g.items, refresh);
+
+  karte.querySelector('.um-klapp').addEventListener('click',()=>{
+    g.zu = !g.zu; persist(); renderMoving(c, def);
+  });
+  const inp = karte.querySelector('.um-gruppe-body input');
+  const btn = karte.querySelector('.um-gruppe-body button');
+  const neu = ()=>{
+    const t = inp.value.trim(); if(!t) return;
+    g.items.push({id:uid(), text:t, done:false});
+    inp.value=''; refresh();
+  };
+  btn.addEventListener('click', neu);
+  inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') neu(); });
+
+  /* Loeschen mit zwei Klicks - eine ganze Gruppe ist zu viel fuer einen Vertipper. */
+  const del = karte.querySelector('.um-gruppe-del');
+  del.addEventListener('click',()=>{
+    if(del.dataset.confirm==='1'){
+      const i = z.gruppen.findIndex(x=>x.id===g.id);
+      if(i>-1) z.gruppen.splice(i,1);
+      persist(); renderMoving(c, def);
+    } else {
+      del.dataset.confirm='1'; del.textContent='wirklich?'; del.classList.add('confirm');
+      setTimeout(()=>{ if(del.dataset.confirm==='1'){
+        del.dataset.confirm=''; del.textContent='🗑'; del.classList.remove('confirm'); } }, 2500);
+    }
+  });
+  return karte;
 }
 
 /* ---------------- CHECKLIST VIEW ---------------- */
