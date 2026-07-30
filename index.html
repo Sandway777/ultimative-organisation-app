@@ -882,9 +882,16 @@ tr.row-off .tt-num{text-decoration:line-through;}
   margin:0 0 16px;break-inside:avoid;position:relative;}
 .ib-tab{position:absolute;top:-10px;left:12px;padding:2px 9px;border-radius:6px 6px 0 0;font-family:'IBM Plex Mono',monospace;
   font-size:9.5px;letter-spacing:.05em;color:#fff;}
-.ib-card-head{display:flex;justify-content:space-between;align-items:baseline;margin:5px 0 8px;padding-bottom:6px;
+.ib-card-head{display:flex;align-items:baseline;gap:4px;margin:5px 0 8px;padding-bottom:6px;
   border-bottom:1px dashed var(--line);}
-.ib-card-title{font-family:'Fraunces',serif;font-weight:600;font-size:0.95rem;}
+/* Titel nimmt den Rest, damit die Zaehler rechts buendig bleiben */
+.ib-card-title{font-family:'Fraunces',serif;font-weight:600;font-size:0.95rem;flex:1;min-width:0;}
+/* Kategorie zuklappen - bei acht Karten sieht man sonst nie alle. */
+.ib-klapp{border:none;background:none;color:var(--ink-soft);cursor:pointer;
+  font-size:0.78rem;padding:2px 5px 2px 0;flex-shrink:0;}
+.ib-klapp:hover{color:var(--ink);}
+.ib-card.zu .ib-items{display:none;}
+.ib-card.zu{padding-bottom:10px;}
 .ib-card-count{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft);}
 .ib-card-del{background:none;border:none;color:var(--ink-soft);font-size:12px;cursor:pointer;padding:0 0 0 6px;}
 .ib-card-del:hover{color:var(--danger);}
@@ -948,6 +955,23 @@ tr.row-off .tt-num{text-decoration:line-through;}
   .entry-back:hover{color:var(--ink);}
   /* Tabellen auf dem Handy: horizontal scrollbar statt gequetscht */
   .tt-wrap{margin-left:-2px;margin-right:-2px;}
+
+  /* Der grosse Titel steht schon oben in der Leiste - hier reicht er kleiner,
+     sonst geht ein Viertel des Schirms fuer eine Doppelung drauf. */
+  h1.zt{font-size:1.3rem;}
+  .head-meta{font-size:0.72rem;margin-bottom:12px;}
+  .main-scroll{padding-top:14px;}
+
+  /* Idee-Board bleibt einspaltig - zwei Spalten sind bei 390 px so eng, dass
+     jeder Satz nach zwei Woertern umbricht. Stattdessen lassen sich die
+     Karten zuklappen, dann sieht man alle acht Kategorien auf einen Blick. */
+  .ib-card{padding:11px 12px 9px;}
+  .ib-tab{font-size:0.58rem;padding:2px 8px;}
+  .ib-quick{flex-direction:column;align-items:stretch;gap:7px;}
+  .ib-quick select,.ib-quick input[type=text]{width:100%;}
+  /* Der Hinweis zu Claude Code gilt fuer den Rechner - am Handy nimmt er nur
+     Platz weg, den die Kategorien brauchen. */
+  .ib-inbox{display:none;}
 
   /* Eingebettete Bereiche: aussen schmaler, innen bleibt die Verschachtelung
      erkennbar. Kopfzeilen duerfen umbrechen statt zu quetschen. */
@@ -2312,6 +2336,7 @@ function findNodeDef(nodeId){
 function migrateData(){
   if(!data.dailyNotes) data.dailyNotes = {days:[]};
   if(!data.ideaBoard)  data.ideaBoard = {categories:[],items:[]};
+  if(!data.ideaBoard.zu || typeof data.ideaBoard.zu!=='object') data.ideaBoard.zu = {};
   if(!data.nodes)      data.nodes = {};
   if(!Array.isArray(data.months)) data.months = [];
 
@@ -6215,11 +6240,13 @@ function renderIbBoard(){
   ib.categories.forEach(cat=>{
     const items = ib.items.filter(i=>i.categoryId===cat.id);
     const openCount = items.filter(i=>!i.done).length;
+    const zu = !!(ib.zu && ib.zu[cat.id]);
     const card = document.createElement('div');
-    card.className='ib-card';
+    card.className='ib-card'+(zu?' zu':'');
     card.innerHTML = `
       <div class="ib-tab" style="background:${cat.color}">${cat.emoji} ${escapeHtml(cat.title.toUpperCase())}</div>
       <div class="ib-card-head">
+        <button class="ib-klapp" data-kat="${cat.id}" aria-label="Auf-/zuklappen">${zu?'▸':'▾'}</button>
         <span class="ib-card-title">${cat.emoji} ${escapeHtml(cat.title)}</span>
         <span class="ib-card-count">${openCount} offen <button class="ib-card-del" data-id="${cat.id}">✕</button></span>
       </div>
@@ -6242,6 +6269,11 @@ function renderIbBoard(){
       const cb=e.target.closest('.mini-checkbox'); const del=e.target.closest('.mini-del');
       if(cb){ const it=ib.items.find(i=>i.id===cb.dataset.id); if(it){it.done=!it.done; persist(); renderIbBoard();} }
       else if(del){ ib.items = ib.items.filter(i=>i.id!==del.dataset.id); persist(); renderIbBoard(); }
+    });
+    card.querySelector('.ib-klapp').addEventListener('click',()=>{
+      if(!ib.zu) ib.zu = {};
+      ib.zu[cat.id] = !ib.zu[cat.id];
+      persist(); renderIbBoard();
     });
     card.querySelector('.ib-card-del').addEventListener('click', ()=>ibDeleteCategory(cat.id));
     board.appendChild(card);
