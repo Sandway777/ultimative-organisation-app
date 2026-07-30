@@ -25,9 +25,25 @@ einfach die Datei im Browser öffnen.
 ## Datenhaltung
 
 - Ein einziger localStorage-Key: `ultimativer-notizblock-v1`
-- Zugriff läuft über den Shim `window.storage` ([index.html:813](index.html#L813)).
+- Zugriff läuft über den Shim `window.storage`.
   **Wichtig:** Immer über diesen Shim gehen, nie direkt `localStorage` aufrufen –
-  hier wird später der OneDrive-Sync eingehängt, ohne den Rest anzufassen.
+  dort hängt der Cloud-Sync.
+
+### Cloud-Sync (GitHub Gist)
+
+Statt OneDrive – kostenlos, kein Azure-Portal, Leon hat den Account schon.
+Der komplette Datenstand liegt als **private Gist-Datei** `notizblock-daten.json`.
+
+- Lokal wird sofort gespeichert, der Upload folgt 2 s später (`cloudPlan`).
+  Die App bleibt dadurch schnell und offline nutzbar.
+- Beim Start, beim Zurückkehren zum Tab und bei „wieder online" wird geholt
+  (`cloudAbgleich`) – **der Cloud-Stand gewinnt**.
+- Zweites Gerät: denselben Token eingeben, `cloudGistFinden` sucht die Datei
+  im Konto. Keine Ids abtippen.
+- **Zugangsdaten liegen in einem eigenen Key** (`notizblock-cloud-cfg`), damit
+  Token und Gist-Id nie im JSON-Export landen. Das ist bewusst so – nicht
+  zusammenlegen.
+- Kein Speicher-Knopf. Leon will nichts drücken müssen.
 
 ## Struktur: vier Säulen
 
@@ -113,10 +129,13 @@ den täglichen Notizzettel betroffen (behoben am 30.07.2026).
 
 ## Stand: was noch fehlt
 
-- **OneDrive-Sync** (Spec Phase 2, Microsoft Graph API + OAuth) – noch nicht gebaut.
-  Einhängepunkt ist der `window.storage`-Shim.
-- **Anthropic-API-Call fürs Idee-Board** – Rohtext/Diktat soll per KI in einzelne
-  Punkte zerlegt und Kategorien zugeordnet werden. Noch nicht implementiert.
+- **KI-Sortierung fürs Idee-Board** – Leon hat Claude Pro, aber **kein API-Guthaben**
+  (Abo ≠ API-Zugang). Der Anthropic-Call scheidet deshalb aus. Offene Wege:
+  Gemini (kostenloses Kontingent) oder weiter über ein Artefakt mit JSON-Import,
+  der schon gebaut ist (`ib-import`).
+
+**Alles muss kostenlos bleiben** – das ist gesetzt. Keine Dienste vorschlagen,
+die eine Kreditkarte verlangen oder nach einer Testphase Geld kosten.
 
 Die Spec-Datei beschreibt außerdem noch die ursprünglichen vier Inhaltstypen und
 nennt Sport nicht als eigene Säule – die App ist dort inzwischen weiter. Bei

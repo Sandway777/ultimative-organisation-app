@@ -1,5 +1,7 @@
-const CACHE = 'notizblock-v1';
-const APP_SHELL = ['/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png'];
+const CACHE = 'notizblock-v2';
+// Relative Pfade: unter GitHub Pages liegt die App in einem Unterordner,
+// absolute Pfade wuerden dort ins Leere zeigen.
+const APP_SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(APP_SHELL)));
@@ -16,6 +18,9 @@ self.addEventListener('activate', (event) => {
 // Network-first: zeigt immer den neuesten Stand, wenn online; faellt offline auf den Cache zurueck.
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  // Cloud-Aufrufe nie zwischenspeichern - sonst kaeme ein alter Stand zurueck.
+  if (event.request.url.includes('api.github.com') ||
+      event.request.url.includes('gist.githubusercontent.com')) return;
   event.respondWith(
     fetch(event.request)
       .then((res) => {

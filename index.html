@@ -788,6 +788,37 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .save-toast.show{opacity:1;transform:translateY(0);}
 .save-toast.err{background:var(--danger);}
 
+/* ---- Cloud-Sync ---- */
+.cloud-status{width:100%;background:none;border:1px solid var(--sidebar-line);border-radius:7px;
+  color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;font-size:0.7rem;
+  padding:7px 10px;margin-bottom:8px;cursor:pointer;text-align:left;letter-spacing:.02em;}
+.cloud-status:hover{border-color:var(--business);color:var(--ink);}
+.cloud-status.an{color:var(--business);border-color:rgba(79,168,162,.35);}
+.cloud-modal{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);
+  display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
+.cloud-modal[hidden]{display:none;}
+.cloud-box{background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:26px;max-width:520px;width:100%;position:relative;max-height:90vh;overflow-y:auto;}
+.cloud-close{position:absolute;top:14px;right:16px;background:none;border:none;
+  color:var(--ink-soft);font-size:1.5rem;line-height:1;cursor:pointer;padding:0 4px;}
+.cloud-close:hover{color:var(--ink);}
+.cloud-text{font-size:0.84rem;color:var(--ink-soft);line-height:1.55;margin:8px 0 12px;}
+.cloud-text b{color:var(--ink);font-weight:600;}
+.cloud-schritt{border-top:1px solid var(--line-soft);padding-top:16px;margin-top:16px;}
+.cloud-schritt-kopf{display:flex;align-items:center;gap:10px;}
+.cloud-link{display:inline-block;text-decoration:none;}
+.cloud-input{width:100%;background:var(--field);border:1px solid var(--line);border-radius:8px;
+  color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:0.84rem;padding:10px 12px;}
+.cloud-input:focus{outline:none;border-color:var(--business);}
+.cloud-check{display:flex;align-items:center;gap:7px;margin-top:9px;
+  font-size:0.76rem;color:var(--ink-soft);cursor:pointer;}
+.cloud-check input{width:15px;height:15px;margin:0;accent-color:var(--business);cursor:pointer;}
+.cloud-btns{display:flex;gap:10px;flex-wrap:wrap;}
+.cloud-meldung{font-size:0.82rem;color:var(--ink-soft);margin-top:12px;min-height:1.2em;line-height:1.5;}
+.cloud-meldung.ok{color:var(--sport);}
+.cloud-meldung.fehler{color:var(--danger);}
+@media(max-width:640px){ .cloud-box{padding:20px 18px;} }
+
 /* ---- Sport: Trainingsuebersicht ---- */
 /* Monat auswaehlen statt durch Wochen blaettern: ein Plan gilt fuer den Monat. */
 .tr-monatbar{display:flex;align-items:flex-end;gap:12px;margin-bottom:16px;flex-wrap:wrap;flex-shrink:0;}
@@ -1070,6 +1101,7 @@ tr.row-off .tt-num{text-decoration:line-through;}
     <div class="main-actions" id="global-nodes"></div>
     <div class="saeulen" id="saeulen"></div>
     <div class="sidebar-footer">
+      <button class="cloud-status" id="cloud-status">○ Cloud aus</button>
       <div class="backup-row">
         <button class="backup-btn" id="export-btn">⬇ Exportieren</button>
         <button class="backup-btn" id="import-btn">⬆ Importieren</button>
@@ -1080,15 +1112,208 @@ tr.row-off .tt-num{text-decoration:line-through;}
   <main class="main"><div class="main-scroll"><div class="content" id="main-content"></div></div></main>
 </div>
 <div class="save-toast" id="save-toast"></div>
+
+<!-- Cloud einrichten: erscheint beim Klick auf die Statuszeile -->
+<div class="cloud-modal" id="cloud-modal" hidden>
+  <div class="cloud-box">
+    <button class="cloud-close" id="cloud-close" aria-label="schließen">×</button>
+    <h2 class="detail-title">Geräte synchronisieren</h2>
+    <p class="cloud-text">Damit stehen deine Notizen auf Handy und Rechner gleich.
+      Gespeichert wird in einer <b>privaten</b> Datei in deinem GitHub-Konto – kostenlos.</p>
+
+    <div class="cloud-schritt">
+      <div class="cloud-schritt-kopf"><span class="kur-schritt-nr">1</span>
+        <span class="kur-schritt-titel">Zugangs-Schlüssel holen</span></div>
+      <p class="cloud-text">Einmalig: Link öffnen, ganz unten <b>„Generate token"</b> klicken,
+        den Schlüssel kopieren. Alles ist schon voreingestellt.</p>
+      <a class="ib-btn primary cloud-link" id="cloud-tokenlink" target="_blank" rel="noopener"
+         href="https://github.com/settings/tokens/new?scopes=gist&description=Notizblock%20Sync">
+        Schlüssel bei GitHub erstellen →</a>
+    </div>
+
+    <div class="cloud-schritt">
+      <div class="cloud-schritt-kopf"><span class="kur-schritt-nr">2</span>
+        <span class="kur-schritt-titel">Schlüssel hier einfügen</span></div>
+      <input type="password" id="cloud-token" class="cloud-input"
+             placeholder="ghp_… hier einfügen" autocomplete="off">
+      <label class="cloud-check"><input type="checkbox" id="cloud-token-zeigen">
+        <span>Schlüssel anzeigen</span></label>
+    </div>
+
+    <div class="cloud-schritt" id="cloud-schritt3">
+      <div class="cloud-schritt-kopf"><span class="kur-schritt-nr">3</span>
+        <span class="kur-schritt-titel">Verbinden</span></div>
+      <p class="cloud-text" id="cloud-hinweis">Beim ersten Mal wird die Cloud-Datei angelegt.
+        Auf dem zweiten Gerät denselben Schlüssel eingeben – dann wird sie gefunden.</p>
+      <div class="cloud-btns">
+        <button class="ib-btn primary" id="cloud-verbinden">Verbinden</button>
+        <button class="ib-btn" id="cloud-trennen" hidden>Verbindung lösen</button>
+      </div>
+      <div class="cloud-meldung" id="cloud-meldung"></div>
+    </div>
+  </div>
+</div>
 <script>
 /* Storage-Shim: bildet die window.storage-API (aus der Sandbox-Vorschau) auf echtes
    localStorage ab, damit der restliche Code unveraendert bleibt. Spaeter wird hier
    der OneDrive-Sync eingehaengt, ohne den Rest der App anzufassen. */
 window.storage = {
   async get(key){ const v = localStorage.getItem(key); return v===null ? null : {value:v}; },
-  async set(key, value){ localStorage.setItem(key, value); },
+  async set(key, value){ localStorage.setItem(key, value); cloudPlan(); },
   async delete(key){ localStorage.removeItem(key); }
 };
+
+/* ---------------- CLOUD-SYNC ----------------
+   Speichert den kompletten Datenstand als private GitHub-Gist-Datei.
+   Kostenlos, kein eigener Server noetig.
+
+   Ablauf: lokal wird wie bisher sofort gespeichert (App bleibt schnell und
+   funktioniert offline), der Upload laeuft kurz danach im Hintergrund.
+   Beim Start wird geholt - ist die Cloud neuer, gewinnt sie.
+
+   Zugangsdaten liegen bewusst NUR lokal in einem eigenen Schluessel,
+   damit sie nie im JSON-Export landen. */
+const CLOUD_CFG_KEY = 'notizblock-cloud-cfg';
+const CLOUD_DATEI   = 'notizblock-daten.json';
+
+function cloudCfg(){
+  try{ return JSON.parse(localStorage.getItem(CLOUD_CFG_KEY)) || {}; }
+  catch(e){ return {}; }
+}
+function cloudCfgSet(c){ localStorage.setItem(CLOUD_CFG_KEY, JSON.stringify(c)); }
+function cloudAktiv(){ const c = cloudCfg(); return !!(c.token && c.gistId); }
+
+/* Sammelt schnelle Aenderungen: nicht nach jedem Tastendruck hochladen,
+   sondern zwei Sekunden nach der letzten Aenderung. */
+let cloudTimer = null, cloudLaeuft = false, cloudNochmal = false;
+function cloudPlan(){
+  if(!cloudAktiv()) return;
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(cloudPush, 2000);
+}
+
+async function cloudPush(){
+  if(!cloudAktiv()) return;
+  if(cloudLaeuft){ cloudNochmal = true; return; }   /* nie zwei Uploads gleichzeitig */
+  cloudLaeuft = true;
+  const c = cloudCfg();
+  try{
+    const inhalt = localStorage.getItem(STORAGE_KEY) || '{}';
+    const res = await fetch('https://api.github.com/gists/' + c.gistId, {
+      method:'PATCH',
+      headers:{'Authorization':'Bearer '+c.token, 'Accept':'application/vnd.github+json'},
+      body: JSON.stringify({files:{[CLOUD_DATEI]:{content: inhalt}}})
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    c.stand = new Date().toISOString();
+    cloudCfgSet(c);
+    cloudStatusZeigen();
+  }catch(e){
+    console.error('Cloud-Upload fehlgeschlagen', e);
+    showSaveToast('Cloud nicht erreichbar – lokal gespeichert', true);
+  }finally{
+    cloudLaeuft = false;
+    if(cloudNochmal){ cloudNochmal = false; cloudPlan(); }
+  }
+}
+
+/* Holt den Cloud-Stand. true, wenn etwas uebernommen wurde. */
+async function cloudPull(){
+  if(!cloudAktiv()) return false;
+  const c = cloudCfg();
+  const res = await fetch('https://api.github.com/gists/' + c.gistId, {
+    headers:{'Authorization':'Bearer '+c.token, 'Accept':'application/vnd.github+json'},
+    cache:'no-store'
+  });
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  const gist = await res.json();
+  const datei = gist.files && gist.files[CLOUD_DATEI];
+  if(!datei) return false;
+  /* Grosse Dateien liefert GitHub gekuerzt - dann ueber raw_url nachladen. */
+  const text = datei.truncated
+    ? await (await fetch(datei.raw_url, {cache:'no-store'})).text()
+    : datei.content;
+  if(!text || text.trim()==='' || text.trim()==='{}') return false;
+  JSON.parse(text);                    /* wirft bei kaputtem JSON - dann nichts anfassen */
+  localStorage.setItem(STORAGE_KEY, text);
+  return true;
+}
+
+function cloudStatusZeigen(){
+  const el = document.getElementById('cloud-status');
+  if(!el) return;
+  const c = cloudCfg();
+  if(!cloudAktiv()){ el.textContent = '○ Cloud aus'; el.className = 'cloud-status'; return; }
+  el.className = 'cloud-status an';
+  el.textContent = c.stand
+    ? '● Cloud ' + new Date(c.stand).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})
+    : '● Cloud an';
+}
+
+/* Sucht die Cloud-Datei im Konto. So findet das zweite Geraet mit demselben
+   Schluessel automatisch den bestehenden Stand, ohne dass man Ids abtippt. */
+async function cloudGistFinden(token){
+  const res = await fetch('https://api.github.com/gists?per_page=100', {
+    headers:{'Authorization':'Bearer '+token, 'Accept':'application/vnd.github+json'},
+    cache:'no-store'
+  });
+  if(!res.ok) throw new Error(res.status===401
+    ? 'Der Schlüssel wird nicht akzeptiert. Stimmt er, und war „gist" angehakt?'
+    : 'GitHub antwortet nicht (HTTP '+res.status+')');
+  const liste = await res.json();
+  const treffer = liste.find(g => g.files && g.files[CLOUD_DATEI]);
+  return treffer ? treffer.id : null;
+}
+
+async function cloudGistAnlegen(token){
+  const res = await fetch('https://api.github.com/gists', {
+    method:'POST',
+    headers:{'Authorization':'Bearer '+token, 'Accept':'application/vnd.github+json'},
+    body: JSON.stringify({
+      description:'Ultimativer Notizblock – Daten (privat)',
+      public:false,
+      files:{[CLOUD_DATEI]:{content: localStorage.getItem(STORAGE_KEY) || '{}'}}
+    })
+  });
+  if(!res.ok) throw new Error('Anlegen fehlgeschlagen (HTTP '+res.status+')');
+  return (await res.json()).id;
+}
+
+/* Verbinden: Schluessel pruefen, Datei finden oder anlegen, Staende abgleichen. */
+async function cloudVerbinden(token){
+  const meld = (txt, art)=>{
+    const el = document.getElementById('cloud-meldung');
+    if(el){ el.textContent = txt; el.className = 'cloud-meldung' + (art?' '+art:''); }
+  };
+  meld('Verbinde …');
+  let gistId = await cloudGistFinden(token);
+  const neu = !gistId;
+  if(neu){
+    meld('Lege Cloud-Datei an …');
+    gistId = await cloudGistAnlegen(token);
+  }
+  cloudCfgSet({token, gistId, stand:new Date().toISOString()});
+
+  if(neu){
+    meld('Verbunden. Dein jetziger Stand liegt jetzt auch in der Cloud.', 'ok');
+  } else {
+    /* Bestehende Datei: der Cloud-Stand ist die Wahrheit fuer dieses Geraet. */
+    meld('Gefunden – hole den Stand …');
+    const lokalLeer = !localStorage.getItem(STORAGE_KEY);
+    const geholt = await cloudPull();
+    if(geholt){
+      meld('Verbunden. Stand vom anderen Gerät übernommen.', 'ok');
+      const daten = await window.storage.get(STORAGE_KEY);
+      data = JSON.parse(daten.value);
+      migrateData(); pruneDailyNotes(); renderAll();
+    } else {
+      if(!lokalLeer) await cloudPush();
+      meld('Verbunden.', 'ok');
+    }
+  }
+  cloudStatusZeigen();
+  cloudModalFuellen();
+}
 
 const STORAGE_KEY = 'ultimativer-notizblock-v1';
 const BEREICHE = {privat:{label:'Privat',color:'var(--privat)'},business:{label:'Business',color:'var(--business)'},uni:{label:'Uni',color:'var(--uni)'},sport:{label:'Sport und Gesundheit',color:'var(--sport)'}};
@@ -4966,10 +5191,91 @@ document.getElementById('import-file').addEventListener('change',(e)=>{
   const f = e.target.files[0]; if(f) importData(f); e.target.value='';
 });
 
+/* ---- Cloud: Fenster und Bedienung ---- */
+function cloudModalFuellen(){
+  const c = cloudCfg();
+  const tok = document.getElementById('cloud-token');
+  const tr  = document.getElementById('cloud-trennen');
+  const vb  = document.getElementById('cloud-verbinden');
+  const hin = document.getElementById('cloud-hinweis');
+  if(tok) tok.value = c.token || '';
+  if(tr) tr.hidden = !cloudAktiv();
+  if(vb) vb.textContent = cloudAktiv() ? 'Neu verbinden' : 'Verbinden';
+  if(hin){
+    hin.textContent = cloudAktiv()
+      ? 'Verbunden. Änderungen gehen automatisch in die Cloud – du musst nichts drücken.'
+      : 'Beim ersten Mal wird die Cloud-Datei angelegt. Auf dem zweiten Gerät denselben Schlüssel eingeben – dann wird sie gefunden.';
+  }
+}
+function cloudModalOeffnen(){
+  cloudModalFuellen();
+  const m = document.getElementById('cloud-meldung');
+  if(m){ m.textContent=''; m.className='cloud-meldung'; }
+  document.getElementById('cloud-modal').hidden = false;
+}
+document.getElementById('cloud-status').addEventListener('click', cloudModalOeffnen);
+document.getElementById('cloud-close').addEventListener('click',
+  ()=>{ document.getElementById('cloud-modal').hidden = true; });
+document.getElementById('cloud-modal').addEventListener('click',(e)=>{
+  if(e.target.id==='cloud-modal') e.target.hidden = true;   /* Klick daneben schliesst */
+});
+document.getElementById('cloud-token-zeigen').addEventListener('change',(e)=>{
+  document.getElementById('cloud-token').type = e.target.checked ? 'text' : 'password';
+});
+document.getElementById('cloud-verbinden').addEventListener('click', async ()=>{
+  const token = document.getElementById('cloud-token').value.trim();
+  const meld = document.getElementById('cloud-meldung');
+  if(!token){
+    meld.textContent = 'Bitte zuerst den Schlüssel aus Schritt 1 einfügen.';
+    meld.className = 'cloud-meldung fehler';
+    document.getElementById('cloud-token').focus();
+    return;
+  }
+  const btn = document.getElementById('cloud-verbinden');
+  btn.disabled = true;
+  try{ await cloudVerbinden(token); }
+  catch(e){
+    meld.textContent = e.message || 'Verbinden fehlgeschlagen.';
+    meld.className = 'cloud-meldung fehler';
+  }
+  finally{ btn.disabled = false; }
+});
+document.getElementById('cloud-trennen').addEventListener('click',()=>{
+  /* Nur die Verbindung loesen - die Daten bleiben lokal und in der Cloud. */
+  localStorage.removeItem(CLOUD_CFG_KEY);
+  cloudStatusZeigen(); cloudModalFuellen();
+  const m = document.getElementById('cloud-meldung');
+  m.textContent = 'Verbindung gelöst. Deine Daten bleiben auf diesem Gerät.';
+  m.className = 'cloud-meldung';
+});
+
 load();
+cloudStatusZeigen();
+
+/* Zurueck an den Bildschirm oder wieder online: nachsehen, ob das andere
+   Geraet inzwischen etwas geaendert hat. */
+async function cloudAbgleich(){
+  if(!cloudAktiv()) return;
+  try{
+    if(await cloudPull()){
+      const gespeichert = await window.storage.get(STORAGE_KEY);
+      data = JSON.parse(gespeichert.value);
+      migrateData(); pruneDailyNotes(); renderAll();
+      showSaveToast('Stand aus der Cloud geholt');
+    }
+  }catch(e){ console.error('Cloud-Abgleich fehlgeschlagen', e); }
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible') cloudAbgleich();
+});
+window.addEventListener('online', cloudAbgleich);
+
+/* Beim Start einmal abgleichen - das andere Geraet koennte neuer sein. */
+cloudAbgleich();
 
 if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('/sw.js').catch(e=>console.error('SW-Registrierung fehlgeschlagen', e)); });
+  /* Relativer Pfad - unter GitHub Pages liegt die App in einem Unterordner. */
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(e=>console.error('SW-Registrierung fehlgeschlagen', e)); });
 }
 </script>
 </body>
