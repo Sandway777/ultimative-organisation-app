@@ -563,7 +563,7 @@ tr.is-done .mini-checkbox svg{stroke-dashoffset:0;}
 .modsem.fertig .modsem-titel{color:var(--ink-soft);}
 .modsem-cp{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--uni);
   flex-shrink:0;}
-.modsem-bar{flex:1;min-width:40px;height:3px;background:var(--line-soft);
+.modsem-bar{flex:1;min-width:40px;height:3px;background:rgba(255,255,255,.09);
   border-radius:2px;overflow:hidden;}
 .modsem-bar>span{display:block;height:100%;background:var(--uni);border-radius:2px;}
 .modsem.fertig .modsem-bar>span{background:var(--sport);}
@@ -578,9 +578,11 @@ tr.is-done .mini-checkbox svg{stroke-dashoffset:0;}
 .modrow-text{flex:1;font-size:0.88rem;color:var(--ink);min-width:0;}
 .modrow.done .modrow-text{color:var(--ink-soft);text-decoration:line-through;}
 .modrow-cp{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;
-  color:var(--ink-soft);flex-shrink:0;min-width:34px;text-align:right;}
+  color:var(--ink-soft);flex-shrink:0;min-width:46px;text-align:right;}
 .modrow-note{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;font-weight:600;
-  color:var(--ink);flex-shrink:0;min-width:30px;text-align:right;}
+  color:var(--ink);flex-shrink:0;min-width:44px;text-align:right;}
+/* Einheit und leere Felder bleiben zurueckhaltend - der Wert soll wirken. */
+.modrow-cp i,.modrow-note i{font-style:normal;font-size:0.62rem;opacity:.4;margin-left:2px;}
 .modrow .mini-del{flex-shrink:0;}
 @media(max-width:600px){
   .modsem-titel{font-size:0.9rem;}
@@ -717,7 +719,12 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .exp-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;
   max-width:1000px;margin-bottom:22px;}
 .exp-sum-box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+/* Die Hauptkachel traegt die Farbe ihrer Saeule, nicht immer die von Privat -
+   sonst sieht ein Uni-Bereich nach Warnung aus, wo nur "Anfang" gemeint ist. */
 .exp-sum-box.main{border-color:var(--privat);background:var(--privat-bg);}
+.content.bereich-business .exp-sum-box.main{border-color:var(--business);background:var(--business-bg);}
+.content.bereich-uni      .exp-sum-box.main{border-color:var(--uni);background:var(--uni-bg);}
+.content.bereich-sport    .exp-sum-box.main{border-color:var(--sport);background:var(--sport-bg);}
 .exp-sum-label{font-family:'IBM Plex Mono',monospace;font-size:0.64rem;text-transform:uppercase;
   letter-spacing:.09em;color:var(--ink-soft);}
 .exp-sum-value{font-family:'Fraunces',serif;font-weight:600;font-size:1.6rem;margin-top:5px;color:var(--privat);}
@@ -814,7 +821,12 @@ tr.row-off .tt-num{text-decoration:line-through;}
   font-family:'IBM Plex Mono',monospace;}
 .um-gruppe-body{margin-top:9px;}
 .um-gruppe.zu .um-gruppe-body{display:none;}
-.um-neu input{font-size:0.82rem;}
+.um-neu{min-width:0;}
+.um-neu input{font-size:0.82rem;min-width:0;}
+/* "+ Gruppe" ist ein Wort-Knopf, kein rundes Plus - der 28px-Kreis aus
+   .input-row wuerde die Zeile sprengen. */
+.um-neu button{width:auto;height:auto;border-radius:7px;padding:6px 12px;
+  font-size:0.78rem;flex-shrink:0;}
 
 .day-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
 .day-card h4{font-family:'Fraunces',serif;font-size:0.98rem;margin:0 0 8px;color:var(--ink);}
@@ -857,8 +869,16 @@ tr.row-off .tt-num{text-decoration:line-through;}
 
 @media(max-width:820px){
   .app{flex-direction:column;}
-  .sidebar{width:100%;max-height:38vh;}
-  .saeulen{flex:1;}
+  .sidebar{width:100%;max-height:46vh;}
+  .saeulen{flex:1;min-height:0;}
+  /* Der Fussbereich frisst sonst die halbe Navigation: eine Reihe statt drei
+     Bloecke, Beschriftung kurz. Alles bleibt erreichbar, nur flacher. */
+  .sidebar-footer{display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px;}
+  .sidebar-footer .beispiel-weg{width:auto;flex:1 1 100%;margin-bottom:0;
+    padding:6px 9px;font-size:0.7rem;}
+  .sidebar-footer .cloud-status{width:auto;flex:1 1 auto;margin-bottom:0;padding:6px 9px;}
+  .sidebar-footer .backup-row{flex:1 1 auto;margin-top:0;gap:6px;}
+  .sidebar-footer .backup-btn{padding:6px 9px;font-size:0.72rem;}
   .main-scroll{padding:20px 18px;}
   /* Kompaktere Navigation, damit oben nicht der halbe Schirm draufgeht */
   .sidebar-header{padding:12px 16px 6px;}
@@ -884,6 +904,30 @@ tr.row-off .tt-num{text-decoration:line-through;}
   .entry-back:hover{color:var(--ink);}
   /* Tabellen auf dem Handy: horizontal scrollbar statt gequetscht */
   .tt-wrap{margin-left:-2px;margin-right:-2px;}
+
+  /* Eingebettete Bereiche: aussen schmaler, innen bleibt die Verschachtelung
+     erkennbar. Kopfzeilen duerfen umbrechen statt zu quetschen. */
+  .modsem-kopf{flex-wrap:wrap;gap:6px 9px;padding:11px 12px;}
+  .modsem-titel{flex:1 1 auto;}
+  .modsem-meta{flex:0 0 auto;}
+  .modsem-body{padding:0 12px 6px;}
+  .modrow{gap:8px;padding:9px 0;}          /* mehr Hoehe = besser zu treffen */
+  .modrow-text{font-size:0.85rem;}
+  .mod-wahl-liste{grid-template-columns:1fr;}
+
+  .um-phase-head{flex-wrap:wrap;gap:4px 8px;}
+  .um-gruppe{padding:10px 12px;}
+  .um-gruppe-head{flex-wrap:wrap;gap:6px;}
+  .um-gruppe-title{flex:1 1 60%;}
+  .umzug-termine{gap:9px;}
+  .umzug-termine label{flex:1 1 100%;justify-content:space-between;}
+  .umzug-termine input[type=date]{flex:0 0 auto;}
+
+  /* Verschieben-Auswahl im Tageszettel: Ziele untereinander gut treffbar */
+  .move-box .move-ziele{gap:7px;}
+  .move-ziel{flex:1 1 calc(50% - 4px);text-align:center;padding:8px 6px;}
+  .move-box .move-neu{flex-direction:column;align-items:stretch;}
+  .move-box input[type=date]{width:100%;}
 }
 
 .save-toast{
@@ -4750,10 +4794,10 @@ function renderModules(c, def){
               <span class="tt-dot ${st.dot}"></span></span>
             <span class="modrow-text mg-cell${m.wahl?'':' editable'}" data-mf="text">${escapeHtml(m.text)}${
               m.wahl ? `<button class="mod-wahl" data-mwahl="${m.id}" title="Modul auswählen">Wahl ▾</button>` : ''}</span>
-            <span class="modrow-cp mg-cell editable" data-mf="cp" title="Credits">${
-              m.cp ? String(m.cp).replace('.',',') : '—'}</span>
-            <span class="modrow-note mg-cell editable" data-mf="note" title="Note">${
-              m.note ? String(m.note).replace('.',',') : '–'}</span>
+            <span class="modrow-cp mg-cell editable" data-mf="cp" title="Credits – tippen zum Ändern">${
+              m.cp ? String(m.cp).replace('.',',')+'<i>CP</i>' : '<i>CP?</i>'}</span>
+            <span class="modrow-note mg-cell editable" data-mf="note" title="Note – tippen zum Eintragen">${
+              m.note ? String(m.note).replace('.',',') : '<i>Note</i>'}</span>
             <button class="mini-del" data-mdel="${m.id}" aria-label="Löschen">×</button>
           </div>`;
         }).join('')}</div>
@@ -4814,7 +4858,8 @@ function renderModules(c, def){
   }));
   tbody.querySelectorAll('.mg-cell.editable').forEach(td=>td.addEventListener('click',()=>{
     if(td.querySelector('input')) return;
-    const m = z.items.find(x=>x.id===td.closest('tr').dataset.mid); if(!m) return;
+    const zeile = td.closest('.modrow'); if(!zeile) return;
+    const m = z.items.find(x=>x.id===zeile.dataset.mid); if(!m) return;
     const feld = td.dataset.mf;
     const zahl = (feld==='cp');
     const inp = document.createElement('input');
