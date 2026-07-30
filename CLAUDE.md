@@ -19,6 +19,7 @@ einfach die Datei im Browser öffnen.
 | [sw.js](sw.js) | Service Worker (Offline-Betrieb) |
 | [speichern.bat](speichern.bat) | Stand committen + auf GitHub pushen |
 | [holen.bat](holen.bat) | Neuesten Stand von GitHub holen |
+| [NOTIZEN-EINWERFEN.md](NOTIZEN-EINWERFEN.md) | Wie Leon hier Notizen einwirft und wie sie eingetragen werden |
 | [notizblock-spec-fuer-claude-code.md](notizblock-spec-fuer-claude-code.md) | Ursprüngliche Spec – **teils veraltet**, siehe unten |
 | [archiv/](archiv/) | Alte Prototypen, nur Referenz – nicht mehr anfassen |
 
@@ -145,12 +146,23 @@ den täglichen Notizzettel betroffen (behoben am 30.07.2026).
 - **Leicht erweiterbar** – neue Säulen und Typen ohne großen Umbau ergänzbar.
 - Sichtbare Reaktion auf Klicks. Kein stilles Filtern ohne Rückmeldung.
 
-## Stand: was noch fehlt
+## Notizen einwerfen
 
-- **KI-Sortierung fürs Idee-Board** – Leon hat Claude Pro, aber **kein API-Guthaben**
-  (Abo ≠ API-Zugang). Der Anthropic-Call scheidet deshalb aus. Offene Wege:
-  Gemini (kostenloses Kontingent) oder weiter über ein Artefakt mit JSON-Import,
-  der schon gebaut ist (`ib-import`).
+Leon schreibt hier in Claude Code „Ideen: …" oder „Notizen: …", Claude sortiert
+und trägt direkt in `index.html` ein. Ablauf und Muster stehen in
+[NOTIZEN-EINWERFEN.md](NOTIZEN-EINWERFEN.md).
+
+Das ersetzt die frühere KI-Sortierung im Board: Leon hat Claude Pro, aber
+**kein API-Guthaben** (Abo ≠ API-Zugang), der Anthropic-Call aus dem Browser
+schied damit aus. Der JSON-Import (`ib-import`) war der Zwischenschritt und ist
+seit 30.07.2026 raus – Claude Code kann die Datei direkt schreiben, damit
+entfallen sowohl API als auch Copy-Paste.
+
+Übernahmen laufen als eigene Funktion mit eigenem Schlüssel in
+`data.uebernommen`, aufgerufen am Ende von `migrateData()` (nicht in `load()`,
+sonst greifen sie nicht bei Cloud- oder Sicherungsständen).
+
+## Stand: was noch fehlt
 
 **Alles muss kostenlos bleiben** – das ist gesetzt. Keine Dienste vorschlagen,
 die eine Kreditkarte verlangen oder nach einer Testphase Geld kosten.

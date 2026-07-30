@@ -760,8 +760,7 @@ tr.row-off .tt-num{text-decoration:line-through;}
 
 /* idea board */
 .ib-inbox{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px;}
-.ib-inbox textarea{width:100%;min-height:80px;resize:vertical;border:1px solid var(--line);border-radius:8px;
-  padding:10px 12px;font-family:inherit;font-size:0.9rem;background:var(--field);color:var(--ink);line-height:1.5;}
+.ib-inbox strong{color:var(--ink);font-weight:600;}
 .ib-row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;}
 .ib-btn{font-family:inherit;font-size:0.85rem;font-weight:500;border:none;border-radius:7px;padding:8px 14px;cursor:pointer;}
 .ib-btn.primary{background:var(--business);color:#fff;}
@@ -1746,6 +1745,65 @@ function alteNotizenUebernehmen(){
   return dazu;
 }
 
+/* Vierte Uebernahme: zwei Antraege fuer August. Beide fangen mit einem Anruf an -
+   solange nicht klar ist, was die Stelle ueberhaupt braucht, kann man keine
+   Unterlagen sammeln. Darum steht der Anruf jeweils als erster Schritt. */
+const AUGUST_KEY = 'august-antraege-2026-07-30';
+function augustAntraegeUebernehmen(){
+  if(data.uebernommen && data.uebernommen[AUGUST_KEY]) return 0;
+  const n = data.nodes['privat:antraege'];
+  if(!n) return 0;
+  if(!Array.isArray(n.items)) n.items = [];
+
+  const neu = [
+    {text:'Kindergeld klären', due:'2026-08-31', note:'Zuerst anrufen: läuft es bei Studienbeginn weiter, was wird gebraucht?',
+     steps:['Bei der Familienkasse anrufen und Fragen klären',
+            'Benötigte Unterlagen zusammenstellen',
+            'Antrag bzw. Nachweis einreichen'],
+     docs:['Immatrikulationsbescheinigung', 'Steuer-ID']},
+    {text:'BAföG-Antrag', due:'2026-08-31', note:'Anrufen und fragen, was für den Erstantrag nötig ist und bis wann.',
+     steps:['Beim BAföG-Amt anrufen und Fragen klären',
+            'Formulare besorgen und ausfüllen',
+            'Nachweise sammeln',
+            'Antrag abschicken'],
+     docs:['Immatrikulationsbescheinigung', 'Einkommensnachweis der Eltern', 'Kontoauszüge / Vermögensnachweis']}
+  ];
+
+  let dazu = 0;
+  const da = new Set(n.items.map(i=>(i.text||'').toLowerCase().trim()));
+  neu.forEach(a=>{
+    if(da.has(a.text.toLowerCase().trim())) return;
+    n.items.push({
+      id:uid(), text:a.text, due:a.due, status:'vorbereiten', done:false, note:a.note,
+      steps:a.steps.map(t=>({id:uid(), text:t, done:false})),
+      docs: a.docs.map(t=>({id:uid(), text:t, done:false}))
+    });
+    dazu++;
+  });
+
+  /* Dieselben zwei Sachen auch auf den Monatszettel August - dort sieht Leon,
+     was der Monat bringt; der Antrags-Bereich haelt den Ablauf dahinter fest. */
+  if(!Array.isArray(data.months)) data.months = [];
+  let aug = data.months.find(m=>m.ym==='2026-08');
+  if(!aug){
+    aug = {id:uid(), ym:'2026-08', open:true,
+           columns:{privat:[], business:[], uni:[], sport:[]}};
+    data.months.push(aug);
+  }
+  aug.columns = aug.columns || {};
+  ['privat','business','uni','sport'].forEach(k=>{ if(!aug.columns[k]) aug.columns[k]=[]; });
+  const augDa = new Set(aug.columns.privat.map(i=>(i.text||'').toLowerCase().trim()));
+  ['Kindergeld: Familienkasse anrufen', 'BAföG: Amt anrufen'].forEach(t=>{
+    if(augDa.has(t.toLowerCase().trim())) return;
+    aug.columns.privat.push({id:uid(), text:t, done:false});
+    dazu++;
+  });
+
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[AUGUST_KEY] = true;
+  return dazu;
+}
+
 /* Dritte Uebernahme: das Idee-Board aus dem alten Artefakt (8 Kategorien,
    27 Punkte) plus die drei neuen Einfaelle vom 30.07. Kategorien werden am
    Titel wiedererkannt, damit nichts doppelt entsteht. */
@@ -2308,6 +2366,7 @@ function migrateData(){
   alteNotizenUebernehmen();
   umzugUebernehmen();
   ideenUebernehmen();
+  augustAntraegeUebernehmen();
 }
 
 async function load(){
@@ -5712,14 +5771,15 @@ function renderIdeaBoard(c){
     <div class="head-row"><div><h1 class="zt">📇 Idee-Board</h1><div class="head-meta">automatisch einsortiert</div></div></div>
     <div class="divider"></div>
     <div class="ib-inbox">
-      <div class="ib-status" style="margin-bottom:8px;">Rohtext in einer Claude-Unterhaltung sortieren lassen, JSON-Antwort hier einfügen:</div>
-      <textarea id="ib-import" placeholder='JSON-Antwort von Claude einfügen, z.B. [{"text":"...","category":"Steuern"}]'></textarea>
-      <div class="ib-row"><button class="ib-btn primary" id="ib-import-btn">Einfügen</button><span class="ib-status" id="ib-sort-status"></span></div>
+      <div class="ib-status" style="margin-bottom:8px;">Viele Ideen auf einmal? In Claude Code im Projektordner einfach
+        <strong>„Ideen: …"</strong> schreiben – die Punkte werden sortiert und landen direkt hier.
+        Einzelne Sachen gehen unten von Hand.</div>
     </div>
     <div class="ib-quick">
       <input type="text" id="ib-quick-text" placeholder="…oder einzelnen Punkt direkt hinzufügen">
       <select id="ib-quick-cat"></select>
       <button class="ib-btn primary" id="ib-quick-add">Hinzufügen</button>
+      <span class="ib-status" id="ib-sort-status"></span>
       <div class="newcat-box" id="ib-newcat-box">
         <input type="text" class="emoji" id="ib-newcat-emoji" placeholder="📌" maxlength="2">
         <input type="text" id="ib-newcat-title" placeholder="Name der Kategorie">
@@ -5730,7 +5790,6 @@ function renderIdeaBoard(c){
   `;
   renderIbBoard();
   renderIbCatSelect();
-  document.getElementById('ib-import-btn').addEventListener('click', ibImportJson);
   document.getElementById('ib-quick-add').addEventListener('click', ibQuickAdd);
   document.getElementById('ib-quick-text').addEventListener('keydown',(e)=>{if(e.key==='Enter')ibQuickAdd();});
   document.getElementById('ib-quick-cat').addEventListener('change', ()=>{
@@ -5837,44 +5896,6 @@ function ibQuickAdd(){
   persist(); renderIbBoard();
 }
 
-function ibImportJson(){
-  const raw = document.getElementById('ib-import').value.trim();
-  const statusEl = document.getElementById('ib-sort-status');
-  if(!raw){ statusEl.textContent='Erst JSON einfügen.'; statusEl.className='ib-status err'; return; }
-  try{
-    const cleaned = raw.replace(/```json|```/g,'').trim();
-    const parsed = JSON.parse(cleaned);
-    if(!Array.isArray(parsed)) throw new Error('Erwartet ein JSON-Array.');
-    let added=0;
-    parsed.forEach(entry=>{
-      if(!entry || !entry.text) return;
-      let catId;
-      const title = (entry.category||'').trim();
-      if(title){
-        const existing = data.ideaBoard.categories.find(c=>c.title.toLowerCase()===title.toLowerCase());
-        if(existing){ catId = existing.id; }
-        else {
-          catId = 'cat_'+uid();
-          data.ideaBoard.categories.push({id:catId,title,emoji:entry.emoji||'📌',color:PALETTE[data.ideaBoard.categories.length % PALETTE.length]});
-        }
-      }
-      if(!catId){
-        if(data.ideaBoard.categories.length===0) return;
-        catId = data.ideaBoard.categories[0].id;
-      }
-      data.ideaBoard.items.push({id:uid(),categoryId:catId,text:entry.text,done:false});
-      added++;
-    });
-    persist();
-    renderIbBoard(); renderIbCatSelect();
-    document.getElementById('ib-import').value='';
-    statusEl.textContent = `${added} Punkt(e) übernommen.`;
-    statusEl.className='ib-status';
-  }catch(e){
-    statusEl.textContent = 'Import fehlgeschlagen: ' + (e.message||e);
-    statusEl.className='ib-status err';
-  }
-}
 
 /* ---------------- EXPORT / IMPORT ---------------- */
 function exportData(){
