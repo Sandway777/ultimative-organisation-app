@@ -45,7 +45,56 @@ Jede Säule hat eine eigene Akzentfarbe, die sich konsequent durchs ganze UI zie
 (Titel, Häkchen, Tags) – nicht nur als kleiner Punkt irgendwo.
 
 Inhaltstypen: `checklist`, `trips`, `deadlines`, `expenses`, `ideas`, `margin`,
-`timetable`, `exams`, `study`, `modules`.
+`timetable`, `exams`, `study`, `modules`, `training`, `cures`.
+
+Ein neuer Typ braucht vier Dinge: Eintrag in `STRUKTUR`, Default in
+`emptyNodeContent`, ein Zweig im Dispatch von `renderMain`, plus Absicherung in
+`migrateData` – sonst verlieren bestehende Nutzerdaten beim Typwechsel ihren Inhalt.
+
+### Sport: Training und Kuren
+
+- **Training** (`training`): **ein Wochenplan pro Monat**, Schlüssel `"YYYY-MM"`
+  (`weeks: {"2026-07": {days:{0..6:[...]}}}`, Montag = 0). Der Monat wird per
+  Auswahlfeld gewählt – **keine Wochen-Navigation, keine KW-Nummern**, Leon denkt
+  nicht in Kalenderwochen. Ein leerer Monat bietet „Vormonat übernehmen"
+  (kopiert, Häkchen zurückgesetzt), ein gefüllter „Plan löschen" (zwei Klicks).
+  Drei Fokus-Bereiche in `TR_FOKUS`: Oberkörper, Bauch, Beine.
+  Frühere Fassung nutzte ISO-Wochenschlüssel; `migrateData` legt alte Wochen in
+  ihren Monat zusammen (Dubletten nach Text+Sätzen gefiltert), `isoWeekMonday`
+  existiert nur noch dafür.
+- **Kuren** (`cures`): **geführter Ablauf in Schritten**, nicht alles auf einmal:
+  1. Neue Kur → nur der Name
+  2. `renderCureSetup` – Schritt 1 Zeitraum, Schritt 2 Ablauf. Schritt 2
+     bleibt gesperrt, bis der Zeitraum steht.
+
+     **Pro Eintrag zwei Mehrfachauswahlen:** `zeiten: ['morgens','abends']` und
+     `days: [0,2,4]` (leer = täglich). Eine Anwendung wird *einmal* eingetragen
+     und kann mehrmals am Tag fällig sein – nicht dreimal anlegen für dreimal
+     täglich. `cureSlotsForDay` erzeugt daraus die einzelnen Fälligkeiten
+     (Schlüssel `anwendungId@tageszeit`), das ist die Einheit zum Abhaken.
+  3. „Tabelle erstellen" → `renderCureTable`: Monatskalender plus Abhakliste des
+     angeklickten Tages, Ablauf unten nur zum Nachlesen. Zurück über „Kur ändern"
+     (`kurEinrichten[k.id]`).
+
+  Die beiden Ansichten dürfen sich **nicht vermischen** – Einrichten und
+  Abhaken sind getrennte Zustände. Eine Kur ohne Zeitraum oder ohne Ablauf
+  startet immer im Einrichten-Schritt.
+  `done: {"YYYY-MM-DD": {"anwendungId@tageszeit": true}}` – ältere Stände hakten
+  nur je Anwendung ab (`{anwendungId: true}`), `cureIsDone` liest das weiter.
+  Kalender-Zustände je Tag: erledigt, teilweise, versäumt, offen;
+  Punkte = Anzahl Fälligkeiten.
+  Heute gilt nie als versäumt – der Tag läuft noch. Fortschritt zählt nur bis
+  heute, damit künftige Tage nicht als Versäumnis gelten.
+
+Anzeigezustand (`trWeekSel`, `kurTagSel`) liegt bewusst außerhalb von `data` –
+welche Woche gerade offen ist, gehört nicht in den Export.
+
+## Datum: nie toISOString()
+
+`toISOString()` rechnet nach UTC um und liefert in unserer Zeitzone (UTC+1/+2)
+für Mitternacht **noch den Vortag**. Für Datums-Schlüssel immer `isoLocal(d)`
+bzw. `isoToday()` benutzen. Diese Falle hatte sowohl die Kur-Tagesliste als auch
+den täglichen Notizzettel betroffen (behoben am 30.07.2026).
 
 ## Design-Sprache
 
@@ -72,6 +121,11 @@ Inhaltstypen: `checklist`, `trips`, `deadlines`, `expenses`, `ideas`, `margin`,
 Die Spec-Datei beschreibt außerdem noch die ursprünglichen vier Inhaltstypen und
 nennt Sport nicht als eigene Säule – die App ist dort inzwischen weiter. Bei
 Widersprüchen gilt der Code, nicht die Spec.
+
+**Reihenfolge laut Leon (30.07.2026):** Erst die App inhaltlich fertig bauen und
+die wichtigsten bestehenden Notizen übertragen – der OneDrive-Sync kommt bewusst
+zuletzt. Bis dahin liegen die Inhalte nur im Browser des jeweiligen Geräts, der
+JSON-Export ist also das einzige Backup der Daten.
 
 ## Speichern und Holen
 

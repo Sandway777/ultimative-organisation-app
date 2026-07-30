@@ -787,6 +787,278 @@ tr.row-off .tt-num{text-decoration:line-through;}
 }
 .save-toast.show{opacity:1;transform:translateY(0);}
 .save-toast.err{background:var(--danger);}
+
+/* ---- Sport: Trainingsuebersicht ---- */
+/* Monat auswaehlen statt durch Wochen blaettern: ein Plan gilt fuer den Monat. */
+.tr-monatbar{display:flex;align-items:flex-end;gap:12px;margin-bottom:16px;flex-wrap:wrap;flex-shrink:0;}
+.tr-monatwahl{display:flex;flex-direction:column;gap:4px;}
+.tr-monatwahl select{background:var(--field);border:1px solid var(--line);border-radius:8px;
+  color:var(--ink);font-family:'Fraunces',serif;font-size:1.05rem;font-weight:600;
+  padding:8px 12px;cursor:pointer;min-width:220px;}
+.tr-monatwahl select:focus{outline:none;border-color:var(--sport);}
+.tr-monatbar .tr-heute{margin-left:0;}
+.tr-monatbar .kur-del{margin-left:auto;}
+@media(max-width:640px){
+  .tr-monatwahl,.tr-monatwahl select{width:100%;}
+  .tr-monatbar .kur-del{margin-left:0;}
+}
+.tr-weekbar{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-shrink:0;}
+.tr-wnav{width:34px;height:34px;flex-shrink:0;border:1px solid var(--line);background:var(--card);
+  color:var(--ink);border-radius:8px;cursor:pointer;font-size:1rem;line-height:1;}
+.tr-wnav:hover{border-color:var(--sport);color:var(--sport);}
+.tr-wlabel{display:flex;flex-direction:column;gap:1px;min-width:0;}
+.tr-wnr{font-family:'Fraunces',serif;font-size:1.05rem;font-weight:600;}
+.tr-wrange{font-size:0.76rem;color:var(--ink-soft);}
+.tr-heute{margin-left:auto;flex-shrink:0;background:var(--card);border:1px solid var(--line);color:var(--ink);}
+.tr-heute:hover{border-color:var(--sport);color:var(--sport);}
+.tr-progress{height:4px;background:var(--line-soft);border-radius:3px;overflow:hidden;
+  margin-bottom:18px;flex-shrink:0;}
+.tr-progress-bar{height:100%;background:var(--sport);border-radius:3px;transition:width .25s ease;}
+
+/* Sieben Spalten = eine Woche auf einen Blick. Wird schrittweise flacher,
+   am Handy eine Liste - damit die Karten nicht unlesbar schmal werden. */
+.tr-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;
+  margin-bottom:18px;align-items:start;}
+@media(max-width:1500px){.tr-week{grid-template-columns:repeat(4,minmax(0,1fr));}}
+@media(max-width:1080px){.tr-week{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:640px){.tr-week{grid-template-columns:1fr;gap:8px;}}
+.tr-day{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 13px;}
+.tr-day.today{border-color:var(--sport);box-shadow:0 0 0 1px var(--sport) inset;}
+.tr-day.alldone{background:var(--sport-bg);}
+.tr-day.empty{opacity:.72;}
+.tr-day-head{display:flex;align-items:center;gap:6px;margin-bottom:9px;flex-wrap:wrap;}
+.tr-day-name{font-family:'Fraunces',serif;font-size:0.95rem;font-weight:600;min-width:0;}
+.tr-day-kurz{display:none;font-family:'Fraunces',serif;font-size:0.95rem;font-weight:600;}
+.tr-day.today .tr-day-name,.tr-day.today .tr-day-kurz{color:var(--sport);}
+.tr-day-today{font-size:0.62rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  background:var(--sport);color:#12210F;padding:2px 6px;border-radius:20px;flex-shrink:0;}
+.tr-day-count{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);}
+.tr-day-rest{margin-left:auto;font-size:0.72rem;color:var(--ink-soft);font-style:italic;}
+.tr-units{display:flex;flex-direction:column;gap:7px;margin-bottom:9px;}
+.tr-unit{display:flex;align-items:flex-start;gap:8px;padding:7px 8px;border-radius:8px;
+  background:var(--field);border:1px solid transparent;flex-wrap:wrap;}
+.tr-unit.done{opacity:.55;}
+.tr-unit.done .tr-unit-text{text-decoration:line-through;}
+.tr-check{width:20px;height:20px;flex-shrink:0;border:1.5px solid var(--line);border-radius:5px;
+  background:transparent;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;}
+.tr-check svg{width:13px;height:13px;stroke:var(--sport);}
+.tr-unit.done .tr-check,.kur-check.done .tr-check{border-color:var(--sport);background:var(--sport-bg);}
+.tr-check:hover{border-color:var(--sport);}
+.tr-fokus{font-size:0.68rem;font-weight:600;padding:2px 7px;border-radius:20px;flex-shrink:0;
+  letter-spacing:.02em;white-space:nowrap;}
+/* Klartext bleibt sichtbar - nur Icons waeren nicht zu unterscheiden.
+   Bei sieben Spalten dafuer etwas kleiner gesetzt. */
+@media(min-width:1501px){.tr-week .tr-fokus{font-size:0.62rem;padding:2px 5px;}}
+.tr-fokus.f-ok{background:rgba(127,177,105,.18);color:var(--sport);}
+.tr-fokus.f-bauch{background:rgba(217,166,72,.18);color:var(--idea);}
+.tr-fokus.f-beine{background:rgba(132,148,204,.18);color:var(--uni);}
+/* Text immer in eigener Zeile unter dem Chip: bei sieben Spalten ist nebeneinander
+   zu eng - der Text wuerde sonst Buchstabe fuer Buchstabe umbrechen. */
+.tr-unit-text{font-size:0.82rem;flex:1 1 100%;min-width:60px;overflow-wrap:break-word;
+  padding-left:28px;line-height:1.35;}
+.tr-sets{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);
+  width:100%;padding-left:28px;}
+.tr-del{margin-left:auto;background:none;border:none;color:var(--ink-soft);cursor:pointer;
+  font-size:1.1rem;line-height:1;padding:0 2px;flex-shrink:0;}
+.tr-del:hover{color:var(--danger);}
+.tr-add-day{width:100%;background:none;border:1px dashed var(--line);border-radius:7px;
+  color:var(--ink-soft);font-family:inherit;font-size:0.76rem;padding:6px;cursor:pointer;}
+.tr-add-day:hover{border-color:var(--sport);color:var(--sport);}
+
+/* Eingabe sitzt INNERHALB der Tageskarte - untereinander, damit sie auch in
+   eine schmale Spalte passt. Bleibt nach dem Eintragen offen, weil an einem Tag
+   mehrere Einheiten mit verschiedenem Fokus stehen koennen. */
+.tr-newbox{display:flex;flex-direction:column;gap:6px;padding:9px;border-radius:8px;
+  background:var(--field);border:1px solid var(--sport);}
+.tr-newbox input,.tr-newbox select{background:var(--card);border:1px solid var(--line);
+  border-radius:6px;color:var(--ink);font-family:inherit;font-size:0.8rem;padding:6px 8px;width:100%;}
+.tr-newbox input:focus,.tr-newbox select:focus{outline:none;border-color:var(--sport);}
+.tr-newbox-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.tr-newbox-btns .ib-btn{flex:1;min-width:0;font-size:0.78rem;padding:6px 8px;white-space:nowrap;}
+/* Sieben Spalten: Kurzform, sonst sprengt "Donnerstag" die Karte.
+   Ab vier Spalten ist Platz fuer den ganzen Namen. */
+@media(min-width:1501px){
+  .tr-week .tr-day-name{display:none;} .tr-week .tr-day-kurz{display:inline;}
+}
+
+/* ---- Sport: Kuren ---- */
+/* Anlege-Kasten gestapelt: nebeneinander wird der Name abgeschnitten und der
+   Hinweis klebt am Knopf. */
+.kur-new{background:var(--card);border:1px solid var(--line);border-radius:10px;
+  padding:16px;margin-bottom:18px;max-width:560px;
+  display:flex;flex-direction:column;gap:14px;align-items:flex-start;}
+.kur-new .ib-btn.primary{align-self:flex-start;}
+.kur-datefield.wide{width:100%;}
+.kur-datefield.wide input{width:100%;}
+/* Datumsfelder mit sichtbarer Beschriftung: zwei nackte tt.mm.jjjj-Felder
+   sagen nicht, was Anfang und was Ende ist. */
+.kur-datefield{display:flex;flex-direction:column;gap:4px;}
+.kur-datelabel{font-size:0.72rem;color:var(--ink-soft);letter-spacing:.02em;}
+.kur-datefield input{background:var(--field);border:1px solid var(--line);border-radius:7px;
+  color:var(--ink);font-family:inherit;font-size:0.86rem;padding:8px 10px;}
+.kur-datefield input:focus{outline:none;border-color:var(--sport);}
+/* Sport-Gruen statt Business-Tuerkis: die Saeulenfarbe zieht laut Spec ueberall
+   durch. Greift fuer alle Hauptknoepfe im Sport-Bereich auf einmal. */
+.content.bereich-sport .ib-btn.primary{background:var(--sport);color:#12210F;}
+.kur-head{margin-bottom:16px;}
+.kur-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px;}
+.kur-badge{font-size:0.7rem;font-weight:600;padding:3px 9px;border-radius:20px;}
+.kur-badge.st-now{background:var(--sport-bg);color:var(--sport);}
+.kur-badge.st-future{background:var(--field);color:var(--ink-soft);}
+.kur-badge.st-past{background:var(--field);color:var(--ink-soft);}
+.kur-range,.kur-quote{font-size:0.78rem;color:var(--ink-soft);}
+.kur-zeitraum{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-top:12px;}
+.kur-zeitraum.offen{background:var(--card);border:1px dashed var(--sport);
+  border-radius:9px;padding:12px 14px;}
+.kur-zeitraum-info{font-size:0.76rem;color:var(--ink-soft);padding-bottom:8px;}
+.kur-zeitraum-info.warn{color:var(--sport);}
+.kur-quote{font-family:'IBM Plex Mono',monospace;}
+.kur-section{margin-bottom:22px;}
+.kur-plan{display:flex;flex-direction:column;gap:9px;}
+.kur-hint{font-size:0.82rem;color:var(--ink-soft);line-height:1.5;}
+.kur-planitem{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;
+  background:var(--card);flex-wrap:wrap;}
+.kur-zeit{font-size:0.68rem;font-weight:600;padding:2px 7px;border-radius:20px;flex-shrink:0;}
+.kur-zeit.z-morgens{background:rgba(217,166,72,.18);color:var(--idea);}
+.kur-zeit.z-mittags{background:rgba(224,128,96,.18);color:var(--privat);}
+.kur-zeit.z-abends{background:rgba(132,148,204,.18);color:var(--uni);}
+.kur-planitem-text,.kur-check-text{font-size:0.84rem;flex:1;min-width:110px;overflow-wrap:break-word;}
+.kur-dose{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);margin-left:6px;}
+.kur-days{display:flex;gap:3px;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;
+  color:var(--ink-soft);flex-shrink:0;}
+.kur-days b{color:var(--sport);}
+.kur-days .off{opacity:.3;}
+.kur-planitem-del{background:none;border:none;color:var(--ink-soft);cursor:pointer;
+  font-size:1.1rem;line-height:1;padding:0 2px;flex-shrink:0;}
+.kur-planitem-del:hover{color:var(--danger);}
+.kur-newitem{display:flex;flex-direction:column;gap:9px;background:var(--card);
+  border:1px dashed var(--line);border-radius:9px;padding:12px;}
+.kur-newitem input,.kur-newitem select{background:var(--field);border:1px solid var(--line);
+  border-radius:7px;color:var(--ink);font-family:inherit;font-size:0.84rem;padding:7px 9px;width:100%;}
+.kur-newitem input:focus,.kur-newitem select:focus{outline:none;border-color:var(--sport);}
+.kur-newitem .ib-btn.primary{align-self:flex-start;}
+.ki-daypick-label{font-size:0.76rem;color:var(--ink-soft);display:block;margin-bottom:6px;}
+.ki-days{display:flex;gap:6px;flex-wrap:wrap;}
+.ki-day{display:flex;align-items:center;gap:4px;background:var(--field);border:1px solid var(--line);
+  border-radius:7px;padding:5px 9px;cursor:pointer;font-size:0.76rem;
+  font-family:'IBM Plex Mono',monospace;user-select:none;}
+.ki-day input{width:14px;height:14px;margin:0;accent-color:var(--sport);cursor:pointer;}
+.ki-day:has(input:checked){border-color:var(--sport);color:var(--sport);}
+.ki-daypick-hint{font-size:0.72rem;color:var(--ink-soft);font-style:italic;display:block;margin-top:5px;}
+
+/* Der Kalender ist die Buehne: gross und zentral. Alles zum Einrichten
+   sitzt darunter im ruhigen Block "Einstellungen". */
+/* Breite so, dass Kalender UND Abhakliste zusammen ins Bild passen -
+   sonst scrollt man staendig zwischen beiden hin und her. */
+.kur-buehne{max-width:560px;margin:0 auto 24px;}
+.kur-calbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+.kur-calmonth{font-family:'Fraunces',serif;font-size:1.15rem;font-weight:600;min-width:150px;}
+.kur-calbar .kur-legende{margin:0 0 0 auto;padding:0;border:none;}
+.kur-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;
+  background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;}
+.kur-cal-wt{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;
+  color:var(--ink-soft);padding-bottom:6px;}
+.kur-cal-leer{aspect-ratio:1;}
+.kur-cal-tag{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;border:1px solid transparent;border-radius:8px;background:var(--field);
+  color:var(--ink-soft);cursor:pointer;padding:0;font-family:'IBM Plex Mono',monospace;font-size:0.84rem;}
+.kur-cal-tag:hover:not(:disabled){border-color:var(--sport);}
+.kur-cal-tag:disabled{background:transparent;color:var(--line);cursor:default;}
+/* Zustaende: voll erledigt, teilweise, verpasst, kommt noch, kein Plan an dem Tag */
+.kur-cal-tag.z-voll{background:var(--sport);color:#12210F;font-weight:600;}
+.kur-cal-tag.z-teil{background:rgba(127,177,105,.22);color:var(--sport);}
+.kur-cal-tag.z-verpasst{background:rgba(224,112,140,.15);color:var(--danger);}
+.kur-cal-tag.z-offen{background:var(--field);color:var(--ink);}
+.kur-cal-tag.z-frei{background:transparent;color:var(--ink-soft);opacity:.55;}
+.kur-cal-tag.heute{box-shadow:0 0 0 1.5px var(--ink) inset;}
+.kur-cal-tag.sel{border-color:var(--ink);}
+.kur-cal-punkte{display:flex;gap:3px;}
+.kur-cal-punkte i{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.35;}
+.kur-cal-punkte i.an{opacity:1;}
+.kur-legende{display:flex;flex-wrap:wrap;gap:10px;font-size:0.68rem;color:var(--ink-soft);}
+.kur-legende span{display:flex;align-items:center;gap:4px;}
+.kur-legende i.lg{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+.kur-legende i.voll{background:var(--sport);}
+.kur-legende i.teil{background:rgba(127,177,105,.35);}
+.kur-legende i.verpasst{background:rgba(224,112,140,.3);}
+.kur-legende i.offen{background:var(--field);border:1px solid var(--line);}
+
+/* Der gewaehlte Tag sitzt direkt unter dem Kalender - dort wird abgehakt. */
+.kur-tagbox{margin-top:18px;}
+.kur-tagkopf{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.kur-tagtitel{font-family:'Fraunces',serif;font-size:1.1rem;font-weight:600;}
+.kur-taginfo{font-size:0.76rem;color:var(--ink-soft);}
+/* Abhaken nach Tageszeit gruppiert: morgens / mittags / abends als Bloecke. */
+.kur-checks{display:flex;flex-direction:column;gap:12px;}
+.kur-block{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--card);}
+.kur-block.fertig{background:var(--sport-bg);border-color:transparent;}
+.kur-block-kopf{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.kur-block-zahl{margin-left:auto;font-family:'IBM Plex Mono',monospace;
+  font-size:0.72rem;color:var(--ink-soft);}
+.kur-block .kur-check{background:var(--field);border:none;padding:8px 10px;}
+.kur-block.fertig .kur-check{background:rgba(0,0,0,.16);}
+.kur-block .kur-check + .kur-check{margin-top:6px;}
+/* Mehrere Tageszeiten je Anwendung nebeneinander. */
+.kur-zeiten{display:flex;gap:4px;flex-wrap:wrap;flex-shrink:0;}
+.ki-days.zeiten .ki-day{font-family:inherit;}
+.ki-daypick.fehlt .ki-daypick-label{color:var(--danger);}
+.ki-daypick.fehlt .ki-days{outline:1px solid var(--danger);outline-offset:4px;border-radius:6px;}
+
+/* Einrichten in Schritten: erst Zeitraum, dann Ablauf, dann Tabelle erzeugen.
+   Ein gesperrter Schritt zeigt, dass der vorige noch fehlt. */
+.kur-setup-info{font-size:0.82rem;color:var(--ink-soft);margin-top:6px;}
+.kur-schritt{max-width:620px;border:1px solid var(--line);border-radius:11px;
+  padding:16px 18px;margin-bottom:14px;background:var(--card);}
+.kur-schritt.aktiv{border-color:var(--sport);}
+.kur-schritt.gesperrt{opacity:.55;}
+.kur-schritt.fertig .kur-schritt-nr{background:var(--sport);color:#12210F;border-color:var(--sport);}
+.kur-schritt-kopf{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.kur-schritt-nr{width:24px;height:24px;flex-shrink:0;border:1px solid var(--line);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:'IBM Plex Mono',monospace;font-size:0.76rem;color:var(--ink-soft);}
+.kur-schritt.aktiv .kur-schritt-nr{border-color:var(--sport);color:var(--sport);}
+.kur-schritt-titel{font-family:'Fraunces',serif;font-size:1rem;font-weight:600;}
+.kur-setup-foot{max-width:620px;display:flex;align-items:center;gap:14px;
+  flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid var(--line-soft);}
+.kur-setup-foot .kur-del{margin-left:auto;}
+.ib-btn.kur-gross{font-size:0.92rem;padding:11px 20px;}
+
+/* Tabellen-Ansicht: Titelzeile mit "Kur ändern", Ablauf unten nur zum Nachlesen. */
+.kur-head-zeile{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.kur-head-zeile .detail-title{flex:1;min-width:0;}
+.ib-btn.kur-aendern{background:var(--field);border:1px solid var(--line);
+  color:var(--ink-soft);flex-shrink:0;}
+.ib-btn.kur-aendern:hover{border-color:var(--sport);color:var(--sport);}
+.kur-uebersicht{max-width:560px;margin:0 auto;border-top:1px solid var(--line);
+  padding-top:18px;display:flex;flex-direction:column;gap:7px;}
+.kur-planitem.ruhig{background:transparent;padding:5px 0;}
+.kur-section-label{font-size:0.78rem;font-weight:500;color:var(--ink-soft);
+  margin-bottom:8px;letter-spacing:.02em;}
+.kur-newitem-zeile{display:flex;gap:8px;flex-wrap:wrap;}
+.kur-newitem-zeile select{flex-shrink:0;}
+.kur-newitem-zeile .ki-text{flex:1;min-width:150px;}
+.kur-newitem-zeile .ki-dose{flex:0 1 150px;}
+.ki-daypick-label em{font-style:normal;opacity:.7;}
+@media(max-width:640px){
+  .kur-newitem-zeile{flex-direction:column;}
+  .kur-newitem-zeile select,.kur-newitem-zeile input{width:100%;}
+}
+.kur-check{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;
+  background:var(--card);border:1px solid var(--line);flex-wrap:wrap;}
+.kur-check.done{background:var(--sport-bg);border-color:transparent;}
+.kur-check.done .kur-check-text{text-decoration:line-through;opacity:.6;}
+/* Am Handy grosszuegiger antippbar - 20px Kaestchen sind zu fummelig. */
+@media(max-width:640px){
+  .tr-check{width:26px;height:26px;}
+  .tr-check svg{width:16px;height:16px;}
+  .tr-unit-text,.tr-sets{padding-left:34px;}
+  .kur-cal-tag{font-size:0.8rem;}
+  .tr-del,.kur-planitem-del{font-size:1.4rem;padding:0 6px;}
+}
+.kur-foot{border-top:1px solid var(--line-soft);padding-top:14px;margin-top:4px;}
+.kur-del{background:none;border:1px solid var(--line);border-radius:7px;color:var(--ink-soft);
+  font-family:inherit;font-size:0.78rem;padding:7px 13px;cursor:pointer;}
+.kur-del:hover,.kur-del.confirm{border-color:var(--danger);color:var(--danger);}
 </style>
 </head>
 <body>
@@ -846,8 +1118,8 @@ const STRUKTUR = {
     {key:'module',     title:'Module & Noten',  icon:'🎓', type:'modules'}
   ],
   sport: [
-    {key:'training',  title:'Trainingsübersicht',      icon:'🏃', type:'checklist'},
-    {key:'kuren',     title:'Kuren',                   icon:'🌿', type:'checklist'}
+    {key:'training',  title:'Trainingsübersicht',      icon:'🏃', type:'training'},
+    {key:'kuren',     title:'Kuren',                   icon:'🌿', type:'cures'}
   ]
 };
 /* Uebergreifende Punkte - gehoeren keiner Saeule, weil sie alle vier abdecken. */
@@ -936,6 +1208,13 @@ function emptyNodeContent(type){
     /* months: {ym: {cats:{...}, closed:bool}} - ein Datensatz pro Monat */
     return {months:{}};
   }
+  if(type==='training'){
+    /* weeks: {isoWoche: {days:{0..6: [uebung,...]}}} - eine Tabelle pro Woche.
+       Der Takt wiederholt sich oft, aber nicht immer - deshalb je Woche
+       ein eigener Datensatz plus "Woche uebernehmen". */
+    return {weeks:{}};
+  }
+  if(type==='cures')      return {cures: []};
   return {};
 }
 
@@ -1118,6 +1397,83 @@ function migrateData(){
             if(typeof s[f]!=='string') s[f] = '';
           });
         });
+      } else if(def.type==='training'){
+        if(!n.weeks) n.weeks = {};
+        /* Frueher war die Trainingsuebersicht eine einfache Checkliste.
+           Die alten Punkte kommen als Einheiten in den laufenden Monat, damit
+           nichts verloren geht - Wochentag Montag, Fokus Oberkoerper. */
+        if(Array.isArray(n.items) && n.items.length){
+          const key = isoToday().slice(0,7);
+          if(!n.weeks[key]) n.weeks[key] = emptyTrainingWeek();
+          n.items.forEach(it=>{
+            n.weeks[key].days[0].push({id: it.id||uid(), fokus:'ok',
+              text: it.text||'', sets:'', done: !!it.done});
+          });
+        }
+        delete n.items;
+        /* Frueher lag je ISO-Kalenderwoche ein Plan ("2026-W31"). Jetzt gilt ein
+           Plan pro Monat - alte Wochen wandern in ihren Monat, Dubletten werden
+           zusammengelegt statt verworfen. */
+        Object.keys(n.weeks).filter(k=>k.includes('-W')).forEach(alt=>{
+          const d = isoWeekMonday(alt);
+          const mo = d.getUTCFullYear() + '-' + String(d.getUTCMonth()+1).padStart(2,'0');
+          if(!n.weeks[mo]) n.weeks[mo] = emptyTrainingWeek();
+          const q = n.weeks[alt];
+          for(let i=0;i<7;i++){
+            (q.days && q.days[i] ? q.days[i] : []).forEach(u=>{
+              /* gleiche Uebung am gleichen Tag nicht doppelt anlegen */
+              if(!n.weeks[mo].days[i].some(x=>x.text===u.text && x.sets===u.sets)){
+                n.weeks[mo].days[i].push(u);
+              }
+            });
+          }
+          delete n.weeks[alt];
+        });
+        Object.keys(n.weeks).forEach(k=>{
+          const w = n.weeks[k];
+          if(!w.days) w.days = {};
+          for(let i=0;i<7;i++){ if(!Array.isArray(w.days[i])) w.days[i] = []; }
+          Object.values(w.days).forEach(arr=>arr.forEach(u=>{
+            if(!u.id) u.id = uid();
+            if(typeof u.text!=='string') u.text = '';
+            if(typeof u.sets!=='string') u.sets = '';
+            if(!TR_FOKUS.some(f=>f.key===u.fokus)) u.fokus = 'ok';
+            u.done = !!u.done;
+          }));
+        });
+      } else if(def.type==='cures'){
+        if(!Array.isArray(n.cures)) n.cures = [];
+        /* Alte Checklisten-Punkte werden je einer Kur ohne Zeitraum - der
+           Titel bleibt erhalten, Zeitraum und Ablauf traegt man dann nach. */
+        if(Array.isArray(n.items) && n.items.length){
+          n.items.forEach(it=>{
+            n.cures.push({id: it.id||uid(), title: it.text||'Kur',
+              dateFrom:'', dateTo:'', items:[], done:{}});
+          });
+        }
+        delete n.items;
+        n.cures.forEach(k=>{
+          if(!k.id) k.id = uid();
+          if(typeof k.title!=='string') k.title = 'Kur';
+          ['dateFrom','dateTo'].forEach(f=>{ if(typeof k[f]!=='string') k[f] = ''; });
+          if(!Array.isArray(k.items)) k.items = [];
+          if(!k.done || typeof k.done!=='object') k.done = {};
+          k.items.forEach(it=>{
+            if(!it.id) it.id = uid();
+            if(typeof it.text!=='string') it.text = '';
+            if(typeof it.dose!=='string') it.dose = '';
+            /* Frueher genau eine Tageszeit ('zeit'), jetzt mehrere ('zeiten') -
+               eine Anwendung kann morgens UND abends dran sein. */
+            if(!Array.isArray(it.zeiten)){
+              it.zeiten = KUR_ZEIT.some(z=>z.key===it.zeit) ? [it.zeit] : ['morgens'];
+            }
+            it.zeiten = it.zeiten.filter(z=>KUR_ZEIT.some(x=>x.key===z));
+            if(!it.zeiten.length) it.zeiten = ['morgens'];
+            delete it.zeit;
+            if(!Array.isArray(it.days)) it.days = [];
+            it.days = it.days.filter(d=>Number.isInteger(d) && d>=0 && d<=6);
+          });
+        });
       } else if(def.type==='study'){
         /* Der Lernplan haelt keine eigenen Daten mehr - er arbeitet auf den Modulen.
            Die Uebertragung alter Lernphasen passiert weiter unten, wenn die
@@ -1259,6 +1615,17 @@ function nodeOpenCount(nodeId, def){
     const mod = data.nodes['uni:module'];
     if(!mod || !Array.isArray(mod.items)) return 0;
     return mod.items.reduce((s,m)=>s + (m.topics||[]).filter(t=>!t.done).length, 0);
+  }
+  if(def.type==='training'){
+    /* offene Einheiten im Plan des laufenden Monats */
+    const w = (n.weeks||{})[isoToday().slice(0,7)];
+    if(!w) return 0;
+    return Object.values(w.days||{}).reduce((s,arr)=>
+      s + (arr||[]).filter(u=>!u.done).length, 0);
+  }
+  if(def.type==='cures'){
+    /* offene Anwendungen von heute, ueber alle laufenden Kuren */
+    return (n.cures||[]).reduce((s,k)=>s + cureTodayOpen(k), 0);
   }
   return (n.items||[]).filter(i=>!i.done).length;
 }
@@ -1422,6 +1789,8 @@ function renderMain(){
   else if(def.type==='modules')   renderModules(c, def);
   else if(def.type==='study')     renderStudy(c, def);
   else if(def.type==='margin')    renderMargin(c, def);
+  else if(def.type==='training')  renderTraining(c, def);
+  else if(def.type==='cures')     renderCures(c, def);
 }
 
 function renderBereichOverview(c, key){
@@ -3553,11 +3922,790 @@ function renderModulPlan(host, c, def, m){
 }
 
 /* ---------------- TÄGLICHER NOTIZZETTEL ---------------- */
+/* ---------------- SPORT: TRAININGSÜBERSICHT ----------------
+   Wochentabelle. Der Takt wiederholt sich oft, aber nicht immer - deshalb
+   hat jede Woche ihren eigenen Datensatz und man kann die Vorwoche
+   uebernehmen und dann anpassen, statt alles neu zu tippen. */
+const TR_TAGE      = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
+const TR_TAGE_KURZ = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+/* Die drei Fokus-Bereiche des Koerpers. Weitere hier ergaenzbar. */
+const TR_FOKUS = [
+  {key:'ok',    label:'Oberkörper', icon:'🏋️'},
+  {key:'bauch', label:'Bauch',      icon:'🎯'},
+  {key:'beine', label:'Beine',      icon:'🦵'}
+];
+function trFokus(k){ return TR_FOKUS.find(f=>f.key===k) || TR_FOKUS[0]; }
+
+/* Montag einer alten ISO-Woche ("2026-W31") als Date.
+   Nur noch fuer die Migration alter Wochenplaene auf Monatsschluessel. */
+function isoWeekMonday(key){
+  const [j, w] = key.split('-W').map(Number);
+  const jan4 = new Date(Date.UTC(j,0,4));
+  const wt = jan4.getUTCDay() || 7;
+  const montagW1 = new Date(jan4); montagW1.setUTCDate(jan4.getUTCDate() - wt + 1);
+  const d = new Date(montagW1); d.setUTCDate(montagW1.getUTCDate() + (w-1)*7);
+  return d;
+}
+/* Leerer Wochenplan: sieben Tage, jeder eine Liste von Einheiten. */
+function emptyTrainingWeek(){
+  const days = {};
+  for(let i=0;i<7;i++) days[i] = [];
+  return {days};
+}
+function getTrainingWeek(node, key, autoCreate){
+  if(node.weeks[key]) return node.weeks[key];
+  if(!autoCreate) return null;
+  node.weeks[key] = emptyTrainingWeek();
+  return node.weeks[key];
+}
+function trWeekStats(w){
+  if(!w) return {done:0, total:0};
+  let done=0, total=0;
+  Object.values(w.days||{}).forEach(arr=>(arr||[]).forEach(u=>{ total++; if(u.done) done++; }));
+  return {done, total};
+}
+
+/* Welche Woche gerade angezeigt wird - pro Unterpunkt gemerkt.
+   Anzeigezustand, kein Inhalt: wird bewusst nicht mitgespeichert. */
+const trWeekSel = {};
+/* In welcher Tageskarte die Eingabe gerade offen ist (0..6 oder null). */
+const trAddSel = {};
+/* Ebenso der angezeigte Kur-Tag, je Kur-Id. */
+const kurTagSel = {};
+/* Und der im Kalender angezeigte Monat, je Kur-Id ("YYYY-MM"). */
+const kurMonSel = {};
+/* true, solange eine fertige Kur zum Aendern wieder im Einrichten-Schritt ist. */
+const kurEinrichten = {};
+
+/* "August 2026" */
+function kurMonatName(ym){
+  const [j,m] = ym.split('-').map(Number);
+  return new Date(Date.UTC(j, m-1, 1))
+    .toLocaleDateString('de-DE',{month:'long', year:'numeric', timeZone:'UTC'});
+}
+function kurMonatShift(ym, delta){
+  const [j,m] = ym.split('-').map(Number);
+  const d = new Date(Date.UTC(j, m-1+delta, 1));
+  return d.getUTCFullYear() + '-' + String(d.getUTCMonth()+1).padStart(2,'0');
+}
+/* Zellen eines Monatsgitters, montagsbeginnend. Leere Felder als '' davor.
+   von/bis optional: dann werden Wochen ganz ausserhalb des Zeitraums weggelassen,
+   damit der Kalender nicht mit leeren Reihen anfaengt. */
+function kurMonatZellen(ym, von, bis){
+  const [j,m] = ym.split('-').map(Number);
+  const erster = new Date(Date.UTC(j, m-1, 1));
+  const vorlauf = (erster.getUTCDay() + 6) % 7;   /* Mo=0 */
+  const tageImMonat = new Date(Date.UTC(j, m, 0)).getUTCDate();
+  const zellen = [];
+  for(let i=0;i<vorlauf;i++) zellen.push('');
+  for(let d=1;d<=tageImMonat;d++){
+    zellen.push(j + '-' + String(m).padStart(2,'0') + '-' + String(d).padStart(2,'0'));
+  }
+  while(zellen.length % 7 !== 0) zellen.push('');
+  if(!von || !bis) return zellen;
+  /* Reihenweise pruefen: enthaelt die Woche keinen Tag der Kur, faellt sie weg. */
+  const reihen = [];
+  for(let i=0;i<zellen.length;i+=7) reihen.push(zellen.slice(i,i+7));
+  const behalten = reihen.filter(r=>r.some(ds=>ds && ds>=von && ds<=bis));
+  return (behalten.length ? behalten : reihen).flat();
+}
+
+function renderTraining(c, def){
+  const z = data.nodes[def.nodeId];
+  if(!z.weeks) z.weeks = {};
+  const heuteKey = isoToday().slice(0,7);      /* "2026-07" */
+  if(!trWeekSel[def.nodeId]) trWeekSel[def.nodeId] = heuteKey;
+  const key = trWeekSel[def.nodeId];
+  const w = getTrainingWeek(z, key, false);
+  const st = trWeekStats(w);
+  const istAktuell = key === heuteKey;
+  /* Heutiger Wochentag, Mo=0 - nur im laufenden Monat hervorheben */
+  const heuteIdx = (new Date().getDay() + 6) % 7;
+  const vorKey = kurMonatShift(key,-1);
+  const vorW = getTrainingWeek(z, vorKey, false);
+  const vorSt = trWeekStats(vorW);
+  /* Auswahlliste: vorhandene Monate plus die naechsten drei ab heute */
+  const monate = new Set(Object.keys(z.weeks));
+  for(let i=-1;i<=3;i++) monate.add(kurMonatShift(heuteKey,i));
+  monate.add(key);
+  const liste = [...monate].sort();
+
+  c.innerHTML = renderNodeHead(def,
+    st.total ? `${st.done} von ${st.total} erledigt` : 'Wochenplan pro Monat') + `
+    <div class="tr-monatbar">
+      <label class="tr-monatwahl">
+        <span class="kur-datelabel">Wochenplan für</span>
+        <select id="tr-monat">
+          ${liste.map(m=>`<option value="${m}"${m===key?' selected':''}>${
+            kurMonatName(m)}${m===heuteKey?' · dieser Monat':''}${
+            trWeekStats(z.weeks[m]).total?'':' (leer)'}</option>`).join('')}
+        </select>
+      </label>
+      ${!istAktuell?`<button class="ib-btn tr-heute" id="tr-heute">Dieser Monat</button>`:''}
+      ${st.total>0?`<button class="kur-del" id="tr-clear">Plan löschen</button>`:''}
+    </div>
+    ${st.total>0?`<div class="tr-progress"><div class="tr-progress-bar" style="width:${
+        st.total? Math.round(st.done/st.total*100):0}%"></div></div>`:''}
+    ${!w||st.total===0 ? `<div class="uni-hint">
+        Für ${kurMonatName(key)} ist noch kein Plan da. Trag unten ein, wie du in
+        diesem Monat trainierst – Fokus wählen, Übung dazu, fertig.${vorSt.total>0?`<br><br>
+        <button class="ib-btn primary" id="tr-copy">${kurMonatName(vorKey)} übernehmen
+        (${vorSt.total} Einheiten)</button>`:''}</div>` : ''}
+    <div class="tr-week">
+      ${TR_TAGE.map((tag,i)=>{
+        const arr = (w && w.days[i]) || [];
+        const alleFertig = arr.length>0 && arr.every(u=>u.done);
+        return `<div class="tr-day${i===heuteIdx&&istAktuell?' today':''}${
+                     alleFertig?' alldone':''}${arr.length===0?' empty':''}">
+          <div class="tr-day-head">
+            <span class="tr-day-name">${tag}</span>
+            <span class="tr-day-kurz">${TR_TAGE_KURZ[i]}</span>
+            ${i===heuteIdx&&istAktuell?'<span class="tr-day-today">heute</span>':''}
+            ${arr.length>0?`<span class="tr-day-count">${
+              arr.filter(u=>u.done).length}/${arr.length}</span>`:'<span class="tr-day-rest">Ruhetag</span>'}
+          </div>
+          ${arr.length?`<div class="tr-units">${arr.map(u=>{
+            const f = trFokus(u.fokus);
+            return `<div class="tr-unit${u.done?' done':''}" data-tag="${i}" data-uid="${u.id}">
+              <button class="tr-check" aria-label="erledigt">${u.done?`
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>`:''}</button>
+              <span class="tr-fokus f-${f.key}" title="${f.label}">${f.icon}<span
+                class="tr-fokus-label"> ${f.label}</span></span>
+              <button class="tr-del" aria-label="löschen">×</button>
+              <span class="tr-unit-text">${escapeHtml(u.text||'')}</span>
+              ${u.sets?`<span class="tr-sets">${escapeHtml(u.sets)}</span>`:''}
+            </div>`;
+          }).join('')}</div>`:''}
+          ${trAddSel[def.nodeId]===i ? `
+          <div class="tr-newbox">
+            <select class="tr-n-fokus" aria-label="Fokus">
+              ${TR_FOKUS.map(f=>`<option value="${f.key}">${f.icon} ${f.label}</option>`).join('')}
+            </select>
+            <input type="text" class="tr-n-text" placeholder="Übung, z. B. Bankdrücken" maxlength="60">
+            <input type="text" class="tr-n-sets" placeholder="Sätze, z. B. 4x8 @60kg" maxlength="30">
+            <div class="tr-newbox-btns">
+              <button class="ib-btn primary tr-n-add">Eintragen</button>
+              <button class="ib-btn tr-n-cancel">Abbrechen</button>
+            </div>
+          </div>` : `
+          <button class="tr-add-day" data-tag="${i}">+ Einheit</button>`}
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+
+  /* Monat waehlen */
+  document.getElementById('tr-monat').addEventListener('change',(e)=>{
+    trWeekSel[def.nodeId] = e.target.value; renderTraining(c, def); });
+  const hb = document.getElementById('tr-heute');
+  if(hb) hb.addEventListener('click',()=>{
+    trWeekSel[def.nodeId] = heuteKey; renderTraining(c, def); });
+
+  /* Vormonat uebernehmen - Haekchen werden dabei zurueckgesetzt. */
+  const cp = document.getElementById('tr-copy');
+  if(cp) cp.addEventListener('click',()=>{
+    const ziel = getTrainingWeek(z, key, true);
+    for(let i=0;i<7;i++){
+      ziel.days[i] = (vorW.days[i]||[]).map(u=>({
+        id:uid(), fokus:u.fokus, text:u.text, sets:u.sets, done:false}));
+    }
+    persist(); renderTraining(c, def); renderSidebar();
+  });
+
+  /* Plan des Monats loeschen - mit Rueckfrage, damit nichts aus Versehen weggeht. */
+  const cl = document.getElementById('tr-clear');
+  if(cl) cl.addEventListener('click',()=>{
+    if(cl.dataset.confirm==='1'){
+      delete z.weeks[key];
+      persist(); renderTraining(c, def); renderSidebar();
+    } else {
+      cl.dataset.confirm='1'; cl.textContent='Wirklich löschen?'; cl.classList.add('confirm');
+      setTimeout(()=>{ if(cl.dataset.confirm==='1'){
+        cl.dataset.confirm=''; cl.textContent='Plan löschen'; cl.classList.remove('confirm'); } }, 2500);
+    }
+  });
+
+  /* Abhaken */
+  c.querySelectorAll('.tr-unit .tr-check').forEach(btn=>btn.addEventListener('click',()=>{
+    const el = btn.closest('.tr-unit');
+    const arr = z.weeks[key].days[Number(el.dataset.tag)];
+    const u = arr.find(x=>x.id===el.dataset.uid);
+    if(u){ u.done = !u.done; persist(); renderTraining(c, def); renderSidebar(); }
+  }));
+  /* Loeschen */
+  c.querySelectorAll('.tr-unit .tr-del').forEach(btn=>btn.addEventListener('click',()=>{
+    const el = btn.closest('.tr-unit');
+    const tag = Number(el.dataset.tag);
+    z.weeks[key].days[tag] = z.weeks[key].days[tag].filter(x=>x.id!==el.dataset.uid);
+    persist(); renderTraining(c, def); renderSidebar();
+  }));
+
+  /* Eingabezeile erscheint unter dem gewaehlten Tag */
+  /* "+ Einheit": Eingabe erscheint IN der Tageskarte, nicht als neue Karte daneben. */
+  c.querySelectorAll('.tr-add-day').forEach(btn=>btn.addEventListener('click',()=>{
+    trAddSel[def.nodeId] = Number(btn.dataset.tag);
+    renderTraining(c, def);
+  }));
+  const box = c.querySelector('.tr-newbox');
+  if(box){
+    const tagIdx = trAddSel[def.nodeId];
+    box.querySelector('.tr-n-text').focus();
+    const add = ()=>{
+      const text = box.querySelector('.tr-n-text').value.trim();
+      if(!text){ box.querySelector('.tr-n-text').focus(); return; }
+      const woche = getTrainingWeek(z, key, true);
+      woche.days[tagIdx].push({id:uid(),
+        fokus: box.querySelector('.tr-n-fokus').value,
+        text, sets: box.querySelector('.tr-n-sets').value.trim(), done:false});
+      /* Eingabe bleibt offen: an einem Tag koennen mehrere Einheiten mit
+         verschiedenem Fokus stehen (kombiniertes Training). */
+      persist(); renderTraining(c, def); renderSidebar();
+    };
+    box.querySelector('.tr-n-add').addEventListener('click', add);
+    box.querySelector('.tr-n-cancel').addEventListener('click',()=>{
+      trAddSel[def.nodeId] = null; renderTraining(c, def); });
+    ['.tr-n-text','.tr-n-sets'].forEach(sel=>
+      box.querySelector(sel).addEventListener('keydown',(e)=>{
+        if(e.key==='Enter') add();
+        if(e.key==='Escape'){ trAddSel[def.nodeId] = null; renderTraining(c, def); }
+      }));
+  }
+}
+
+/* ---------------- SPORT: KUREN ----------------
+   Eine Kur laeuft von-bis. Die Anwendungen werden vorher definiert (was, wann,
+   an welchen Wochentagen) - danach wird nur noch abgehakt.
+   done: {"YYYY-MM-DD": {anwendungId: true}} - abgehakt je Tag. */
+
+/* Tageszeiten, damit der Ablauf eine Ordnung hat. */
+const KUR_ZEIT = [
+  {key:'morgens', label:'Morgens', icon:'🌅'},
+  {key:'mittags', label:'Mittags', icon:'☀️'},
+  {key:'abends',  label:'Abends',  icon:'🌙'}
+];
+function kurZeit(k){ return KUR_ZEIT.find(z=>z.key===k) || KUR_ZEIT[0]; }
+function kurZeitIdx(k){ const i = KUR_ZEIT.findIndex(z=>z.key===k); return i<0?0:i; }
+/* Tageszeiten einer Anwendung, immer als sortierte Liste.
+   Aeltere Daten hatten ein einzelnes Feld 'zeit' - das wird hier mitgelesen. */
+function kurZeiten(it){
+  const arr = Array.isArray(it.zeiten) ? it.zeiten : (it.zeit ? [it.zeit] : []);
+  const gueltig = arr.filter(z=>KUR_ZEIT.some(x=>x.key===z));
+  return (gueltig.length ? gueltig : ['morgens']).sort((a,b)=>kurZeitIdx(a)-kurZeitIdx(b));
+}
+/* Frueheste Tageszeit - zum Sortieren der Eintraege. */
+function kurErsteZeit(it){ return kurZeitIdx(kurZeiten(it)[0]); }
+
+/* Datum als YYYY-MM-DD in LOKALER Zeit.
+   Nicht toISOString() nehmen: das rechnet nach UTC um und liefert
+   bei uns (UTC+1/+2) fuer Mitternacht noch den Vortag. */
+function isoLocal(d){
+  return d.getFullYear() + '-'
+    + String(d.getMonth()+1).padStart(2,'0') + '-'
+    + String(d.getDate()).padStart(2,'0');
+}
+function isoToday(){ return isoLocal(new Date()); }
+/* Wochentag eines ISO-Datums, Mo=0. */
+function isoWeekday(ds){ return (new Date(ds+'T00:00:00').getDay() + 6) % 7; }
+/* Alle Tage der Kur als ISO-Strings. */
+function cureDays(k){
+  if(!k.dateFrom || !k.dateTo) return [];
+  const out = [];
+  const d = new Date(k.dateFrom+'T00:00:00');
+  const bis = new Date(k.dateTo+'T00:00:00');
+  let schutz = 0;
+  while(d <= bis && schutz++ < 400){
+    out.push(isoLocal(d));
+    d.setDate(d.getDate()+1);
+  }
+  return out;
+}
+/* Anwendungen, die an diesem Datum faellig sind. days leer = jeden Tag. */
+function cureItemsForDay(k, ds){
+  const wt = isoWeekday(ds);
+  return (k.items||[])
+    .filter(it=>!it.days || it.days.length===0 || it.days.includes(wt))
+    .sort((a,b)=>kurErsteZeit(a)-kurErsteZeit(b));
+}
+/* Ein Tag besteht aus einzelnen Faelligkeiten: je Anwendung und Tageszeit eine.
+   Eine Anwendung, die morgens UND abends dran ist, ergibt zwei Haken. */
+function cureSlotsForDay(k, ds){
+  const slots = [];
+  cureItemsForDay(k, ds).forEach(it=>{
+    kurZeiten(it).forEach(z=>slots.push({item: it, zeit: z, key: it.id + '@' + z}));
+  });
+  return slots.sort((a,b)=>kurZeitIdx(a.zeit)-kurZeitIdx(b.zeit));
+}
+/* Haken je Anwendung+Tageszeit. Alte Daten hakten nur je Anwendung ab -
+   dieser Haken gilt dann weiter fuer alle ihre Tageszeiten. */
+function cureIsDone(k, ds, key){
+  const tag = (k.done||{})[ds] || {};
+  if(tag[key]) return true;
+  const id = String(key).split('@')[0];
+  return !!tag[id] && id !== key;
+}
+/* Offene Anwendungen von heute - nur wenn die Kur gerade laeuft. */
+function cureTodayOpen(k){
+  const t = isoToday();
+  if(!k.dateFrom || !k.dateTo || t < k.dateFrom || t > k.dateTo) return 0;
+  return cureSlotsForDay(k, t).filter(s=>!cureIsDone(k, t, s.key)).length;
+}
+function cureStatus(k){
+  const t = isoToday();
+  if(!k.dateFrom || !k.dateTo) return {cls:'future', text:'Kein Zeitraum'};
+  if(t < k.dateFrom) return {cls:'future', text:'Startet noch'};
+  if(t > k.dateTo)   return {cls:'past',   text:'Abgeschlossen'};
+  const tage = cureDays(k);
+  const nr = tage.indexOf(t) + 1;
+  return {cls:'now', text:`Tag ${nr} von ${tage.length}`};
+}
+function cureRangeText(k){
+  if(!k.dateFrom || !k.dateTo) return 'Zeitraum offen';
+  const f = ds=>new Date(ds+'T00:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'short'});
+  return f(k.dateFrom) + ' – ' + f(k.dateTo);
+}
+/* Wie konsequent die Kur bisher lief - nur bis heute gezaehlt. */
+function cureProgress(k){
+  const t = isoToday();
+  let done=0, soll=0;
+  cureDays(k).filter(ds=>ds<=t).forEach(ds=>{
+    cureSlotsForDay(k, ds).forEach(s=>{ soll++; if(cureIsDone(k,ds,s.key)) done++; });
+  });
+  return {done, soll};
+}
+
+function renderCures(c, def){
+  const z = data.nodes[def.nodeId];
+  if(!z.cures) z.cures = [];
+  const sorted = [...z.cures].sort((a,b)=>(b.dateFrom||'').localeCompare(a.dateFrom||''));
+  /* Standardauswahl: laufende Kur, sonst die naechste */
+  if(!selectedEntry[def.nodeId] || !z.cures.some(k=>k.id===selectedEntry[def.nodeId])){
+    const next = sorted.find(k=>cureStatus(k).cls==='now')
+              || sorted.find(k=>cureStatus(k).cls==='future')
+              || sorted[0];
+    selectedEntry[def.nodeId] = next ? next.id : null;
+  }
+  const laufend = z.cures.filter(k=>cureStatus(k).cls==='now').length;
+  renderEntryLayout(c, {
+    def, entries: sorted,
+    selectedId: selectedEntry[def.nodeId],
+    listTitle: `Kuren · ${z.cures.length}`,
+    addLabel: '+ Neue Kur',
+    headMeta: laufend ? `${laufend} Kur(en) laufen` : `${z.cures.length} Kur(en)`,
+    emptyHint: 'Wähle links eine Kur oder lege eine neue an.',
+    itemInfo: k=>{
+      const st = cureStatus(k);
+      const offen = cureTodayOpen(k);
+      /* "heute erledigt" nur, wenn es heute ueberhaupt etwas gab - eine Kur ohne
+         Plan ist nicht fertig, sondern noch nicht eingerichtet. */
+      const heuteGeplant = st.cls==='now' ? cureSlotsForDay(k, isoToday()).length : 0;
+      let info = st.text;
+      if(st.cls==='now'){
+        if(!(k.items||[]).length)   info = 'Plan noch leer';
+        else if(!heuteGeplant)      info = st.text + ' · heute nichts geplant';
+        else if(offen)              info = offen + ' heute offen';
+        else                        info = 'heute erledigt';
+      }
+      return {title: k.title, status: st.cls, sub: `${cureRangeText(k)} · ${info}`};
+    },
+    onAdd: ()=>openCureForm(c, def, z),
+    renderDetail: (host, k)=>renderCureDetail(host, c, def, z, k)
+  });
+}
+
+/* Anlegen: Titel und Zeitraum. Die Anwendungen kommen danach im Detail. */
+function openCureForm(c, def, z){
+  selectedEntry[def.nodeId] = null;
+  showDetailMobile = true;
+  const sorted = [...z.cures].sort((a,b)=>(b.dateFrom||'').localeCompare(a.dateFrom||''));
+  renderEntryLayout(c, {
+    def, entries: sorted, selectedId: null,
+    listTitle: `Kuren · ${z.cures.length}`,
+    addLabel: '+ Neue Kur',
+    headMeta: `${z.cures.length} Kur(en)`,
+    itemInfo: k=>{
+      const st = cureStatus(k);
+      return {title:k.title, status:st.cls, sub:`${cureRangeText(k)} · ${st.text}`};
+    },
+    onAdd: ()=>openCureForm(c, def, z),
+    renderDetail: ()=>{}
+  });
+  /* Nur der Name - Zeitraum und Ablauf kommen danach als eigene Schritte. */
+  const detail = document.getElementById('entry-detail');
+  detail.innerHTML = `<button class="entry-back" id="entry-back">← Zurück zur Liste</button>
+    <h2 class="detail-title">Neue Kur</h2>
+    <div class="kur-new">
+      <label class="kur-datefield wide">
+        <span class="kur-datelabel">Wie heißt die Kur?</span>
+        <input type="text" id="kn-title" placeholder="z. B. Leberkur" maxlength="60">
+      </label>
+      <button class="ib-btn primary" id="kn-add">Weiter →</button>
+      <div class="kur-hint">Im nächsten Schritt legst du den Zeitraum fest und was
+        zur Kur gehört. Daraus wird dann die Tabelle erzeugt.</div>
+    </div>`;
+  document.getElementById('entry-back').addEventListener('click',()=>{ showDetailMobile=false; renderMain(); });
+  const ti = document.getElementById('kn-title');
+  ti.focus();
+  function create(){
+    const t = ti.value.trim();
+    if(!t) return;
+    const neu = {id:uid(), title:t, dateFrom:'', dateTo:'', items: [], done: {}};
+    z.cures.push(neu);
+    selectedEntry[def.nodeId] = neu.id;
+    kurEinrichten[neu.id] = true;
+    persist(); renderAll();
+  }
+  document.getElementById('kn-add').addEventListener('click', create);
+  ti.addEventListener('keydown',(e)=>{ if(e.key==='Enter') create(); });
+}
+
+/* Detail einer Kur. Zwei Zustaende, klar getrennt:
+   1. EINRICHTEN - Zeitraum und Ablauf festlegen, Schritt fuer Schritt.
+   2. TABELLE - erst wenn beides steht, wird der Kalender daraus erzeugt.
+   Der Wechsel zurueck ins Einrichten geht ueber "Kur ändern". */
+function renderCureDetail(host, c, def, z, k){
+  const fertigEingerichtet = !!(k.dateFrom && k.dateTo && (k.items||[]).length);
+  if(!fertigEingerichtet || kurEinrichten[k.id]){
+    return renderCureSetup(host, c, def, z, k);
+  }
+  return renderCureTable(host, c, def, z, k);
+}
+
+/* SCHRITT 1+2: Kur einstellen. Erst Zeitraum, dann der Ablauf.
+   Der zweite Schritt wird erst freigegeben, wenn der Zeitraum steht. */
+function renderCureSetup(host, c, def, z, k){
+  const tage = cureDays(k);
+  const hatZeitraum = tage.length > 0;
+  const hatAblauf = (k.items||[]).length > 0;
+
+  host.innerHTML = `
+    <button class="entry-back" id="entry-back">← Zurück zur Liste</button>
+    <div class="kur-head">
+      <h2 class="detail-title">${escapeHtml(k.title)}</h2>
+      <div class="kur-setup-info">Kur einstellen – danach wird die Tabelle daraus erzeugt.</div>
+    </div>
+
+    <div class="kur-schritt${hatZeitraum?' fertig':' aktiv'}">
+      <div class="kur-schritt-kopf">
+        <span class="kur-schritt-nr">${hatZeitraum?'✓':'1'}</span>
+        <span class="kur-schritt-titel">Von wann bis wann läuft die Kur?</span>
+      </div>
+      <div class="kur-schritt-inhalt">
+        <div class="kur-zeitraum">
+          <label class="kur-datefield">
+            <span class="kur-datelabel">Erster Tag</span>
+            <input type="date" id="kz-from" value="${k.dateFrom||''}">
+          </label>
+          <label class="kur-datefield">
+            <span class="kur-datelabel">Letzter Tag</span>
+            <input type="date" id="kz-to" value="${k.dateTo||''}">
+          </label>
+          ${hatZeitraum?`<span class="kur-zeitraum-info">${tage.length} Tage</span>`:''}
+        </div>
+      </div>
+    </div>
+
+    <div class="kur-schritt${!hatZeitraum?' gesperrt':(hatAblauf?' fertig':' aktiv')}">
+      <div class="kur-schritt-kopf">
+        <span class="kur-schritt-nr">${hatAblauf?'✓':'2'}</span>
+        <span class="kur-schritt-titel">Was gehört zur Kur – und an welchen Tagen?</span>
+      </div>
+      <div class="kur-schritt-inhalt">
+        ${!hatZeitraum?`<div class="kur-hint">Trag zuerst den Zeitraum oben ein.</div>`:`
+        ${hatAblauf?`<div class="kur-plan">
+          ${k.items.slice().sort((a,b)=>kurErsteZeit(a)-kurErsteZeit(b)).map(it=>{
+            const jeden = !it.days || it.days.length===0;
+            return `<div class="kur-planitem" data-iid="${it.id}">
+              <span class="kur-planitem-text">${escapeHtml(it.text)}
+                ${it.dose?`<span class="kur-dose">${escapeHtml(it.dose)}</span>`:''}</span>
+              <span class="kur-zeiten">${kurZeiten(it).map(z=>{
+                const zt = kurZeit(z);
+                return `<span class="kur-zeit z-${zt.key}">${zt.icon} ${zt.label}</span>`;
+              }).join('')}</span>
+              <span class="kur-days">${jeden?'täglich':
+                TR_TAGE_KURZ.map((d,i)=>it.days.includes(i)
+                  ? `<b>${d}</b>` : `<span class="off">${d}</span>`).join('')}</span>
+              <button class="kur-planitem-del" aria-label="löschen">×</button>
+            </div>`;
+          }).join('')}
+        </div>`:`<div class="kur-hint">
+          Noch nichts festgelegt. Trag ein, was gemacht werden muss – und an welchen
+          Tagen der Woche. Diese Tage wiederholen sich über die ganze Kur.</div>`}
+        <div class="kur-newitem">
+          <div class="kur-newitem-zeile">
+            <input type="text" class="ki-text" placeholder="Was? z. B. Mariendistel" maxlength="60">
+            <input type="text" class="ki-dose" placeholder="Menge, z. B. 2 Kapseln" maxlength="30">
+          </div>
+          <div class="ki-daypick">
+            <span class="ki-daypick-label">Wann am Tag? <em>mehrere möglich</em></span>
+            <div class="ki-days zeiten">
+              ${KUR_ZEIT.map(zz=>`<label class="ki-day">
+                <input type="checkbox" class="ki-zeit-box" value="${zz.key}"
+                  ${zz.key==='morgens'?'checked':''}><span>${zz.icon} ${zz.label}</span></label>`).join('')}
+            </div>
+          </div>
+          <div class="ki-daypick">
+            <span class="ki-daypick-label">An welchen Tagen? <em>nichts angeklickt = jeden Tag</em></span>
+            <div class="ki-days">
+              ${TR_TAGE_KURZ.map((d,i)=>`<label class="ki-day">
+                <input type="checkbox" class="ki-tag-box" value="${i}"><span>${d}</span></label>`).join('')}
+            </div>
+          </div>
+          <button class="ib-btn primary ki-add">Hinzufügen</button>
+        </div>`}
+      </div>
+    </div>
+
+    <div class="kur-setup-foot">
+      ${hatZeitraum && hatAblauf
+        ? `<button class="ib-btn primary kur-gross" id="kur-fertig">Tabelle erstellen →</button>`
+        : `<span class="kur-hint">Sobald Zeitraum und Ablauf stehen, kannst du die
+             Tabelle erstellen.</span>`}
+      <button class="kur-del" id="kur-del">Kur löschen</button>
+    </div>
+  `;
+
+  document.getElementById('entry-back').addEventListener('click',()=>{
+    showDetailMobile=false; renderMain(); });
+
+  /* Zeitraum */
+  ['kz-from','kz-to'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('change',()=>{
+      const von = document.getElementById('kz-from').value;
+      const bis = document.getElementById('kz-to').value;
+      k.dateFrom = von;
+      k.dateTo = (von && bis && bis < von) ? von : bis;
+      delete kurMonSel[k.id]; delete kurTagSel[k.id];
+      persist(); renderMain(); renderSidebar();
+    });
+  });
+
+  /* Ablauf-Eintrag hinzufuegen */
+  const addBtn = host.querySelector('.ki-add');
+  if(addBtn){
+    const doAdd = ()=>{
+      const txt = host.querySelector('.ki-text').value.trim();
+      if(!txt){ host.querySelector('.ki-text').focus(); return; }
+      const zeiten = [...host.querySelectorAll('.ki-zeit-box:checked')].map(i=>i.value);
+      if(!zeiten.length){
+        /* Ohne Tageszeit waere nichts faellig - wenigstens eine muss stehen. */
+        host.querySelector('.ki-zeit-box').closest('.ki-daypick').classList.add('fehlt');
+        setTimeout(()=>{ const el = host.querySelector('.ki-daypick.fehlt');
+          if(el) el.classList.remove('fehlt'); }, 1600);
+        return;
+      }
+      const days = [...host.querySelectorAll('.ki-tag-box:checked')].map(i=>Number(i.value));
+      if(!k.items) k.items = [];
+      k.items.push({id:uid(), zeiten,
+        text: txt, dose: host.querySelector('.ki-dose').value.trim(), days});
+      persist(); renderMain(); renderSidebar();
+    };
+    addBtn.addEventListener('click', doAdd);
+    ['.ki-text','.ki-dose'].forEach(sel=>
+      host.querySelector(sel).addEventListener('keydown',(e)=>{ if(e.key==='Enter') doAdd(); }));
+  }
+  host.querySelectorAll('.kur-planitem-del').forEach(btn=>btn.addEventListener('click',()=>{
+    const id = btn.closest('.kur-planitem').dataset.iid;
+    k.items = k.items.filter(x=>x.id!==id);
+    Object.keys(k.done||{}).forEach(ds=>{ delete k.done[ds][id]; });
+    persist(); renderMain(); renderSidebar();
+  }));
+
+  /* Fertig: Tabelle erzeugen */
+  const fb = document.getElementById('kur-fertig');
+  if(fb) fb.addEventListener('click',()=>{
+    kurEinrichten[k.id] = false; renderMain(); });
+
+  kurDeleteHandler(z, def, k);
+}
+
+/* SCHRITT 3: die Tabelle - erzeugt aus Zeitraum und Ablauf. */
+function renderCureTable(host, c, def, z, k){
+  const st = cureStatus(k);
+  const tage = cureDays(k);
+  const t = isoToday();
+  const pr = cureProgress(k);
+  /* Angezeigter Tag: heute, wenn die Kur laeuft - sonst erster Tag. */
+  if(!kurTagSel[k.id] || !tage.includes(kurTagSel[k.id])){
+    kurTagSel[k.id] = tage.includes(t) ? t : (tage[0]||'');
+  }
+  const tag = kurTagSel[k.id];
+  const tagNr = tage.indexOf(tag) + 1;
+  const heuteItems = tag ? cureSlotsForDay(k, tag) : [];
+  /* Angezeigter Kalendermonat: folgt dem gewaehlten Tag, bis man selbst blaettert. */
+  if(!kurMonSel[k.id]) kurMonSel[k.id] = (tag||k.dateFrom||isoToday()).slice(0,7);
+  const kalYm = kurMonSel[k.id];
+
+  /* Reine Tabellen-Ansicht: Kalender und Abhaken. Zum Aendern der Einstellungen
+     geht es ueber "Kur ändern" zurueck in den Einrichten-Schritt. */
+  host.innerHTML = `
+    <button class="entry-back" id="entry-back">← Zurück zur Liste</button>
+    <div class="kur-head">
+      <div class="kur-head-zeile">
+        <h2 class="detail-title">${escapeHtml(k.title)}</h2>
+        <button class="ib-btn kur-aendern" id="kur-aendern">Kur ändern</button>
+      </div>
+      <div class="kur-meta">
+        <span class="kur-badge st-${st.cls}">${st.text}</span>
+        <span class="kur-range">${cureRangeText(k)}</span>
+        ${pr.soll>0?`<span class="kur-quote">${pr.done}/${pr.soll} erledigt</span>`:''}
+      </div>
+    </div>
+
+    <div class="kur-buehne">
+      <div class="kur-calbar">
+        <button class="tr-wnav" id="kur-mprev" aria-label="Monat zurück">←</button>
+        <span class="kur-calmonth">${kurMonatName(kalYm)}</span>
+        <button class="tr-wnav" id="kur-mnext" aria-label="Monat vor">→</button>
+        <div class="kur-legende">
+          <span><i class="lg voll"></i> erledigt</span>
+          <span><i class="lg teil"></i> teilweise</span>
+          <span><i class="lg verpasst"></i> versäumt</span>
+          <span><i class="lg offen"></i> offen</span>
+        </div>
+      </div>
+      <div class="kur-cal">
+        ${TR_TAGE_KURZ.map(d=>`<div class="kur-cal-wt">${d}</div>`).join('')}
+        ${kurMonatZellen(kalYm, k.dateFrom, k.dateTo).map(ds=>{
+          if(!ds) return `<div class="kur-cal-leer"></div>`;
+          const drin = ds>=k.dateFrom && ds<=k.dateTo;
+          const items = drin ? cureSlotsForDay(k, ds) : [];
+          const fertig = items.filter(x=>cureIsDone(k,ds,x.key)).length;
+          /* Heute gilt nie als verpasst - der Tag laeuft noch. */
+          const zust = !drin ? 'aus'
+                     : items.length===0 ? 'frei'
+                     : fertig===items.length ? 'voll'
+                     : fertig>0 ? 'teil'
+                     : ds>=t ? 'offen' : 'verpasst';
+          return `<button class="kur-cal-tag z-${zust}${ds===tag?' sel':''}${ds===t?' heute':''}"
+            data-ds="${ds}"${drin?'':' disabled'}
+            title="${fmtDay(ds)}${items.length?' · '+fertig+'/'+items.length:''}">
+            <span class="kur-cal-nr">${Number(ds.slice(8,10))}</span>
+            ${items.length?`<span class="kur-cal-punkte">${
+              items.map(x=>`<i class="${cureIsDone(k,ds,x.key)?'an':''}"></i>`).join('')}</span>`:''}
+          </button>`;
+        }).join('')}
+      </div>
+
+      <div class="kur-tagbox">
+        <div class="kur-tagkopf">
+          <span class="kur-tagtitel">${tag===t?'Heute':fmtDay(tag)}</span>
+          <span class="kur-taginfo">Tag ${tagNr} von ${tage.length}${
+            tag>t?' · noch nicht dran':(tag<t?' · vergangen':'')}</span>
+        </div>
+        ${heuteItems.length===0?`<div class="kur-hint">
+          An diesem Tag ist nichts geplant.</div>`:`
+        <div class="kur-checks">
+          ${KUR_ZEIT.map(zt=>{
+            const dran = heuteItems.filter(s=>s.zeit===zt.key);
+            if(!dran.length) return '';
+            const alle = dran.every(s=>cureIsDone(k, tag, s.key));
+            return `<div class="kur-block${alle?' fertig':''}">
+              <div class="kur-block-kopf">
+                <span class="kur-zeit z-${zt.key}">${zt.icon} ${zt.label}</span>
+                <span class="kur-block-zahl">${
+                  dran.filter(s=>cureIsDone(k,tag,s.key)).length}/${dran.length}</span>
+              </div>
+              ${dran.map(s=>{
+                const done = cureIsDone(k, tag, s.key);
+                return `<div class="kur-check${done?' done':''}" data-slot="${s.key}">
+                  <button class="tr-check" aria-label="erledigt">${done?`
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>`:''}</button>
+                  <span class="kur-check-text">${escapeHtml(s.item.text)}
+                    ${s.item.dose?`<span class="kur-dose">${escapeHtml(s.item.dose)}</span>`:''}</span>
+                </div>`;
+              }).join('')}
+            </div>`;
+          }).join('')}
+        </div>`}
+      </div>
+    </div>
+
+    <!-- Was eingestellt ist, nur zum Nachlesen. Geaendert wird ueber "Kur ändern". -->
+    <div class="kur-uebersicht">
+      <div class="kur-section-label">Ablauf der Kur</div>
+      ${k.items.slice().sort((a,b)=>kurErsteZeit(a)-kurErsteZeit(b)).map(it=>{
+        const jeden = !it.days || it.days.length===0;
+        return `<div class="kur-planitem ruhig">
+          <span class="kur-planitem-text">${escapeHtml(it.text)}
+            ${it.dose?`<span class="kur-dose">${escapeHtml(it.dose)}</span>`:''}</span>
+          <span class="kur-zeiten">${kurZeiten(it).map(z=>{
+            const zt = kurZeit(z);
+            return `<span class="kur-zeit z-${zt.key}">${zt.icon} ${zt.label}</span>`;
+          }).join('')}</span>
+          <span class="kur-days">${jeden?'täglich':
+            TR_TAGE_KURZ.map((d,i)=>it.days.includes(i)
+              ? `<b>${d}</b>` : `<span class="off">${d}</span>`).join('')}</span>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+
+  document.getElementById('entry-back').addEventListener('click',()=>{
+    showDetailMobile=false; renderMain(); });
+  /* Zurueck in den Einrichten-Schritt */
+  document.getElementById('kur-aendern').addEventListener('click',()=>{
+    kurEinrichten[k.id] = true; renderMain(); });
+
+  /* Monat blaettern */
+  const mp = document.getElementById('kur-mprev');
+  if(mp) mp.addEventListener('click',()=>{
+    kurMonSel[k.id] = kurMonatShift(kalYm,-1); renderMain(); });
+  const mn = document.getElementById('kur-mnext');
+  if(mn) mn.addEventListener('click',()=>{
+    kurMonSel[k.id] = kurMonatShift(kalYm, 1); renderMain(); });
+  /* Tag im Kalender waehlen */
+  host.querySelectorAll('.kur-cal-tag').forEach(b=>b.addEventListener('click',()=>{
+    kurTagSel[k.id] = b.dataset.ds; renderMain(); }));
+
+  /* Abhaken - je Anwendung UND Tageszeit ein eigener Haken. */
+  host.querySelectorAll('.kur-check .tr-check').forEach(btn=>btn.addEventListener('click',()=>{
+    const key = btn.closest('.kur-check').dataset.slot;
+    if(!k.done) k.done = {};
+    if(!k.done[tag]) k.done[tag] = {};
+    if(cureIsDone(k, tag, key)){
+      delete k.done[tag][key];
+      /* Alter Sammel-Haken je Anwendung: beim Abwaehlen in Einzelhaken
+         aufloesen, sonst liesse er sich nie entfernen. */
+      const id = key.split('@')[0];
+      if(k.done[tag][id]){
+        delete k.done[tag][id];
+        cureSlotsForDay(k, tag).forEach(s=>{
+          if(s.item.id===id && s.key!==key) k.done[tag][s.key] = true;
+        });
+      }
+    } else {
+      k.done[tag][key] = true;
+    }
+    persist(); renderMain(); renderSidebar();
+  }));
+
+}
+
+/* Loeschen mit Rueckfrage - von Einrichten- und Tabellen-Ansicht genutzt. */
+function kurDeleteHandler(z, def, k){
+  const del = document.getElementById('kur-del');
+  if(!del) return;
+  del.addEventListener('click',()=>{
+    if(del.dataset.confirm==='1'){
+      z.cures = z.cures.filter(x=>x.id!==k.id);
+      selectedEntry[def.nodeId] = null;
+      delete kurEinrichten[k.id];
+      persist(); renderAll();
+    } else {
+      del.dataset.confirm='1'; del.textContent='Wirklich löschen?'; del.classList.add('confirm');
+      setTimeout(()=>{ if(del.dataset.confirm==='1'){
+        del.dataset.confirm=''; del.textContent='Kur löschen'; del.classList.remove('confirm'); } }, 2500);
+    }
+  });
+}
+
 function pruneDailyNotes(){
   const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-7);
-  const cutoffIso = cutoff.toISOString().slice(0,10);
+  const cutoffIso = isoLocal(cutoff);
   data.dailyNotes.days = data.dailyNotes.days.filter(d=>d.date>=cutoffIso);
-  const today = new Date().toISOString().slice(0,10);
+  const today = isoToday();
   if(!data.dailyNotes.days.find(d=>d.date===today)){
     data.dailyNotes.days.push({date:today, items:[]});
   }
@@ -3573,7 +4721,7 @@ function renderDailyNotes(c){
     </div>
     <div id="daily-days"></div>
   `;
-  const today = new Date().toISOString().slice(0,10);
+  const today = isoToday();
   document.getElementById('daily-date-add').addEventListener('click',()=>{
     const picked = document.getElementById('daily-date-input').value;
     if(!picked) return;
