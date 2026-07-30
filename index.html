@@ -795,6 +795,8 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .beispiel-weg:hover{border-color:var(--idea);color:var(--idea);}
 .beispiel-weg.confirm{border-color:var(--danger);color:var(--danger);border-style:solid;}
 .beispiel-weg[hidden]{display:none;}
+/* Gegenstueck: holt die Muster-Eintraege zurueck, wenn keine da sind. */
+.beispiel-her.confirm{border-color:var(--idea);color:var(--idea);border-style:solid;}
 
 /* ---- Cloud-Sync ---- */
 .cloud-status{width:100%;background:none;border:1px solid var(--sidebar-line);border-radius:7px;
@@ -1110,6 +1112,7 @@ tr.row-off .tt-num{text-decoration:line-through;}
     <div class="saeulen" id="saeulen"></div>
     <div class="sidebar-footer">
       <button class="beispiel-weg" id="beispiel-weg" hidden>🧹 Beispiele entfernen</button>
+      <button class="beispiel-weg beispiel-her" id="beispiel-her" hidden>➕ Beispiele anzeigen</button>
       <button class="cloud-status" id="cloud-status">○ Cloud aus</button>
       <div class="backup-row">
         <button class="backup-btn" id="export-btn">⬇ Exportieren</button>
@@ -1553,6 +1556,61 @@ function beispielDaten(nodes){
       sport:[{id:uid(), text:'Beispiel: 3x pro Woche Training', done:false}]
     }
   }];
+}
+
+/* Legt die Beispiele nachtraeglich an, ohne vorhandene Daten anzuruehren.
+   beispielDaten() setzt die Listen hart (nodes[..].trips = [..]) - das ist beim
+   ersten Start richtig, wuerde hier aber echte Eintraege ueberschreiben.
+   Darum: auf einer leeren Huelle erzeugen und das Ergebnis anhaengen.
+   Monats-Objekte (Ausgaben, Training) bekommen nur dann einen Beispiel-Monat,
+   wenn fuer diesen Monat noch nichts existiert - sonst bliebe der echte Monat
+   auf der Strecke. */
+function beispieleEinfuegen(){
+  const leer = {};
+  Object.keys(STRUKTUR).forEach(bereich=>{
+    STRUKTUR[bereich].forEach(def=>{
+      leer[bereich+':'+def.key] = emptyNodeContent(def.type);
+    });
+  });
+  const monate = beispielDaten(leer);
+  let dazu = 0;
+
+  Object.keys(leer).forEach(key=>{
+    const quelle = leer[key];
+    const ziel   = data.nodes[key];
+    if(!ziel) return;                          /* Bereich kennt die App (noch) nicht */
+    Object.keys(quelle).forEach(feld=>{
+      const v = quelle[feld];
+      if(Array.isArray(v) && v.length){
+        if(!Array.isArray(ziel[feld])) ziel[feld] = [];
+        /* Schon ein Beispiel in dieser Liste? Dann nicht nochmal - sonst haette
+           ein versehentlicher Doppeltipp alles doppelt drin. */
+        if(ziel[feld].some(x=>x && x.beispiel===true)) return;
+        ziel[feld].push(...v); dazu += v.length;
+      } else if(v && typeof v==='object'){
+        if(!ziel[feld] || typeof ziel[feld]!=='object') ziel[feld] = {};
+        Object.keys(v).forEach(k=>{
+          if(ziel[feld][k]===undefined){ ziel[feld][k] = v[k]; dazu++; }
+        });
+      }
+    });
+  });
+
+  /* Monatszettel nur, wenn der Monat noch keinen hat */
+  if(!Array.isArray(data.months)) data.months = [];
+  monate.forEach(m=>{
+    if(!data.months.some(x=>x.ym===m.ym)){ data.months.push(m); dazu++; }
+  });
+
+  /* Idee-Board: eine Musterkarte, falls das Board leer ist */
+  if(data.ideaBoard && Array.isArray(data.ideaBoard.items)
+     && !data.ideaBoard.items.some(i=>i.beispiel===true)){
+    data.ideaBoard.items.push({id:uid(), beispiel:true,
+      text:'Beispiel: Rohtext hier einwerfen, Kategorien lassen sich frei anlegen',
+      cat:null});
+    dazu++;
+  }
+  return dazu;
 }
 
 /* Entfernt alle Eintraege mit beispiel:true - egal in welcher Liste sie stecken.
@@ -5367,12 +5425,17 @@ function beispieleZaehlen(){
   durch(data);
   return n;
 }
+/* Immer nur einer der beiden Knoepfe ist sichtbar: sind Beispiele da, kann man
+   sie wegraeumen - sind keine da, kann man sie sich zeigen lassen. */
 function beispielKnopfZeigen(){
   const b = document.getElementById('beispiel-weg');
-  if(!b) return;
+  const h = document.getElementById('beispiel-her');
+  if(!b || !h) return;
   const n = beispieleZaehlen();
   b.hidden = n === 0;
+  h.hidden = n > 0;
   if(!b.dataset.confirm) b.textContent = '🧹 Beispiele entfernen';
+  if(!h.dataset.confirm) h.textContent = '➕ Beispiele anzeigen';
 }
 document.getElementById('beispiel-weg').addEventListener('click', function(){
   if(this.dataset.confirm==='1'){
@@ -5385,6 +5448,20 @@ document.getElementById('beispiel-weg').addEventListener('click', function(){
     setTimeout(()=>{ if(this.dataset.confirm==='1'){
       this.dataset.confirm=''; this.classList.remove('confirm');
       this.textContent='🧹 Beispiele entfernen'; } }, 2500);
+  }
+});
+
+document.getElementById('beispiel-her').addEventListener('click', function(){
+  if(this.dataset.confirm==='1'){
+    const dazu = beispieleEinfuegen();
+    this.dataset.confirm=''; this.classList.remove('confirm');
+    persist(); renderAll();
+    showSaveToast(dazu + ' Beispiel(e) eingefügt');
+  } else {
+    this.dataset.confirm='1'; this.textContent='Wirklich? Nochmal tippen'; this.classList.add('confirm');
+    setTimeout(()=>{ if(this.dataset.confirm==='1'){
+      this.dataset.confirm=''; this.classList.remove('confirm');
+      this.textContent='➕ Beispiele anzeigen'; } }, 2500);
   }
 });
 
