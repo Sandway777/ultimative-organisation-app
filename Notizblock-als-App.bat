@@ -52,28 +52,8 @@ if not defined BROWSER (
 REM --- Icon vorbereiten (PNG nach ICO ueber PowerShell) -------------------
 set "ICON=%~dp0notizblock.ico"
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$ErrorActionPreference='Stop';" ^
-  "$ico='%ICON%'; $png='%~dp0icon-512.png';" ^
-  "if(-not (Test-Path $ico)){" ^
-  "  Add-Type -AssemblyName System.Drawing;" ^
-  "  $src=[System.Drawing.Image]::FromFile($png);" ^
-  "  $bmp=New-Object System.Drawing.Bitmap 256,256;" ^
-  "  $g=[System.Drawing.Graphics]::FromImage($bmp);" ^
-  "  $g.InterpolationMode='HighQualityBicubic';" ^
-  "  $g.DrawImage($src,0,0,256,256); $g.Dispose();" ^
-  "  $ms=New-Object System.IO.MemoryStream;" ^
-  "  $bmp.Save($ms,[System.Drawing.Imaging.ImageFormat]::Png);" ^
-  "  $bytes=$ms.ToArray();" ^
-  "  $fs=[System.IO.File]::Create($ico);" ^
-  "  $w=New-Object System.IO.BinaryWriter($fs);" ^
-  "  $w.Write([UInt16]0); $w.Write([UInt16]1); $w.Write([UInt16]1);" ^
-  "  $w.Write([Byte]0); $w.Write([Byte]0); $w.Write([Byte]0); $w.Write([Byte]0);" ^
-  "  $w.Write([UInt16]1); $w.Write([UInt16]32);" ^
-  "  $w.Write([UInt32]$bytes.Length); $w.Write([UInt32]22);" ^
-  "  $w.Write($bytes); $w.Close(); $fs.Close();" ^
-  "  $bmp.Dispose(); $src.Dispose();" ^
-  "}" 2>nul
+REM Immer neu bauen, damit ein ausgetauschtes Logo auch ankommt.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0icon-bauen.ps1"
 
 REM --- Verknuepfung auf dem Desktop anlegen -------------------------------
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
@@ -92,6 +72,9 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
+
+REM Iconcache auffrischen - sonst zeigt der Desktop weiter das alte Bild.
+ie4uinit.exe -show >nul 2>&1
 
 echo.
 echo   Fertig. Auf dem Desktop liegt jetzt "%NAME%".
