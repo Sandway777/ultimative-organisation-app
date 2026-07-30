@@ -82,3 +82,17 @@ Beide Skripte prüfen vorher, ob überhaupt ein Remote verbunden ist, und melden
 falls nicht – dann wird ausschließlich lokal gespeichert. Wenn ein Stand
 scheinbar nicht auf GitHub landet, **zuerst `git remote -v` und `gh auth status`
 prüfen**: ohne Remote und ohne Anmeldung kann kein Push stattfinden.
+
+Remote: `https://github.com/Sandway777/ultimative-organisation-app.git`
+
+### Historie: zwei getrennte Anfänge (Juli 2026)
+
+Das lokale Repo wurde ursprünglich per `git init` neu angelegt, statt das
+bestehende GitHub-Repo zu klonen. Dadurch hatten beide Seiten **keinen gemeinsamen
+Vorfahren** – der Grund, warum `git pull --rebase` im Skript nie funktionieren
+konnte und der lokale Stand monatelang nicht in der Cloud landete.
+
+Aufgelöst am 30.07.2026: Der lokale Stand (3831 Zeilen, 10 Inhaltstypen, vier
+Säulen) war deutlich weiter als der GitHub-Stand (982 Zeilen, 3 Typen) und wurde
+zur neuen Wahrheit auf `main`. Der alte GitHub-Stand liegt weiterhin im Branch
+**`alter-stand-github`** – nicht löschen, das ist das Sicherheitsnetz.
