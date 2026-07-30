@@ -1667,9 +1667,15 @@ try{
   const g = localStorage.getItem('notizblock-collapsed');
   if(g) collapsedSaeulen = JSON.parse(g);
 }catch(e){}
-if(!collapsedSaeulen || typeof collapsedSaeulen!=='object'){
-  collapsedSaeulen = {};
+if(!collapsedSaeulen || typeof collapsedSaeulen!=='object') collapsedSaeulen = {};
+/* Einmalig alle Saeulen zuklappen. Geraete, die die App schon vorher offen
+   hatten, trugen im Speicher "aufgeklappt" - ohne diesen Schnitt blieben sie
+   dort fuer immer offen, egal was der Standard sagt. Danach zaehlt wieder,
+   was Leon selbst einstellt. */
+if(!collapsedSaeulen.__zuGesetzt){
   Object.keys(STRUKTUR).forEach(b=>{ collapsedSaeulen[b] = true; });
+  collapsedSaeulen.__zuGesetzt = true;
+  try{ localStorage.setItem('notizblock-collapsed', JSON.stringify(collapsedSaeulen)); }catch(e){}
 }
 function saveCollapsed(){
   try{ localStorage.setItem('notizblock-collapsed', JSON.stringify(collapsedSaeulen)); }catch(e){}
@@ -2901,19 +2907,22 @@ function renderSidebar(){
   /* Die vier Saeulen mit ihren festen Unterpunkten */
   const wrap = document.getElementById('saeulen');
   wrap.innerHTML = '';
-  /* Die Saeule, in der man gerade steckt, ist immer offen - man soll sehen,
-     wo man ist, ohne erst aufklappen zu muessen. */
-  const aktiveSaeule = (data.activeId||'').startsWith('bereich:')
-    ? data.activeId.slice(8)
-    : ((data.activeId||'').includes(':') ? data.activeId.split(':')[0] : null);
+  /* Zu bleibt zu - auch die Saeule, in der man gerade steckt. Vorher ging sie
+     automatisch auf, was das Zuklappen praktisch wirkungslos machte: sobald
+     man irgendwo drin war, stand ihre Liste wieder offen da. Wo man ist,
+     zeigen die Kopfzeile oben und die Markierung an der Saeule. */
   Object.keys(STRUKTUR).forEach(bereich=>{
-    const zu = !!collapsedSaeulen[bereich] && bereich !== aktiveSaeule;
+    const zu = !!collapsedSaeulen[bereich];
     const sec = document.createElement('div');
     sec.className = 'saeule '+bereich+(zu?' collapsed':'');
     /* Offene Punkte der ganzen Saeule - sichtbar auch wenn eingeklappt */
     const saeuleOpen = STRUKTUR[bereich].reduce((s,d)=>s+nodeOpenCount(bereich+':'+d.key, d), 0);
     const head = document.createElement('div');
-    head.className = 'saeule-head'+(data.activeId==='bereich:'+bereich?' active':'');
+    /* Auch markieren, wenn man in einem Unterpunkt dieser Saeule steckt -
+       bei zugeklappter Liste ist das der einzige Hinweis. */
+    const drin = data.activeId==='bereich:'+bereich
+              || (data.activeId||'').startsWith(bereich+':');
+    head.className = 'saeule-head'+(drin?' active':'');
     head.innerHTML = `
       <button class="saeule-toggle" aria-label="Bereich auf-/zuklappen">${zu?'▸':'▾'}</button>
       <span class="saeule-dot"></span>
@@ -2925,12 +2934,12 @@ function renderSidebar(){
       collapsedSaeulen[bereich] = !collapsedSaeulen[bereich];
       saveCollapsed(); renderSidebar();
     });
-    /* Auf die Saeule tippen zeigt ihre Uebersicht und klappt sie auf - sonst
-       muesste man zweimal tippen, um an die Unterpunkte zu kommen. */
+    /* Auf den Namen tippen zeigt die Bereichsuebersicht. Aufgeklappt wird nur
+       ueber den Pfeil - sonst klappt sich beim blossen Anschauen alles wieder
+       auf und das Zuklappen haelt nie. */
     head.addEventListener('click',()=>{
       data.activeId='bereich:'+bereich;
-      collapsedSaeulen[bereich] = false;
-      saveCollapsed(); renderAll(); persist();
+      renderAll(); persist();
     });
     sec.appendChild(head);
 
