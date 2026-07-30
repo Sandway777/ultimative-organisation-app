@@ -1,0 +1,3831 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notizblock</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#201E1A">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Dunkles Grundthema - warme, nicht blaustichige Grautoene passend zur Papier-Optik */
+  --paper:#141517;      /* Arbeitsflaeche */
+  --card:#1C1E21;       /* Karten, Tabellen, aktive Eintraege */
+  --card-2:#212428;     /* leicht abgesetzt (Eintragsliste) */
+  --ink:#E6E8EA;        /* Haupttext */
+  --ink-soft:#8D9299;   /* Sekundaertext */
+  --line:#2E3237;       /* Rahmen und Trenner */
+  --line-soft:#26292E;  /* feine Trenner in Listen */
+  --sidebar-bg:#0F1113; --sidebar-line:rgba(255,255,255,.07);
+  /* Bereichsfarben aufgehellt, damit sie auf Dunkel lesbar bleiben */
+  --privat:#E08060; --business:#4FA8A2; --uni:#8494CC; --sport:#7FB169; --danger:#E0708C;
+  --privat-bg:#33262A; --business-bg:#1D3335; --uni-bg:#252A3B; --sport-bg:#26312A;
+  --idea:#D9A648; --daily:#A06F94;
+  --field:#191B1E;      /* Eingabefelder */
+}
+*{box-sizing:border-box;}
+html,body{height:100%;margin:0;}
+body{font-family:'IBM Plex Sans',sans-serif;color:var(--ink);background:var(--sidebar-bg);}
+.app{display:flex;height:100vh;width:100%;}
+
+/* ---------- Sidebar ---------- */
+.sidebar{width:250px;flex-shrink:0;background:var(--sidebar-bg);color:#fff;display:flex;flex-direction:column;overflow-y:auto;}
+.sidebar-header{padding:18px 16px 10px;}
+.sidebar-title{font-family:'Fraunces',serif;font-weight:600;font-style:italic;font-size:1.3rem;}
+.main-actions{display:flex;flex-direction:column;gap:8px;padding:12px;border-top:1px solid var(--sidebar-line);flex-shrink:0;}
+.main-btn{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:12px;cursor:pointer;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);transition:.15s;}
+.main-btn:hover{background:rgba(255,255,255,.11);transform:translateY(-1px);}
+.main-btn-icon{width:32px;height:32px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  font-size:1rem;color:#fff;}
+.main-btn.ideaboard .main-btn-icon{background:var(--idea);}
+.main-btn.daily .main-btn-icon{background:var(--daily);}
+.main-btn.months .main-btn-icon{background:linear-gradient(135deg,var(--privat),var(--business),var(--uni),var(--sport));}
+.main-btn-text{min-width:0;}
+.main-btn-title{font-size:0.87rem;font-weight:600;color:rgba(255,255,255,.92);}
+.main-btn-sub{font-size:0.68rem;color:rgba(255,255,255,.48);margin-top:1px;}
+.main-btn.ideaboard.active{background:var(--idea);border-color:transparent;}
+.main-btn.daily.active{background:var(--daily);border-color:transparent;}
+.main-btn.months.active{background:rgba(255,255,255,.16);border-color:transparent;}
+.main-btn.active .main-btn-icon{background:rgba(255,255,255,.25);}
+.main-btn.active .main-btn-title{color:#fff;}
+.main-btn.active .main-btn-sub{color:rgba(255,255,255,.75);}
+
+/* Saeulen-Navigation: vier feste Bereiche mit ihren festen Unterpunkten */
+.saeulen{flex:1;overflow-y:auto;padding:6px 8px 12px;}
+.saeule{margin-bottom:14px;}
+.saeule-head{display:flex;align-items:center;gap:7px;width:100%;border:none;background:none;cursor:pointer;
+  padding:6px 8px 6px 4px;border-radius:7px;font-family:inherit;text-align:left;transition:.15s;}
+.saeule-head:hover{background:rgba(255,255,255,.07);}
+.saeule-toggle{border:none;background:none;cursor:pointer;flex-shrink:0;padding:2px 3px;line-height:1;
+  color:rgba(255,255,255,.4);font-size:0.7rem;border-radius:4px;transition:.13s;}
+.saeule-toggle:hover{color:#fff;background:rgba(255,255,255,.12);}
+.saeule-body{overflow:hidden;}
+.saeule.collapsed .saeule-body{display:none;}
+.saeule-badge{margin-left:auto;flex-shrink:0;min-width:18px;height:18px;padding:0 5px;border-radius:9px;
+  display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;
+  font-size:0.62rem;font-weight:600;background:rgba(255,255,255,.13);color:rgba(255,255,255,.8);}
+.saeule-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.saeule.privat .saeule-dot{background:var(--privat);} .saeule.business .saeule-dot{background:var(--business);}
+.saeule.uni .saeule-dot{background:var(--uni);}       .saeule.sport .saeule-dot{background:var(--sport);}
+.saeule-name{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:.09em;
+  color:rgba(255,255,255,.55);font-weight:500;}
+.saeule-head.active .saeule-name{color:#fff;}
+.saeule-head.active{background:rgba(255,255,255,.09);}
+
+.node-item{position:relative;display:flex;align-items:center;gap:9px;padding:8px 10px 8px 14px;margin:2px 0 0 6px;
+  border-radius:8px;cursor:pointer;transition:.15s;}
+.node-item::before{content:'';position:absolute;left:0;top:9px;bottom:9px;width:2px;border-radius:2px;
+  background:rgba(255,255,255,.14);transition:.15s;}
+.saeule.privat .node-item:hover::before,.saeule.privat .node-item.active::before{background:var(--privat);}
+.saeule.business .node-item:hover::before,.saeule.business .node-item.active::before{background:var(--business);}
+.saeule.uni .node-item:hover::before,.saeule.uni .node-item.active::before{background:var(--uni);}
+.saeule.sport .node-item:hover::before,.saeule.sport .node-item.active::before{background:var(--sport);}
+.node-item:hover{background:rgba(255,255,255,.07);}
+.node-item.active{background:var(--card);}
+.node-icon{font-size:0.9rem;flex-shrink:0;line-height:1;}
+.node-title{flex:1;min-width:0;font-size:0.85rem;color:rgba(255,255,255,.88);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.node-item.active .node-title{color:var(--ink);font-weight:600;}
+.node-badge{flex-shrink:0;min-width:19px;height:19px;padding:0 5px;border-radius:10px;display:flex;align-items:center;
+  justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;font-weight:600;
+  background:rgba(255,255,255,.15);color:rgba(255,255,255,.85);}
+.node-item.active .node-badge{background:var(--ink);color:var(--card);}
+
+.sidebar-footer{flex-shrink:0;padding:10px 14px 14px;border-top:1px solid var(--sidebar-line);}
+.backup-row{display:flex;gap:6px;}
+.backup-btn{flex:1;border:none;border-radius:6px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.9);
+  font-size:0.74rem;font-family:inherit;padding:7px 5px;cursor:pointer;}
+.backup-btn:hover{background:rgba(255,255,255,.22);}
+
+/* ---------- Main ---------- */
+.main{flex:1;display:flex;flex-direction:column;background:var(--paper);overflow:hidden;min-width:0;}
+.main-scroll{flex:1;overflow-y:auto;padding:30px 34px;display:flex;flex-direction:column;}
+.content{flex:1;min-height:0;display:flex;flex-direction:column;}
+/* Inhalt nutzt die Fensterbreite, bleibt aber lesbar begrenzt */
+.content{max-width:1600px;}
+/* Fliesstext-Ansichten (Idee-Board, Tageszettel) bleiben schmaler */
+.content.narrow{max-width:900px;}
+
+/* ---------- Eintragsliste innerhalb eines Unterpunkts ----------
+   Zweite Spalte: alle Eintraege eines Unterpunkts, rechts das Detail. */
+.entry-layout{display:flex;gap:0;height:100%;min-height:0;}
+.entry-list{width:264px;flex-shrink:0;border-right:1px solid var(--line);overflow-y:auto;
+  display:flex;flex-direction:column;background:var(--card-2);}
+.entry-list-head{padding:14px 16px 10px;flex-shrink:0;}
+.entry-list-title{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;text-transform:uppercase;
+  letter-spacing:.09em;color:var(--ink-soft);}
+.entry-list-body{flex:1;overflow-y:auto;padding:0 8px;}
+.entry-list-foot{flex-shrink:0;padding:10px 12px 14px;border-top:1px solid var(--line);}
+.entry-add-btn{width:100%;border:1px dashed var(--line);background:none;color:var(--ink-soft);border-radius:8px;
+  padding:9px;font-size:0.82rem;font-family:inherit;cursor:pointer;transition:.15s;}
+.entry-add-btn:hover{background:rgba(255,255,255,.05);border-color:var(--ink-soft);color:var(--ink);}
+.entry-item{position:relative;padding:10px 12px 10px 16px;border-radius:8px;cursor:pointer;margin-bottom:3px;transition:.13s;}
+.entry-item::before{content:'';position:absolute;left:5px;top:10px;bottom:10px;width:3px;border-radius:3px;background:transparent;}
+.entry-item:hover{background:rgba(255,255,255,.06);}
+.entry-item.active{background:var(--card);box-shadow:0 1px 4px rgba(0,0,0,.35);}
+.entry-item.active::before{background:var(--ink);}
+.entry-item.st-now::before{background:var(--business);}
+.entry-item.st-over::before{background:var(--danger);}
+.entry-item.st-soon::before{background:#C08A2E;}
+.entry-item.st-past::before{background:#454B52;}
+.entry-item-title{font-size:0.87rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.entry-item.st-past .entry-item-title{color:var(--ink-soft);}
+.entry-item-sub{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--ink-soft);margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* Jahres-Zeile: Sammelpunkt, darunter eingerueckt seine Monate */
+.entry-year{position:relative;padding:11px 12px 11px 14px;border-radius:8px;cursor:pointer;
+  margin:10px 0 4px;transition:.13s;background:rgba(255,255,255,.04);
+  border:1px solid var(--line);}
+.entry-year:first-child{margin-top:0;}
+.entry-year:hover{background:rgba(255,255,255,.08);}
+.entry-year.active{background:var(--card);border-color:var(--privat);box-shadow:0 1px 4px rgba(0,0,0,.35);}
+.entry-year{display:flex;align-items:center;gap:6px;}
+.entry-year-main{flex:1;min-width:0;}
+.entry-year-toggle{border:none;background:none;cursor:pointer;flex-shrink:0;padding:2px 4px;line-height:1;
+  color:var(--ink-soft);font-size:0.72rem;border-radius:4px;transition:.13s;}
+.entry-year-toggle:hover{color:var(--ink);background:rgba(255,255,255,.1);}
+.entry-year-title{font-size:0.86rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.entry-year-sub{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--ink-soft);margin-top:3px;}
+.entry-year.active .entry-year-title{color:var(--privat);}
+/* Monate unter ihrem Jahr eingerueckt */
+.entry-item.nested{margin-left:14px;padding-left:14px;}
+.entry-item.nested::before{left:3px;}
+/* display:block, damit Inhalte im Detail nicht vom Flex-Layout gestaucht werden */
+.entry-detail{flex:1;min-width:0;overflow-y:auto;padding:24px 30px;display:block;}
+.entry-empty{color:var(--ink-soft);font-size:0.88rem;font-style:italic;padding:30px 4px;}
+.entry-back{display:none;}
+/* Kopf des geoeffneten Eintrags */
+.detail-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;}
+.detail-head-main{flex:1;min-width:0;}
+.detail-title{font-family:'Fraunces',serif;font-weight:600;font-size:1.45rem;margin:0;overflow-wrap:break-word;}
+/* Zusammenfassung nur so breit wie noetig - nicht ueber die ganze Seite strecken */
+.detail-summary{margin-bottom:22px;max-width:640px;}
+.detail-summary table.trip-table{min-width:0;}
+.detail-summary tbody tr{cursor:default;}
+.detail-summary th,.detail-summary td{width:25%;}
+/* Auf sehr breiten Schirmen bleiben die Arbeitsspalten lesbar beieinander */
+.entry-detail .trip-cols{max-width:1100px;}
+.month-new{margin-top:4px;}
+
+.head-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px;}
+h1.zt{font-family:'Fraunces',serif;font-weight:600;font-size:1.9rem;margin:0;color:var(--ink);word-break:break-word;}
+.head-meta{font-size:0.78rem;color:var(--ink-soft);margin-bottom:16px;font-family:'IBM Plex Mono',monospace;}
+.del-btn{border:none;background:none;color:var(--ink-soft);font-size:1.05rem;cursor:pointer;padding:4px 6px;border-radius:6px;flex-shrink:0;}
+.del-btn:hover{background:#eee0dd;color:var(--danger);}
+
+.bereich-tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:0.68rem;font-weight:600;
+  letter-spacing:.03em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;margin-left:8px;color:#fff;}
+.bereich-tag.privat{background:var(--privat);} .bereich-tag.business{background:var(--business);} .bereich-tag.uni{background:var(--uni);}
+.bereich-tag.sport{background:var(--sport);}
+
+.content.bereich-privat h1.zt{color:var(--privat);}
+.content.bereich-privat .input-row input:focus{border-bottom-color:var(--privat);}
+.content.bereich-privat .mini-checkbox svg{stroke:var(--privat);}
+.content.bereich-privat .mini-item.done .mini-checkbox{border-color:var(--privat);background:var(--privat-bg);}
+.content.bereich-privat .input-row button{background:var(--privat);}
+
+.content.bereich-business h1.zt{color:var(--business);}
+.content.bereich-business .input-row input:focus{border-bottom-color:var(--business);}
+.content.bereich-business .mini-checkbox svg{stroke:var(--business);}
+.content.bereich-business .mini-item.done .mini-checkbox{border-color:var(--business);background:var(--business-bg);}
+.content.bereich-business .input-row button{background:var(--business);}
+
+.content.bereich-uni h1.zt{color:var(--uni);}
+.content.bereich-uni .input-row input:focus{border-bottom-color:var(--uni);}
+.content.bereich-uni .mini-checkbox svg{stroke:var(--uni);}
+.content.bereich-uni .mini-item.done .mini-checkbox{border-color:var(--uni);background:var(--uni-bg);}
+.content.bereich-uni .input-row button{background:var(--uni);}
+
+.content.bereich-sport h1.zt{color:var(--sport);}
+.content.bereich-sport .input-row input:focus{border-bottom-color:var(--sport);}
+.content.bereich-sport .mini-checkbox svg{stroke:var(--sport);}
+.content.bereich-sport .mini-item.done .mini-checkbox{border-color:var(--sport);background:var(--sport-bg);}
+.content.bereich-sport .input-row button{background:var(--sport);}
+.confirm-row{display:flex;align-items:center;gap:8px;font-size:0.82rem;flex-shrink:0;}
+.confirm-row button{border:none;border-radius:6px;padding:5px 11px;font-size:0.78rem;cursor:pointer;font-family:inherit;}
+.confirm-yes{background:var(--danger);color:#fff;} .confirm-no{background:#2A2E33;color:var(--ink);}
+.divider{height:1px;background:var(--line);margin:4px 0 18px;}
+.empty-lists{padding:40px 4px;text-align:center;color:var(--ink-soft);font-style:italic;}
+.empty-lists button{margin-top:14px;border:none;background:var(--ink);color:var(--paper);padding:9px 18px;border-radius:8px;font-family:inherit;cursor:pointer;}
+
+.ov-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;max-width:1200px;}
+.ov-card{position:relative;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:10px;
+  padding:18px 16px 16px;cursor:pointer;transition:.15s;}
+.ov-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.45);}
+.ov-card-bar{position:absolute;top:0;left:0;right:0;height:4px;}
+.ov-card-type{font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.04em;font-size:0.62rem;color:var(--ink-soft);margin-bottom:6px;}
+.ov-card-title{font-family:'Fraunces',serif;font-weight:600;font-size:1rem;margin-bottom:4px;
+  overflow-wrap:break-word;word-break:break-word;}
+.ov-card-sub{font-size:0.76rem;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;}
+
+/* generic mini checklist (used in checklist / month columns / trip days) */
+.input-row{display:flex;gap:8px;margin-bottom:10px;}
+.input-row input{flex:1;border:none;border-bottom:1px solid var(--line);background:transparent;font-size:0.95rem;
+  color:var(--ink);padding:6px 2px;outline:none;font-family:inherit;}
+.input-row input:focus{border-bottom-color:var(--ink);}
+.input-row button{border:none;background:var(--ink);color:var(--paper);width:28px;height:28px;border-radius:50%;
+  font-size:1.05rem;cursor:pointer;flex-shrink:0;}
+ul.mini-list{list-style:none;margin:0;padding:0;}
+.mini-item{display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid var(--line-soft);}
+.mini-item:last-child{border-bottom:none;}
+.mini-checkbox{width:16px;height:16px;border:2px solid var(--ink-soft);border-radius:4px;flex-shrink:0;cursor:pointer;
+  position:relative;margin-top:2px;}
+.mini-checkbox svg{position:absolute;inset:-3px;stroke:var(--ink);stroke-width:3;fill:none;stroke-linecap:round;
+  stroke-linejoin:round;stroke-dasharray:24;stroke-dashoffset:24;transition:.2s;}
+.mini-item.done .mini-checkbox{border-color:var(--ink);background:rgba(255,255,255,.06);}
+.mini-item.done .mini-checkbox svg{stroke-dashoffset:0;}
+.mini-text{flex:1;font-size:0.9rem;overflow-wrap:break-word;word-break:break-word;line-height:1.4;}
+.mini-item.done .mini-text{color:var(--ink-soft);text-decoration:line-through;}
+.mini-del{border:none;background:none;color:var(--ink-soft);font-size:1.05rem;cursor:pointer;opacity:.4;padding:2px 5px;flex-shrink:0;}
+.mini-del:hover{color:var(--danger);opacity:1;}
+.empty-mini{color:var(--ink-soft);font-size:0.85rem;font-style:italic;padding:4px 0;}
+
+/* checklist view */
+.footer-count{margin-top:14px;font-size:0.75rem;color:var(--ink-soft);}
+
+/* month view */
+.month-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+.month-col{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;}
+.month-col h3{font-family:'Fraunces',serif;font-size:1rem;margin:0 0 10px;display:flex;align-items:center;gap:6px;}
+.month-col.privat h3{color:var(--privat);} .month-col.business h3{color:var(--business);}
+.month-col.uni h3{color:var(--uni);} .month-col.sport h3{color:var(--sport);}
+@media(max-width:900px){.month-cols{grid-template-columns:1fr 1fr;}}
+@media(max-width:720px){.month-cols{grid-template-columns:1fr;}}
+
+/* reisen view */
+.trip-new{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:18px;
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.trip-new input[type=text]{flex:1;min-width:160px;border:none;border-bottom:1px solid var(--line);background:transparent;
+  font-family:inherit;font-size:0.95rem;color:var(--ink);padding:6px 2px;outline:none;}
+.trip-new input[type=text]:focus{border-bottom-color:var(--ink);}
+.trip-new-dates{display:flex;gap:6px;align-items:center;}
+.trip-new input[type=date]{border:1px solid var(--line);border-radius:7px;background:var(--field);font-family:inherit;
+  font-size:0.82rem;color:var(--ink);padding:6px 8px;outline:none;}
+.trip-arrow{color:var(--ink-soft);font-size:0.85rem;}
+.trip-card{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:12px;overflow:hidden;}
+.trip-head{display:flex;align-items:center;gap:10px;padding:14px 16px;}
+.trip-head-main{flex:1;min-width:0;}
+.trip-head h4{font-family:'Fraunces',serif;font-size:1.02rem;margin:0;color:var(--ink);overflow-wrap:break-word;}
+.trip-range-line{font-family:'IBM Plex Mono',monospace;font-size:0.76rem;color:var(--ink-soft);margin-top:3px;}
+.trip-toggle{border:none;background:none;color:var(--ink-soft);font-size:1rem;cursor:pointer;padding:4px 6px;flex-shrink:0;}
+.trip-del{flex-shrink:0;}
+.trip-body{display:none;padding:0 16px 16px;}
+.trip-card.open .trip-body{display:block;}
+.trip-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.trip-col h5{font-family:'Fraunces',serif;font-size:0.88rem;margin:0 0 8px;color:var(--ink-soft);
+  text-transform:uppercase;letter-spacing:.06em;}
+.dated-row{flex-wrap:wrap;}
+.dated-row .d-date{flex:0 0 auto;border:1px solid var(--line);border-radius:7px;background:var(--field);font-family:inherit;
+  font-size:0.78rem;color:var(--ink);padding:5px 7px;outline:none;}
+.dated-row .d-input{flex:1;min-width:110px;}
+.mini-date{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);flex-shrink:0;
+  margin-top:2px;white-space:nowrap;}
+.mini-item.done .mini-date{text-decoration:line-through;}
+@media(max-width:720px){.trip-cols{grid-template-columns:1fr;gap:20px;}}
+
+/* ---- Status-Ampel: einheitlich fuer Reisen und Fristen ----
+   over/now = jetzt wichtig, soon = naht, future = spaeter, past/done = erledigt */
+.tt-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;flex-shrink:0;
+  background:var(--ink-soft);vertical-align:middle;}
+.tt-dot.over{background:var(--danger);}
+.tt-dot.now{background:var(--business);}
+.tt-dot.soon{background:#C08A2E;}
+.tt-dot.future{background:var(--ink-soft);opacity:.5;}
+.tt-dot.past,.tt-dot.done{background:#565D65;}
+
+/* ---- Tabellarische Uebersicht (Reisen + Anträge) ---- */
+.tt-wrap{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow-x:auto;margin-bottom:20px;}
+table.trip-table{width:100%;border-collapse:collapse;font-size:0.86rem;min-width:520px;}
+table.trip-table th{font-family:'IBM Plex Mono',monospace;font-size:0.64rem;text-transform:uppercase;
+  letter-spacing:.09em;color:var(--ink-soft);font-weight:500;text-align:left;padding:11px 12px 8px;
+  border-bottom:1px solid var(--line);white-space:nowrap;}
+table.trip-table td{padding:11px 12px;border-bottom:1px solid var(--line-soft);vertical-align:middle;}
+table.trip-table th:first-child,table.trip-table td:first-child{padding-left:16px;}
+table.trip-table th:last-child, table.trip-table td:last-child{padding-right:16px;}
+table.trip-table tbody tr:last-child td{border-bottom:none;}
+table.trip-table tbody tr{cursor:pointer;transition:background .13s;}
+table.trip-table tbody tr:hover{background:rgba(255,255,255,.035);}
+.tt-status{white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:0.74rem;color:var(--ink-soft);}
+.tt-title{font-weight:600;overflow-wrap:break-word;}
+.tt-date{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;white-space:nowrap;}
+.tt-num{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;white-space:nowrap;color:var(--ink-soft);}
+.tt-open{display:inline-block;min-width:20px;padding:1px 6px;border-radius:10px;text-align:center;
+  background:var(--ink);color:var(--card);font-size:0.7rem;font-weight:600;}
+/* laufende und ueberfaellige Zeilen hervorheben */
+tr.row-now{background:var(--business-bg)!important;}
+tr.row-now .tt-title{color:var(--business);}
+tr.row-over{background:rgba(224,112,140,.13)!important;}
+tr.row-over .tt-title{color:var(--danger);}
+tr.row-soon .tt-title{color:#8A5A2E;}
+tr.row-past,tr.row-done,tr.is-done{opacity:.5;}
+tr.is-done .dl-text{text-decoration:line-through;}
+/* erledigte Zeile: Haken sichtbar fuellen (die done-Klasse sitzt hier auf dem <tr>) */
+tr.is-done .mini-checkbox{border-color:var(--ink);background:rgba(255,255,255,.06);}
+tr.is-done .mini-checkbox svg{stroke-dashoffset:0;}
+
+/* Statusstreifen links an der Reise-Karte */
+.trip-card{border-left:3px solid transparent;}
+.trip-card.status-now{border-left-color:var(--business);}
+.trip-card.status-over{border-left-color:var(--danger);}
+.trip-card.status-soon{border-left-color:#C08A2E;}
+.trip-card.status-past{border-left-color:#454B52;}
+.trip-badge{display:inline-block;margin-left:9px;padding:2px 8px;border-radius:20px;vertical-align:middle;
+  font-family:'IBM Plex Mono',monospace;font-size:0.62rem;font-weight:600;letter-spacing:.03em;
+  background:#2A2E33;color:var(--ink-soft);}
+.trip-badge.now{background:var(--business);color:#fff;}
+.trip-badge.soon{background:#463A22;color:#E8C77E;}
+.trip-badge.over{background:var(--danger);color:#fff;}
+
+/* ---- Anträge / Fristen ---- */
+.dl-new{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:18px;
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.dl-new input[type=text]{flex:1;min-width:150px;border:none;border-bottom:1px solid var(--line);background:transparent;
+  font-family:inherit;font-size:0.92rem;color:var(--ink);padding:6px 2px;outline:none;}
+.dl-new input[type=text]:focus{border-bottom-color:var(--privat);}
+.dl-new-date{display:flex;gap:7px;align-items:center;}
+.dl-new-date label{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--ink-soft);}
+.dl-new input[type=date]{border:1px solid var(--line);border-radius:7px;background:var(--field);font-family:inherit;
+  font-size:0.82rem;color:var(--ink);padding:6px 8px;outline:none;}
+.dl-check{width:34px;padding-right:0!important;padding-left:16px!important;}
+.dl-check .mini-checkbox{display:block;margin-top:0;}
+.dl-new input#dl-text{flex:1.4 1 200px;}
+
+/* Frist im Antragskopf */
+.dl-detail-meta{display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap;}
+.dl-frist-txt{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:var(--ink-soft);}
+#dl-due-edit{border:1px solid var(--line);border-radius:7px;background:var(--field);color:var(--ink);
+  font-family:inherit;font-size:0.78rem;padding:5px 8px;outline:none;}
+.editable-title{cursor:text;border-radius:6px;padding:1px 6px;margin-left:-6px;transition:background .13s;}
+.editable-title:hover{background:rgba(255,255,255,.06);}
+.dl-title-input{width:100%;border:1px solid var(--privat);border-radius:6px;background:var(--field);
+  color:var(--ink);font-family:'Fraunces',serif;font-weight:600;font-size:1.35rem;padding:2px 8px;outline:none;}
+
+/* Statusleiste: vier Stufen des Behoerdenwegs */
+.dl-steps-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:22px;max-width:820px;}
+.dl-step{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;
+  border:1px solid var(--line);background:var(--card);border-radius:9px;padding:10px 12px;cursor:pointer;
+  font-family:inherit;transition:.15s;}
+.dl-step:hover{border-color:var(--ink-soft);}
+.dl-step-icon{font-size:0.9rem;color:var(--ink-soft);line-height:1;}
+.dl-step-label{font-size:0.84rem;font-weight:600;color:var(--ink);}
+.dl-step-hint{font-size:0.66rem;color:var(--ink-soft);line-height:1.3;}
+.dl-step.passed{background:var(--business-bg);border-color:transparent;}
+.dl-step.passed .dl-step-icon{color:var(--business);}
+.dl-step.active{background:var(--privat);border-color:transparent;}
+.dl-step.active .dl-step-icon,.dl-step.active .dl-step-label{color:#fff;}
+.dl-step.active .dl-step-hint{color:rgba(255,255,255,.8);}
+@media(max-width:900px){.dl-steps-bar{grid-template-columns:1fr 1fr;}}
+
+/* Schritte und Unterlagen nebeneinander */
+.dl-cols{display:grid;grid-template-columns:1fr 1fr;gap:22px;max-width:1100px;margin-bottom:22px;}
+.dl-col h5{font-family:'Fraunces',serif;font-size:0.92rem;margin:0 0 10px;color:var(--ink);
+  display:flex;align-items:center;gap:8px;}
+.dl-rest{font-family:'IBM Plex Mono',monospace;font-size:0.64rem;font-weight:600;text-transform:uppercase;
+  letter-spacing:.05em;background:var(--privat-bg);color:var(--privat);padding:2px 8px;border-radius:20px;}
+@media(max-width:820px){.dl-cols{grid-template-columns:1fr;gap:20px;}}
+
+/* Notizfeld */
+.dl-note-box{max-width:1100px;}
+.dl-note-box h5{font-family:'Fraunces',serif;font-size:0.92rem;margin:0 0 10px;color:var(--ink);}
+#dl-note,#id-note,#sp-ziel,#sp-fokus{width:100%;min-height:100px;height:100px;resize:vertical;
+  border:1px solid var(--line);border-radius:9px;flex-shrink:0;
+  padding:11px 13px;font-family:inherit;font-size:0.88rem;background:var(--card);color:var(--ink);
+  line-height:1.55;outline:none;}
+#dl-note:focus,#id-note:focus,#sp-ziel:focus,#sp-fokus:focus{border-color:var(--privat);}
+.dl-note-box{flex-shrink:0;}
+
+/* ---- Business: Aufgaben ---- */
+.tsk-list{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;
+  margin-bottom:18px;max-width:1200px;}
+.tsk-row{display:flex;align-items:center;gap:11px;padding:11px 16px;border-bottom:1px solid var(--line-soft);}
+.tsk-row:last-child{border-bottom:none;}
+.tsk-row.done{opacity:.45;}
+.tsk-row.done .tsk-text{text-decoration:line-through;}
+.tsk-prio{display:flex;align-items:center;flex-shrink:0;cursor:pointer;font-family:'IBM Plex Mono',monospace;
+  font-size:0.66rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);
+  padding:3px 8px;border-radius:20px;transition:.13s;min-width:76px;}
+.tsk-prio:hover{background:rgba(255,255,255,.07);}
+.tsk-prio.p-hoch{color:var(--danger);}
+.tsk-text{flex:1;min-width:0;font-size:0.9rem;overflow-wrap:break-word;cursor:text;
+  border-radius:5px;padding:2px 5px;margin:-2px -5px;transition:background .13s;}
+.tsk-text:hover{background:rgba(255,255,255,.06);}
+.tsk-tag{flex-shrink:0;font-size:0.7rem;padding:2px 9px;border-radius:20px;
+  background:var(--business-bg);color:var(--business);}
+.tsk-due{flex-shrink:0;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);
+  min-width:74px;text-align:right;}
+.tsk-due.over{color:var(--danger);font-weight:600;}
+.tsk-due.soon{color:#D9A648;}
+.tsk-new{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;max-width:1200px;}
+.tsk-new input[type=text]{border:none;border-bottom:1px solid var(--line);background:transparent;
+  font-family:inherit;font-size:0.92rem;color:var(--ink);padding:6px 2px;outline:none;}
+.tsk-new input#tk-text{flex:1;min-width:180px;}
+.tsk-new input#tk-tag{width:140px;}
+.tsk-new input[type=text]:focus{border-bottom-color:var(--business);}
+.tsk-new select,.tsk-new input[type=date]{border:1px solid var(--line);border-radius:7px;background:var(--field);
+  color:var(--ink);font-family:inherit;font-size:0.82rem;padding:7px 9px;outline:none;}
+@media(max-width:820px){
+  .tsk-new{flex-direction:column;align-items:stretch;}
+  .tsk-new input,.tsk-new select,.tsk-new .ib-btn{width:100%;}
+  .tsk-tag{display:none;}
+}
+
+/* ---- Uni: Hinweis fuer noch leere Bereiche ---- */
+.uni-hint{background:var(--card);border:1px dashed var(--line);border-radius:10px;padding:14px 16px;
+  margin-bottom:18px;max-width:820px;font-size:0.86rem;color:var(--ink-soft);line-height:1.5;flex-shrink:0;}
+
+/* ---- Uni: Stundenplan als Wochenraster ---- */
+.tt-grid-wrap{overflow-x:auto;margin-bottom:18px;flex-shrink:0;}
+.tt-grid{display:grid;grid-template-columns:58px repeat(5, minmax(120px, 1fr));
+  background:var(--card);border:1px solid var(--line);border-radius:10px;min-width:700px;
+  position:relative;overflow:hidden;}
+.tt-corner{grid-column:1;grid-row:1;border-bottom:1px solid var(--line);}
+.tt-head{padding:10px 8px;text-align:center;border-bottom:1px solid var(--line);
+  border-left:1px solid var(--line-soft);font-family:'IBM Plex Mono',monospace;
+  font-size:0.68rem;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft);}
+.tt-head-kurz{display:none;}
+.tt-hour{padding:4px 8px;text-align:right;font-family:'IBM Plex Mono',monospace;
+  font-size:0.68rem;color:var(--ink-soft);border-top:1px solid var(--line-soft);}
+.tt-cell{border-top:1px solid var(--line-soft);border-left:1px solid var(--line-soft);}
+.tt-slot{position:relative;z-index:2;margin:2px 3px;padding:5px 7px;border-radius:6px;
+  background:var(--uni);color:#fff;cursor:pointer;overflow:hidden;transition:.13s;
+  box-shadow:0 1px 4px rgba(0,0,0,.3);}
+.tt-slot:hover{filter:brightness(1.12);}
+.tt-slot.confirm{background:var(--danger);}
+.tt-slot-titel{font-size:0.78rem;font-weight:600;line-height:1.25;overflow-wrap:break-word;}
+.tt-slot-meta{font-family:'IBM Plex Mono',monospace;font-size:0.63rem;
+  color:rgba(255,255,255,.85);margin-top:2px;}
+@media(max-width:820px){
+  .tt-head-lang{display:none;} .tt-head-kurz{display:inline;}
+  .tt-grid{min-width:540px;grid-template-columns:44px repeat(5, minmax(94px, 1fr));}
+}
+
+/* ---- Uni: Pruefungen ---- */
+.ex-table{min-width:760px;}
+.ex-status{white-space:nowrap;cursor:pointer;font-family:'IBM Plex Mono',monospace;
+  font-size:0.7rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);
+  transition:background .13s;}
+.ex-status:hover{background:rgba(255,255,255,.07);}
+.ex-rest{display:inline-block;margin-left:7px;font-family:'IBM Plex Mono',monospace;
+  font-size:0.64rem;padding:1px 6px;border-radius:20px;background:#2A2E33;color:var(--ink-soft);}
+.ex-rest.over{background:rgba(224,112,140,.2);color:var(--danger);font-weight:600;}
+.ex-rest.soon{background:#463A22;color:#E8C77E;}
+.ex-rest.past{opacity:.6;}
+
+/* ---- Uni: Lernplan / Lernphasen ---- */
+.sp-form{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;
+  display:flex;flex-direction:column;gap:12px;max-width:520px;}
+.sp-form input[type=text]{border:none;border-bottom:1px solid var(--line);background:transparent;
+  font-family:inherit;font-size:0.95rem;color:var(--ink);padding:6px 2px;outline:none;}
+.sp-form input[type=text]:focus{border-bottom-color:var(--uni);}
+.sp-dates{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.sp-dates label{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--ink-soft);}
+.sp-dates input,#sp-von-e,#sp-bis-e{border:1px solid var(--line);border-radius:7px;background:var(--field);
+  color:var(--ink);font-family:inherit;font-size:0.82rem;padding:6px 8px;outline:none;}
+.sp-cols{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:1100px;margin-bottom:22px;
+  flex-shrink:0;}
+.sp-col h5{font-family:'Fraunces',serif;font-size:0.92rem;margin:0 0 12px;
+  display:flex;align-items:center;gap:9px;}
+/* Hinweis in der Semester-Liste, wenn ein Semester leer ist */
+.sp-sem-leer{margin:0 0 4px 20px;padding:5px 12px;font-size:0.76rem;font-style:italic;color:var(--ink-soft);}
+
+/* Semesteruebersicht: Modulkarten */
+.sp-mod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;
+  max-width:1200px;flex-shrink:0;}
+.sp-mod-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;
+  cursor:pointer;transition:.14s;border-top:3px solid var(--uni);}
+.sp-mod-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.45);border-color:var(--uni);}
+.sp-card-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:7px;}
+.sp-card-titel{font-family:'Fraunces',serif;font-weight:600;font-size:1rem;overflow-wrap:break-word;}
+.sp-card-cp{flex-shrink:0;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);}
+.sp-card-pruef{font-size:0.78rem;color:var(--ink-soft);margin-bottom:10px;}
+.sp-card-foot{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--ink-soft);margin-top:6px;}
+
+/* Pruefungsblock im Modul-Lernplan */
+.sp-pruef-box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;
+  margin-bottom:22px;max-width:1100px;flex-shrink:0;}
+.sp-pruef-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  flex-wrap:wrap;margin-bottom:14px;}
+.sp-pruef-head h5{font-family:'Fraunces',serif;font-size:0.98rem;margin:0;}
+.sp-pruef-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;}
+.sp-pf .exp-sum-label{margin-bottom:5px;}
+.sp-pf select,.sp-pf input{width:100%;border:1px solid var(--line);border-radius:7px;background:var(--field);
+  color:var(--ink);font-family:inherit;font-size:0.85rem;padding:7px 9px;outline:none;}
+.sp-pf select:focus,.sp-pf input:focus{border-color:var(--uni);}
+.sp-pf-val{font-family:'IBM Plex Mono',monospace;font-size:1.05rem;font-weight:600;padding:4px 0 2px;}
+.sp-pf-val .exp-sum-note{display:inline;margin-left:6px;font-size:0.7rem;}
+@media(max-width:820px){.sp-cols{grid-template-columns:1fr;gap:20px;}}
+
+/* ---- Uni: Module ---- */
+.mod-table{min-width:640px;}
+.mod-ziel{font-size:0.62em;color:var(--ink-soft);font-weight:400;}
+.mod-bar{height:6px;border-radius:3px;background:rgba(255,255,255,.1);margin:8px 0 6px;overflow:hidden;}
+.mod-bar-fill{height:100%;border-radius:3px;background:var(--uni);transition:width .3s;}
+.mod-note{font-weight:600;}
+tr.row-done .tt-title{color:var(--ink-soft);}
+
+/* ---- Business: Optimierungen ---- */
+.opt-list{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;
+  margin-bottom:18px;max-width:1200px;}
+.opt-row{display:flex;align-items:flex-start;gap:11px;padding:11px 16px;border-bottom:1px solid var(--line-soft);}
+.opt-row:last-child{border-bottom:none;}
+.opt-row.done{opacity:.45;}
+.opt-row.done .opt-text{text-decoration:line-through;}
+.opt-bereich{flex-shrink:0;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:0.64rem;
+  text-transform:uppercase;letter-spacing:.05em;padding:3px 9px;border-radius:20px;margin-top:1px;
+  background:var(--business-bg);color:var(--business);transition:.13s;min-width:84px;text-align:center;}
+.opt-bereich:hover{filter:brightness(1.25);}
+.opt-text{flex:1;min-width:0;font-size:0.9rem;line-height:1.45;overflow-wrap:break-word;cursor:text;
+  border-radius:5px;padding:2px 5px;margin:-2px -5px;transition:background .13s;white-space:pre-wrap;}
+.opt-text:hover{background:rgba(255,255,255,.06);}
+.opt-edit{width:100%;border:1px solid var(--business);border-radius:6px;background:var(--field);
+  color:var(--ink);font-family:inherit;font-size:0.9rem;padding:5px 8px;outline:none;
+  resize:vertical;line-height:1.45;}
+
+/* ---- Business: Marge ---- */
+.mg-plat-switch{display:inline-flex;gap:4px;background:var(--card);border:1px solid var(--line);
+  border-radius:9px;padding:4px;margin-bottom:18px;}
+.mg-plat{border:none;background:none;cursor:pointer;font-family:inherit;font-size:0.88rem;
+  color:var(--ink-soft);padding:8px 22px;border-radius:6px;transition:.13s;}
+.mg-plat:hover{color:var(--ink);}
+.mg-plat.active{background:var(--business);color:#fff;font-weight:600;}
+.mg-fees{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;
+  margin-bottom:20px;max-width:820px;}
+.mg-fees-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  flex-wrap:wrap;margin-bottom:12px;}
+.mg-fees-head h5{font-family:'Fraunces',serif;font-size:0.98rem;margin:0;}
+.mg-fee-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-soft);}
+.mg-fee-row:last-child{border-bottom:none;}
+.mg-fee-label{flex:1;min-width:0;font-size:0.88rem;}
+.mg-fee-val{width:82px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:0.84rem;
+  color:var(--ink-soft);flex-shrink:0;}
+.mg-fee-beispiel{width:92px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:0.76rem;
+  color:var(--business);flex-shrink:0;}
+.mg-f-label{flex:1;min-width:130px;}
+.mg-f-pct,.mg-f-fix{width:78px;font-family:'IBM Plex Mono',monospace;}
+/* Tabelle waechst mit dem Inhalt; nur seitlich scrollen wenn zu schmal.
+   flex-shrink:0 verhindert, dass das Flex-Layout sie zusammendrueckt. */
+.mg-table-wrap{max-width:100%;margin-bottom:18px;overflow-x:auto;overflow-y:visible;flex-shrink:0;}
+.mg-table{min-width:820px;}
+.mg-table td{padding:9px 12px;}
+.mg-cell{cursor:text;transition:background .13s;}
+.mg-cell:hover{background:rgba(255,255,255,.07);}
+.mg-groesse{font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:var(--ink-soft);}
+.mg-fee-col{color:var(--ink-soft);}
+.mg-table tbody tr{cursor:default;}
+.mg-table tr.mg-group-start td{border-top:1px solid var(--line);}
+.mg-table tbody tr:first-child td{border-top:none;}
+.mg-empty{text-align:center;color:var(--ink-soft);font-style:italic;padding:22px!important;}
+.mg-gut{color:var(--sport);font-weight:600;}
+.mg-mittel{color:#D9A648;font-weight:600;}
+.mg-schwach{color:var(--danger);font-weight:600;}
+.mg-newrow{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;
+  display:flex;gap:9px;align-items:center;flex-wrap:wrap;flex-shrink:0;}
+.mg-plat-switch,.mg-fees{flex-shrink:0;}
+.mg-newrow input{border:1px solid var(--line);border-radius:7px;background:var(--field);color:var(--ink);
+  font-family:inherit;font-size:0.85rem;padding:7px 9px;outline:none;min-width:0;}
+.mg-newrow input:focus{border-color:var(--business);}
+.mg-n-produkt{flex:1;min-width:130px;}
+.mg-n-groesse{width:110px;}
+.mg-n-price,.mg-n-druck,.mg-n-versand{width:90px;font-family:'IBM Plex Mono',monospace;}
+@media(max-width:820px){
+  .mg-newrow,.mg-fees .exp-add{flex-direction:column;align-items:stretch;}
+  .mg-newrow input,.mg-newrow .ib-btn,.mg-fees .exp-add input,.mg-fees .exp-add .ib-btn{width:100%;}
+  .mg-fee-beispiel{display:none;}
+}
+
+/* ---- Ausgaben ---- */
+.exp-bar{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
+  margin-bottom:18px;}
+.exp-bar-left,.exp-bar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.exp-bar input[type=month],.exp-bar select{border:1px solid var(--line);border-radius:7px;
+  background:var(--field);color:var(--ink);font-family:inherit;font-size:0.9rem;padding:8px 10px;outline:none;}
+.ib-btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink-soft);}
+.ib-btn.ghost:hover{color:var(--ink);border-color:var(--ink-soft);}
+.ib-btn.full{width:100%;margin-top:7px;}
+.exp-newmonth{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.exp-newmonth input[type=month]{border:1px solid var(--line);border-radius:7px;background:var(--field);
+  color:var(--ink);font-family:inherit;font-size:0.9rem;padding:8px 10px;outline:none;}
+.detail-head .ib-btn{flex-shrink:0;}
+.exp-lock{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;text-transform:uppercase;
+  letter-spacing:.06em;background:var(--business-bg);color:var(--business);padding:4px 10px;border-radius:20px;}
+.exp-lock.sm,.exp-open.sm{font-size:0.58rem;padding:2px 7px;margin-left:8px;vertical-align:middle;}
+.exp-open{font-family:'IBM Plex Mono',monospace;background:#2A2E33;color:var(--ink-soft);
+  padding:4px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.06em;}
+/* Abgeschlossener Monat: sichtbar, aber nicht bearbeitbar */
+.exp-cats.locked .exp-cat{opacity:.82;}
+.exp-katzeile{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;
+  max-width:1000px;margin-bottom:22px;}
+.exp-katbox{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 15px;
+  border-top:3px solid var(--ink-soft);}
+.exp-katbox.wohnen{border-top-color:var(--business);}
+.exp-katbox.essen{border-top-color:var(--sport);}
+.exp-katbox.sonstiges{border-top-color:var(--uni);}
+.exp-katsum{font-family:'IBM Plex Mono',monospace;font-size:1.12rem;font-weight:600;margin-top:5px;}
+.tt-num.strong{color:var(--privat);font-weight:600;}
+tr.row-off{opacity:.4;}
+tr.row-off .tt-num{text-decoration:line-through;}
+.mini-checkbox.on{border-color:var(--ink);background:rgba(255,255,255,.06);}
+.mini-checkbox.on svg{stroke-dashoffset:0;}
+.exp-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;
+  max-width:1000px;margin-bottom:22px;}
+.exp-sum-box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+.exp-sum-box.main{border-color:var(--privat);background:var(--privat-bg);}
+.exp-sum-label{font-family:'IBM Plex Mono',monospace;font-size:0.64rem;text-transform:uppercase;
+  letter-spacing:.09em;color:var(--ink-soft);}
+.exp-sum-value{font-family:'Fraunces',serif;font-weight:600;font-size:1.6rem;margin-top:5px;color:var(--privat);}
+.exp-sum-value.sub{color:var(--ink);font-size:1.35rem;}
+.exp-sum-note{font-size:0.7rem;color:var(--ink-soft);margin-top:5px;line-height:1.35;}
+.exp-sum-box input[type=month]{margin-top:6px;width:100%;border:1px solid var(--line);border-radius:7px;
+  background:var(--field);color:var(--ink);font-family:inherit;font-size:0.85rem;padding:7px 9px;outline:none;}
+
+.exp-cats{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;max-width:1400px;}
+.exp-cat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;
+  border-top:3px solid var(--ink-soft);}
+.exp-cat.wohnen{border-top-color:var(--business);}
+.exp-cat.essen{border-top-color:var(--sport);}
+.exp-cat.sonstiges{border-top-color:var(--uni);}
+.exp-cat-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.exp-cat-title{font-family:'Fraunces',serif;font-weight:600;font-size:1.02rem;}
+.exp-tag{display:inline-block;margin-left:7px;padding:2px 8px;border-radius:20px;vertical-align:middle;
+  font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:.04em;text-transform:uppercase;}
+.exp-tag.shared{background:var(--business-bg);color:var(--business);}
+.exp-tag.own{background:var(--uni-bg);color:var(--uni);}
+.exp-cat-nums{text-align:right;flex-shrink:0;}
+.exp-cat-sum{font-family:'IBM Plex Mono',monospace;font-size:1.02rem;font-weight:600;white-space:nowrap;}
+.exp-cat-mine{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;color:var(--ink-soft);
+  margin-top:2px;white-space:nowrap;}
+.exp-cat-hint{font-size:0.72rem;color:var(--ink-soft);font-style:italic;margin:4px 0 12px;}
+.exp-rows{margin-bottom:12px;}
+.exp-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line-soft);}
+.exp-row:last-child{border-bottom:none;}
+.exp-row-label{flex:1;min-width:0;font-size:0.88rem;overflow-wrap:break-word;}
+.exp-row-amount{font-family:'IBM Plex Mono',monospace;font-size:0.88rem;white-space:nowrap;}
+/* Direkt bearbeitbare Felder */
+.exp-row-label.editable,.exp-row-amount.editable{cursor:text;border-radius:5px;padding:2px 5px;margin:-2px -5px;
+  transition:background .13s;}
+.exp-row-label.editable:hover,.exp-row-amount.editable:hover{background:rgba(255,255,255,.07);
+  box-shadow:inset 0 0 0 1px var(--line);}
+.exp-edit-input{width:100%;min-width:70px;border:1px solid var(--privat);border-radius:5px;
+  background:var(--field);color:var(--ink);font-family:inherit;font-size:0.86rem;padding:3px 6px;outline:none;}
+.exp-row-amount .exp-edit-input{font-family:'IBM Plex Mono',monospace;text-align:right;width:96px;}
+/* Veraenderung gegenueber dem Vormonat */
+.exp-diff{font-family:'IBM Plex Mono',monospace;font-weight:600;font-style:normal;}
+.exp-diff.hoch{color:var(--danger);}
+.exp-diff.runter{color:var(--sport);}
+.exp-diff.gleich{color:var(--ink-soft);}
+.exp-add{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:12px;border-top:1px dashed var(--line);}
+.exp-add input{border:1px solid var(--line);border-radius:7px;background:var(--field);color:var(--ink);
+  font-family:inherit;font-size:0.85rem;padding:7px 9px;outline:none;min-width:0;}
+.exp-add input:focus{border-color:var(--privat);}
+.exp-in-label{flex:1;min-width:120px;}
+.exp-in-amount{width:96px;font-family:'IBM Plex Mono',monospace;}
+.exp-in-date{width:140px;}
+.exp-add .ib-btn{flex-shrink:0;}
+@media(max-width:820px){
+  .exp-add{flex-direction:column;align-items:stretch;}
+  .exp-add input,.exp-add .ib-btn{width:100%;}
+}
+
+/* Monatskarte: Farbverlauf-Streifen, weil sie alle vier Bereiche enthaelt.
+   Als Pseudo-Element, damit nur die linke Kante faerbt (border-image faerbt sonst rundum). */
+.month-card{border-left:none;position:relative;padding-left:3px;}
+.month-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(180deg,var(--privat),var(--business),var(--uni),var(--sport));}
+.month-card .trip-body{padding-top:4px;}
+/* Vier Spalten muessen im Kartenkoerper Platz finden */
+.month-card .month-cols{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+.month-card .month-col{padding:12px;min-width:0;}
+@media(max-width:1100px){.month-card .month-cols{grid-template-columns:1fr 1fr;}}
+@media(max-width:720px){ .month-card .month-cols{grid-template-columns:1fr;}}
+.trip-new input[type=month]{border:1px solid var(--line);border-radius:7px;background:var(--field);font-family:inherit;
+  font-size:0.85rem;color:var(--ink);padding:7px 9px;outline:none;}
+.day-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
+.day-card h4{font-family:'Fraunces',serif;font-size:0.98rem;margin:0 0 8px;color:var(--ink);}
+
+/* idea board */
+.ib-inbox{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px;}
+.ib-inbox textarea{width:100%;min-height:80px;resize:vertical;border:1px solid var(--line);border-radius:8px;
+  padding:10px 12px;font-family:inherit;font-size:0.9rem;background:var(--field);color:var(--ink);line-height:1.5;}
+.ib-row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;}
+.ib-btn{font-family:inherit;font-size:0.85rem;font-weight:500;border:none;border-radius:7px;padding:8px 14px;cursor:pointer;}
+.ib-btn.primary{background:var(--business);color:#fff;}
+.ib-btn.primary:disabled{opacity:.5;}
+.ib-status{font-size:0.78rem;color:var(--ink-soft);font-style:italic;}
+.ib-status.err{color:var(--danger);}
+.ib-quick{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:12px 14px;margin-bottom:20px;}
+.ib-quick input[type=text],.ib-quick input[type=date]{flex:1;min-width:160px;border:1px solid var(--line);border-radius:7px;padding:8px 10px;
+  font-size:0.88rem;font-family:inherit;background:var(--field);color:var(--ink);}
+.ib-quick select{border:1px solid var(--line);border-radius:7px;padding:8px 8px;font-family:inherit;font-size:0.85rem;background:var(--field);color:var(--ink);}
+.ib-board{column-width:260px;column-gap:16px;}
+.ib-card{background:var(--card);border:1px solid var(--line);border-radius:2px 10px 10px 10px;padding:14px 14px 12px;
+  margin:0 0 16px;break-inside:avoid;position:relative;}
+.ib-tab{position:absolute;top:-10px;left:12px;padding:2px 9px;border-radius:6px 6px 0 0;font-family:'IBM Plex Mono',monospace;
+  font-size:9.5px;letter-spacing:.05em;color:#fff;}
+.ib-card-head{display:flex;justify-content:space-between;align-items:baseline;margin:5px 0 8px;padding-bottom:6px;
+  border-bottom:1px dashed var(--line);}
+.ib-card-title{font-family:'Fraunces',serif;font-weight:600;font-size:0.95rem;}
+.ib-card-count{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft);}
+.ib-card-del{background:none;border:none;color:var(--ink-soft);font-size:12px;cursor:pointer;padding:0 0 0 6px;}
+.ib-card-del:hover{color:var(--danger);}
+.newcat-box{display:none;gap:8px;margin-top:8px;flex-wrap:wrap;}
+.newcat-box.show{display:flex;}
+.newcat-box input{border:1px solid var(--line);border-radius:7px;padding:7px 9px;font-size:0.85rem;background:var(--field);color:var(--ink);}
+.newcat-box input.emoji{width:52px;text-align:center;}
+
+/* Mittelgrosse Fenster: Eintragsliste etwas schmaler */
+@media(max-width:1100px){
+  .entry-list{width:220px;}
+  .entry-detail{padding:20px 22px;}
+}
+
+@media(max-width:820px){
+  .app{flex-direction:column;}
+  .sidebar{width:100%;max-height:38vh;}
+  .saeulen{flex:1;}
+  .main-scroll{padding:20px 18px;}
+  /* Kompaktere Navigation, damit oben nicht der halbe Schirm draufgeht */
+  .sidebar-header{padding:12px 16px 6px;}
+  .sidebar-title{font-size:1.1rem;}
+  .main-actions{flex-direction:row;gap:6px;padding:8px 10px;overflow-x:auto;}
+  .main-btn{flex:0 0 auto;padding:7px 10px;border-radius:10px;}
+  .main-btn-icon{width:26px;height:26px;font-size:0.85rem;}
+  .main-btn-sub{display:none;}
+  .main-btn-title{font-size:0.8rem;white-space:nowrap;}
+  .saeule{margin-bottom:8px;}
+  .node-item{padding:7px 10px 7px 13px;}
+  .trip-new,.dl-new{flex-direction:column;align-items:stretch;}
+  .trip-new .ib-btn,.dl-new .ib-btn{width:100%;}
+  /* Handy: erst die Liste, nach Antippen das Detail - nicht beides nebeneinander */
+  .entry-layout{flex-direction:column;}
+  .entry-list{width:100%;border-right:none;border-bottom:1px solid var(--line);background:transparent;}
+  .entry-list-body{padding:0;}
+  .entry-detail{padding:18px 2px 0;}
+  .entry-layout.show-detail .entry-list{display:none;}
+  .entry-layout:not(.show-detail) .entry-detail{display:none;}
+  .entry-back{display:inline-flex;align-items:center;gap:6px;border:none;background:none;cursor:pointer;
+    font-family:inherit;font-size:0.84rem;color:var(--ink-soft);padding:4px 0 12px;}
+  .entry-back:hover{color:var(--ink);}
+  /* Tabellen auf dem Handy: horizontal scrollbar statt gequetscht */
+  .tt-wrap{margin-left:-2px;margin-right:-2px;}
+}
+
+.save-toast{
+  position:fixed;bottom:18px;right:18px;z-index:999;
+  background:var(--sidebar-bg);color:#fff;
+  font-family:'IBM Plex Sans',sans-serif;font-size:0.82rem;
+  padding:8px 14px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.2);
+  opacity:0;transform:translateY(6px);pointer-events:none;
+  transition:opacity .2s ease, transform .2s ease;
+}
+.save-toast.show{opacity:1;transform:translateY(0);}
+.save-toast.err{background:var(--danger);}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header"><span class="sidebar-title">Notizblock</span></div>
+    <div class="main-actions" id="global-nodes"></div>
+    <div class="saeulen" id="saeulen"></div>
+    <div class="sidebar-footer">
+      <div class="backup-row">
+        <button class="backup-btn" id="export-btn">⬇ Exportieren</button>
+        <button class="backup-btn" id="import-btn">⬆ Importieren</button>
+        <input type="file" id="import-file" accept=".json" style="display:none;">
+      </div>
+    </div>
+  </aside>
+  <main class="main"><div class="main-scroll"><div class="content" id="main-content"></div></div></main>
+</div>
+<div class="save-toast" id="save-toast"></div>
+<script>
+/* Storage-Shim: bildet die window.storage-API (aus der Sandbox-Vorschau) auf echtes
+   localStorage ab, damit der restliche Code unveraendert bleibt. Spaeter wird hier
+   der OneDrive-Sync eingehaengt, ohne den Rest der App anzufassen. */
+window.storage = {
+  async get(key){ const v = localStorage.getItem(key); return v===null ? null : {value:v}; },
+  async set(key, value){ localStorage.setItem(key, value); },
+  async delete(key){ localStorage.removeItem(key); }
+};
+
+const STORAGE_KEY = 'ultimativer-notizblock-v1';
+const BEREICHE = {privat:{label:'Privat',color:'var(--privat)'},business:{label:'Business',color:'var(--business)'},uni:{label:'Uni',color:'var(--uni)'},sport:{label:'Sport und Gesundheit',color:'var(--sport)'}};
+const TYPE_LABELS = {checklist:'Checkliste', month:'Monat', trip:'Reise', trips:'Reisen', months:'Monate', deadlines:'Fristen'};
+/* Kurzform fuer enge Stellen (Filter-Chips, Tag neben dem Titel) */
+const BEREICH_SHORT = {privat:'Privat', business:'Business', uni:'Uni', sport:'Sport'};
+
+/* ---------------- FESTE STRUKTUR ----------------
+   Die vier Saeulen und ihre festen Unterpunkte. Diese Liste ist der Bauplan:
+   Unterpunkte werden daraus erzeugt und koennen nicht geloescht werden.
+   Angelegt/geloescht wird immer nur INNERHALB eines Unterpunkts.
+   Neue Unterpunkte hier ergaenzen - bestehende Daten bleiben erhalten. */
+const STRUKTUR = {
+  privat: [
+    {key:'reisen',    title:'Reisen',   icon:'✈️', type:'trips'},
+    {key:'antraege',  title:'Anträge',  icon:'📄', type:'deadlines'},
+    {key:'ausgaben',  title:'Ausgaben', icon:'💶', type:'expenses'}
+  ],
+  business: [
+    {key:'schritte',    title:'Nächste Schritte', icon:'🎯', type:'checklist'},
+    {key:'prozesse',    title:'Optimierungen',    icon:'⚙️', type:'ideas'},
+    {key:'marge',       title:'Marge',            icon:'💰', type:'margin'}
+  ],
+  uni: [
+    {key:'termine',    title:'Vor dem Start',   icon:'📋', type:'checklist'},
+    {key:'stundenplan',title:'Stundenplan',     icon:'📅', type:'timetable'},
+    {key:'pruefungen', title:'Prüfungstermine', icon:'📝', type:'exams'},
+    {key:'lernplan',   title:'Lernplan',        icon:'📚', type:'study'},
+    {key:'module',     title:'Module & Noten',  icon:'🎓', type:'modules'}
+  ],
+  sport: [
+    {key:'training',  title:'Trainingsübersicht',      icon:'🏃', type:'checklist'},
+    {key:'kuren',     title:'Kuren',                   icon:'🌿', type:'checklist'}
+  ]
+};
+/* Uebergreifende Punkte - gehoeren keiner Saeule, weil sie alle vier abdecken. */
+/* Ausgaben-Kategorien. shared=true bedeutet: wird zu zweit getragen, dein Anteil ist die Haelfte.
+   mode 'fixed' = feste Monatsposten, 'receipts' = einzelne Belege mit Datum. */
+const EXPENSE_CATS = [
+  {key:'wohnen',    title:'Wohnen',    icon:'🏠', shared:true,  mode:'fixed',
+   hint:'Miete, Nebenkosten, Strom, Internet'},
+  {key:'essen',     title:'Essen',     icon:'🍽️', shared:true,  mode:'receipts',
+   hint:'Belege: Datum und Betrag'},
+  {key:'sonstiges', title:'Sonstiges', icon:'📋', shared:false, mode:'fixed',
+   hint:'Abos, Kredite, Versicherungen – nur deine'}
+];
+
+/* ---- Marge: Plattformen ----
+   Gebuehren unterscheiden sich zwischen Etsy und Shopify. Prozentgebuehren
+   rechnen auf den Verkaufspreis, Fixkosten kommen pro Bestellung dazu.
+   Werte sind Platzhalter - Leon traegt seine echten ein. */
+const PLATTFORMEN = [
+  {key:'etsy', label:'Etsy', fees:[
+    {id:'f1', label:'Transaktionsgebühr', pct:6.5,  fix:0},
+    {id:'f2', label:'Zahlungsgebühr',     pct:4.0,  fix:0.30},
+    {id:'f3', label:'Listing-Gebühr',     pct:0,    fix:0.19}
+  ]},
+  {key:'shopify', label:'Shopify', fees:[
+    {id:'g1', label:'Zahlungsgebühr',     pct:1.9,  fix:0.25}
+  ]}
+];
+
+/* Bearbeitungsstand eines Antrags - bildet den Behoerdenweg ab. */
+const ANTRAG_STATUS = [
+  {key:'vorbereiten', label:'Vorbereiten', icon:'○', hint:'Unterlagen sammeln'},
+  {key:'eingereicht', label:'Eingereicht', icon:'◐', hint:'raus, Eingang bestätigt'},
+  {key:'wartet',      label:'Wartet',      icon:'◑', hint:'Behörde prüft / Rückfrage'},
+  {key:'erledigt',    label:'Erledigt',    icon:'●', hint:'bewilligt, abgeschlossen'}
+];
+function antragStatusDef(key){
+  return ANTRAG_STATUS.find(s=>s.key===key) || ANTRAG_STATUS[0];
+}
+
+const GLOBAL_NODES = [
+  {key:'ideaboard', title:'Idee-Board',           icon:'📇', sub:'automatisch einsortiert'},
+  {key:'daily',     title:'Täglicher Notizzettel',icon:'🗓️', sub:'letzte 7 Tage'},
+  {key:'months',    title:'Monatsübersicht',      icon:'📆', sub:'alle vier Bereiche'}
+];
+const MONTH_GRADIENT = 'linear-gradient(90deg,var(--privat),var(--business),var(--uni),var(--sport))';
+const PALETTE = ['#2B6E6B','#4A5A8C','#C08A2E','#B5563A','#6B7A3A','#3E6B8C','#8A5A2E','#5A6B7A'];
+let data = null;
+let pendingDeleteCat = null;
+/* Welcher Eintrag ist innerhalb eines Unterpunkts geoeffnet: {nodeId: entryId} */
+let selectedEntry = {};
+/* Eingeklappte Saeulen in der Navigation (bleibt ueber Neuladen erhalten) */
+let collapsedSaeulen = {};
+try{ collapsedSaeulen = JSON.parse(localStorage.getItem('notizblock-collapsed')||'{}'); }catch(e){}
+function saveCollapsed(){
+  try{ localStorage.setItem('notizblock-collapsed', JSON.stringify(collapsedSaeulen)); }catch(e){}
+}
+/* Handy: zeigt die Detailspalte statt der Liste */
+let showDetailMobile = false;
+
+function uid(){return 'id'+Date.now()+Math.random().toString(36).slice(2,8);}
+function escapeHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function fmtDate(ts){return new Date(ts).toLocaleDateString('de-DE',{day:'2-digit',month:'short',year:'2-digit'});}
+function fmtDay(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  return d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'short'});
+}
+
+/* Leerer Inhalt passend zum Typ eines festen Unterpunkts. */
+function emptyNodeContent(type){
+  if(type==='checklist')  return {items: []};
+  if(type==='trips')      return {trips: []};
+  if(type==='deadlines')  return {items: []};
+  if(type==='ideas')      return {items: []};
+  if(type==='timetable')  return {slots: []};
+  if(type==='exams')      return {items: []};
+  if(type==='modules')    return {items: [], zielCp: 180};
+  if(type==='study')      return {};   /* arbeitet auf uni:module */
+  if(type==='margin'){
+    /* rows: eine Zeile je Produkt+Groesse. plats: Gebuehren je Plattform. */
+    const plats = {};
+    PLATTFORMEN.forEach(p=>{ plats[p.key] = p.fees.map(f=>({...f})); });
+    return {rows: [], plats, aktiv: 'etsy'};
+  }
+  if(type==='expenses'){
+    /* months: {ym: {cats:{...}, closed:bool}} - ein Datensatz pro Monat */
+    return {months:{}};
+  }
+  return {};
+}
+
+function defaultData(){
+  const nodes = {};
+  Object.keys(STRUKTUR).forEach(bereich=>{
+    STRUKTUR[bereich].forEach(def=>{
+      nodes[bereich+':'+def.key] = emptyNodeContent(def.type);
+    });
+  });
+  return {
+    ideaBoard:{categories:[],items:[]},
+    dailyNotes:{days:[]},
+    nodes,
+    months:[],
+    activeId:'ideaboard'
+  };
+}
+
+/* Findet die Definition eines festen Unterpunkts ueber seine nodeId ("privat:reisen"). */
+function findNodeDef(nodeId){
+  if(typeof nodeId!=='string' || !nodeId.includes(':')) return null;
+  const [bereich, key] = nodeId.split(':');
+  const list = STRUKTUR[bereich];
+  if(!list) return null;
+  const def = list.find(d=>d.key===key);
+  return def ? {...def, bereich, nodeId} : null;
+}
+
+function migrateData(){
+  if(!data.dailyNotes) data.dailyNotes = {days:[]};
+  if(!data.ideaBoard)  data.ideaBoard = {categories:[],items:[]};
+  if(!data.nodes)      data.nodes = {};
+  if(!Array.isArray(data.months)) data.months = [];
+
+  /* Alte freie Zettel (data.zettel) in die feste Struktur ueberfuehren.
+     Zuordnung ueber den Titel; nicht zuordenbare Inhalte gehen nicht verloren,
+     sondern landen im passenden Unterpunkt derselben Saeule bzw. bei den Monaten. */
+  if(Array.isArray(data.zettel)){
+    const byTitle = {};
+    Object.keys(STRUKTUR).forEach(b=>{
+      STRUKTUR[b].forEach(d=>{ byTitle[d.title.toLowerCase()] = b+':'+d.key; });
+    });
+    data.zettel.forEach(z=>{
+      /* Alte Einzel-Reiseplaene: Tageskarten werden zu datierten Punkten einer Reise. */
+      if(z.type==='trip'){
+        const dated = [];
+        (z.days||[]).forEach(day=>{
+          (day.items||[]).forEach(it=>dated.push({...it, date: day.date}));
+        });
+        z.type='trips';
+        z.trips=[{id:uid(), title:z.title, dateFrom:z.dateFrom||'', dateTo:z.dateTo||'',
+                  open:true, undated:[], dated}];
+      }
+      if(z.type==='month'){
+        const cols = z.columns || {};
+        const hasContent = ['privat','business','uni','sport']
+          .some(c=>Array.isArray(cols[c]) && cols[c].length);
+        if(hasContent){
+          const d = new Date(z.createdAt||Date.now());
+          data.months.push({
+            id: uid(), ym: d.toISOString().slice(0,7), open:true,
+            columns:{privat:cols.privat||[], business:cols.business||[],
+                     uni:cols.uni||[], sport:cols.sport||[]}
+          });
+        }
+        return;
+      }
+      const target = byTitle[(z.title||'').toLowerCase()];
+      if(!target) return;
+      const def = findNodeDef(target);
+      if(!def) return;
+      if(!data.nodes[target]) data.nodes[target] = emptyNodeContent(def.type);
+      const node = data.nodes[target];
+      if(def.type==='trips' && Array.isArray(z.trips)){
+        node.trips = (node.trips||[]).concat(z.trips);
+      } else if(Array.isArray(z.items)){
+        node.items = (node.items||[]).concat(z.items);
+      }
+    });
+    delete data.zettel;
+  }
+
+  /* "Vor dem Start" war kurz als Antrags-Typ gebaut; zurueck auf einfache Liste.
+     Schritte und Unterlagen werden als eigene Punkte angehaengt, damit nichts verlorengeht. */
+  (function(){
+    const n = data.nodes['uni:termine'];
+    if(!n || !Array.isArray(n.items)) return;
+    const neu = [];
+    n.items.forEach(it=>{
+      if(!it.steps && !it.docs && !it.status) { neu.push(it); return; }
+      neu.push({id: it.id, text: it.text, done: it.status==='erledigt' || !!it.done});
+      (it.steps||[]).forEach(s=>neu.push({id:uid(), text:'  ↳ '+s.text, done:!!s.done}));
+      (it.docs ||[]).forEach(d=>neu.push({id:uid(), text:'  📎 '+d.text, done:!!d.done}));
+      if(it.note) neu.push({id:uid(), text:'  📝 '+it.note.replace(/\n+/g,' · '), done:false});
+    });
+    n.items = neu;
+  })();
+
+  /* Business-Umbau: alte Finanzen-/Produktions-Listen wandern nach "Nächste Schritte",
+     damit beim Wechsel auf Prozesse/Marge nichts verloren geht. */
+  ['business:finanzen','business:produktion'].forEach(alt=>{
+    const n = data.nodes[alt];
+    if(n && Array.isArray(n.items) && n.items.length){
+      if(!data.nodes['business:schritte']) data.nodes['business:schritte'] = {items:[]};
+      const ziel = data.nodes['business:schritte'];
+      if(!Array.isArray(ziel.items)) ziel.items = [];
+      const herkunft = alt.endsWith('finanzen') ? 'Finanzen' : 'Produktion';
+      n.items.forEach(it=>ziel.items.push({...it, tag: it.tag || herkunft}));
+    }
+    delete data.nodes[alt];
+  });
+
+  /* Fehlende Unterpunkte anlegen und Felder je Typ absichern. */
+  Object.keys(STRUKTUR).forEach(bereich=>{
+    STRUKTUR[bereich].forEach(def=>{
+      const id = bereich+':'+def.key;
+      if(!data.nodes[id]) data.nodes[id] = emptyNodeContent(def.type);
+      const n = data.nodes[id];
+      if(def.type==='trips'){
+        if(!Array.isArray(n.trips)) n.trips = [];
+        n.trips.forEach(t=>{
+          if(!Array.isArray(t.undated)) t.undated = [];
+          if(!Array.isArray(t.dated))   t.dated   = [];
+        });
+      } else if(def.type==='expenses'){
+        if(!n.months) n.months = {};
+        /* Alte Fassung (ein einziger cats-Block) wird zum aktuellen Monat */
+        if(n.cats){
+          const ym = new Date().toISOString().slice(0,7);
+          const cats = {};
+          EXPENSE_CATS.forEach(cat=>{ cats[cat.key] = Array.isArray(n.cats[cat.key])?n.cats[cat.key]:[]; });
+          /* Belege nach ihrem eigenen Datum auf die richtigen Monate verteilen */
+          EXPENSE_CATS.filter(c=>c.mode==='receipts').forEach(cat=>{
+            const rest = [];
+            cats[cat.key].forEach(e=>{
+              const zielYm = (e.date||'').slice(0,7) || ym;
+              if(zielYm===ym){ rest.push(e); return; }
+              if(!n.months[zielYm]) n.months[zielYm] = {cats:emptyExpenseCats(), closed:false};
+              n.months[zielYm].cats[cat.key].push(e);
+            });
+            cats[cat.key] = rest;
+          });
+          if(!n.months[ym]) n.months[ym] = {cats, closed:false};
+          delete n.cats;
+        }
+        Object.keys(n.months).forEach(ym=>{
+          const m = n.months[ym];
+          if(!m.cats) m.cats = emptyExpenseCats();
+          EXPENSE_CATS.forEach(cat=>{ if(!Array.isArray(m.cats[cat.key])) m.cats[cat.key] = []; });
+          if(typeof m.closed!=='boolean') m.closed = false;
+        });
+      } else if(def.type==='margin'){
+        if(!Array.isArray(n.rows)) n.rows = [];
+        /* Alte Fassung (products mit Kostenposten) wird zu Zeilen */
+        if(Array.isArray(n.products)){
+          n.products.forEach(p=>{
+            const druck = (p.costs||[]).find(k=>/druck|gelato/i.test(k.label));
+            const vers  = (p.costs||[]).find(k=>/versand/i.test(k.label));
+            n.rows.push({id:uid(), produkt:p.title, groesse:'', price:p.price||0,
+              druck: druck?druck.amount:0, versand: vers?vers.amount:0});
+          });
+          delete n.products;
+        }
+        if(!n.plats) n.plats = {};
+        PLATTFORMEN.forEach(p=>{
+          if(!Array.isArray(n.plats[p.key])) n.plats[p.key] = p.fees.map(f=>({...f}));
+        });
+        if(!n.aktiv) n.aktiv = 'etsy';
+        n.rows.forEach(r=>{
+          ['price','druck','versand'].forEach(f=>{ if(typeof r[f]!=='number') r[f] = Number(r[f])||0; });
+          if(typeof r.produkt!=='string') r.produkt = '';
+          if(typeof r.groesse!=='string') r.groesse = '';
+        });
+      } else if(def.type==='timetable'){
+        if(!Array.isArray(n.slots)) n.slots = [];
+        n.slots.forEach(s=>{
+          if(typeof s.tag!=='number') s.tag = 0;
+          ['titel','von','bis','raum','dozent'].forEach(f=>{
+            if(typeof s[f]!=='string') s[f] = '';
+          });
+        });
+      } else if(def.type==='study'){
+        /* Der Lernplan haelt keine eigenen Daten mehr - er arbeitet auf den Modulen.
+           Die Uebertragung alter Lernphasen passiert weiter unten, wenn die
+           Module bereits abgesichert sind. */
+      } else if(def.type==='modules'){
+        if(!Array.isArray(n.items)) n.items = [];
+        if(typeof n.zielCp!=='number') n.zielCp = 180;
+        n.items.forEach(m=>{
+          if(typeof m.cp!=='number') m.cp = Number(m.cp)||0;
+          if(typeof m.note!=='string') m.note = '';
+          if(!m.status) m.status = 'offen';
+          if(typeof m.semester!=='string') m.semester = '';
+          /* Lernplan-Felder direkt am Modul - eine Quelle fuer alles */
+          if(!Array.isArray(m.topics)) m.topics = [];
+          if(!Array.isArray(m.tips))   m.tips   = [];
+          if(typeof m.pruefform!=='string') m.pruefform = '';
+          if(typeof m.pruefdatum!=='string') m.pruefdatum = '';
+          if(typeof m.pruefzeit!=='string')  m.pruefzeit  = '';
+          if(typeof m.pruefraum!=='string')  m.pruefraum  = '';
+          if(typeof m.fokus!=='string') m.fokus = '';
+        });
+      } else {
+        if(!Array.isArray(n.items)) n.items = [];
+        if(def.type==='exams'){
+          /* Pruefungen: Datum, Uhrzeit, Raum, Anmeldefrist, Status */
+          n.items.forEach(it=>{
+            ['date','zeit','raum','anmeldung'].forEach(f=>{
+              if(typeof it[f]!=='string') it[f] = '';
+            });
+            if(!it.status) it.status = it.done ? 'bestanden' : 'offen';
+          });
+        }
+        if(def.type==='ideas'){
+          /* Optimierungen: Bereich + Text, mehr braucht es nicht.
+             Alte Fassung hatte state/impact/note - Notiz an den Text anhaengen. */
+          n.items.forEach(it=>{
+            if(typeof it.bereich!=='string' || !it.bereich) it.bereich = 'Sonstiges';
+            if(it.note){ it.text = it.text + ' – ' + it.note; delete it.note; }
+            if(it.state){ it.done = (it.state==='erledigt' || it.state==='verworfen'); delete it.state; }
+            delete it.impact;
+          });
+        }
+        if(def.type==='deadlines'){
+          /* Antraege um Status, Schritte, Unterlagen und Notiz ergaenzen */
+          n.items.forEach(it=>{
+            if(!it.status) it.status = it.done ? 'erledigt' : 'vorbereiten';
+            it.done = it.status === 'erledigt';
+            if(!Array.isArray(it.steps)) it.steps = [];
+            if(!Array.isArray(it.docs)){
+              /* Alte Kategorie ("Benoetigt") wird der erste Unterlagen-Eintrag */
+              it.docs = it.cat ? [{id:uid(), text:it.cat, done:false}] : [];
+            }
+            if(typeof it.note!=='string') it.note = '';
+          });
+        }
+      }
+    });
+  });
+
+  /* Alte Lernphasen in die Module ueberfuehren - laeuft erst hier, weil die
+     Module oben abgesichert werden mussten. Danach ist der Lernplan datenlos. */
+  (function(){
+    const lp = data.nodes['uni:lernplan'], mod = data.nodes['uni:module'];
+    if(!lp || !Array.isArray(lp.phases) || !mod) return;
+    lp.phases.forEach(ph=>{
+      const ziele = (ph.modulIds||[]).map(id=>mod.items.find(m=>m.id===id)).filter(Boolean);
+      if(!ziele.length) return;
+      (ph.topics||[]).forEach(t=>{
+        /* Thema dem Modul zuordnen. Vergleich ueber das erste Wort des Modulnamens,
+           damit "Anatomie: ..." auch "Anatomie / Physiologie" trifft. */
+        const kern = s => (s||'').toLowerCase().split(/[\s\/:,–-]+/)[0];
+        const tk = kern(t.text);
+        const treffer = ziele.find(m=>t.text.toLowerCase().startsWith(m.text.toLowerCase()))
+                     || ziele.find(m=>kern(m.text) === tk)
+                     || ziele[0];
+        if(!treffer.topics.some(x=>x.text===t.text)){
+          treffer.topics.push({id:uid(), text:t.text, done:!!t.done});
+        }
+      });
+      if(ph.ziel) ziele.forEach(m=>{
+        if(!m.fokus.includes(ph.ziel)) m.fokus = m.fokus ? m.fokus+'\n'+ph.ziel : ph.ziel;
+      });
+    });
+    delete lp.phases; delete lp.items;
+  })();
+
+  data.months.forEach(m=>{
+    m.columns = m.columns || {};
+    ['privat','business','uni','sport'].forEach(c=>{ if(!m.columns[c]) m.columns[c]=[]; });
+  });
+}
+
+async function load(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    data = res ? JSON.parse(res.value) : defaultData();
+  }catch(e){ data = defaultData(); }
+  if(!data.activeId) data.activeId = 'ideaboard';
+  migrateData();
+  pruneDailyNotes();
+  renderAll();
+}
+async function persist(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(data), false);
+    showSaveToast('Gespeichert ✓', false);
+  }catch(e){
+    console.error('Speichern fehlgeschlagen', e);
+    showSaveToast('Speichern fehlgeschlagen', true);
+  }
+}
+
+let saveToastTimer = null;
+function showSaveToast(msg, isErr){
+  const el = document.getElementById('save-toast');
+  if(!el) return;
+  el.textContent = msg;
+  el.className = 'save-toast show' + (isErr ? ' err' : '');
+  clearTimeout(saveToastTimer);
+  saveToastTimer = setTimeout(()=>{ el.classList.remove('show'); }, 1300);
+}
+
+/* Zaehlt offene Punkte eines festen Unterpunkts - fuer die Badges in der Leiste. */
+function nodeOpenCount(nodeId, def){
+  const n = data.nodes[nodeId];
+  if(!n) return 0;
+  if(def.type==='trips'){
+    return (n.trips||[]).reduce((sum,t)=>
+      sum + (t.undated||[]).filter(i=>!i.done).length
+          + (t.dated  ||[]).filter(i=>!i.done).length, 0);
+  }
+  if(def.type==='expenses') return 0;   /* Ausgaben zeigen Betrag statt Anzahl */
+  if(def.type==='margin')    return 0;   /* Marge ebenso */
+  if(def.type==='timetable') return 0;   /* Stundenplan zeigt Anzahl Termine separat */
+  if(def.type==='modules')   return 0;   /* Module zeigen Credits */
+  if(def.type==='exams')     return (n.items||[]).filter(i=>i.status==='offen').length;
+  if(def.type==='study'){
+    /* zaehlt offene Themen ueber alle Module */
+    const mod = data.nodes['uni:module'];
+    if(!mod || !Array.isArray(mod.items)) return 0;
+    return mod.items.reduce((s,m)=>s + (m.topics||[]).filter(t=>!t.done).length, 0);
+  }
+  return (n.items||[]).filter(i=>!i.done).length;
+}
+
+/* ---- Ausgaben: Rechnen ----
+   Geteilte Kategorien zaehlen zur Haelfte, eigene voll. */
+function eur(v){
+  return (v||0).toLocaleString('de-DE',{minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+}
+function emptyExpenseCats(){
+  const cats = {};
+  EXPENSE_CATS.forEach(c=>{ cats[c.key] = []; });
+  return cats;
+}
+/* Monatsdatensatz holen; legt ihn bei Bedarf an und uebernimmt feste Posten
+   aus dem zuletzt abgeschlossenen Vormonat. */
+function getExpenseMonth(node, ym, autoCreate){
+  if(node.months[ym]) return node.months[ym];
+  if(!autoCreate) return null;
+  const vorher = Object.keys(node.months).filter(k=>k<ym).sort().pop();
+  const cats = emptyExpenseCats();
+  if(vorher){
+    EXPENSE_CATS.filter(c=>c.mode==='fixed').forEach(cat=>{
+      cats[cat.key] = (node.months[vorher].cats[cat.key]||[])
+        .map(e=>({id:uid(), label:e.label, amount:e.amount}));
+    });
+  }
+  node.months[ym] = {cats, closed:false};
+  return node.months[ym];
+}
+/* Summen eines Monatsdatensatzes.
+   gemeinsam = nur die geteilten Kategorien (Wohnen + Essen)
+   meins     = gemeinsam/2 + eigene Kategorien
+   alles     = wirklich alles zusammen */
+function expenseSums(monat){
+  const proKat = {};
+  let gemeinsam = 0, eigene = 0;
+  EXPENSE_CATS.forEach(cat=>{
+    const sum = (monat && monat.cats[cat.key] ? monat.cats[cat.key] : [])
+      .reduce((s,e)=>s + (Number(e.amount)||0), 0);
+    proKat[cat.key] = sum;
+    if(cat.shared) gemeinsam += sum; else eigene += sum;
+  });
+  return {proKat, gemeinsam, eigene, meins: gemeinsam/2 + eigene, alles: gemeinsam + eigene};
+}
+function fmtYm(ym){
+  const [y,m] = ym.split('-');
+  return new Date(Number(y), Number(m)-1, 1)
+    .toLocaleDateString('de-DE',{month:'long', year:'numeric'});
+}
+/* Der zeitlich davorliegende erfasste Monat - fuer den Vergleich */
+function vormonatVon(node, ym){
+  const davor = Object.keys(node.months).filter(k=>k<ym).sort();
+  return davor.length ? davor[davor.length-1] : null;
+}
+/* Differenz aufbereiten: Vorzeichen, Farbe, Text */
+function diffInfo(jetzt, vorher){
+  const d = jetzt - vorher;
+  if(Math.abs(d) < 0.005) return {cls:'gleich', text:'unverändert'};
+  const vz = d>0 ? '+' : '−';
+  /* Prozente nur zeigen, wenn sie etwas aussagen (ab 1 %) */
+  const p = vorher>0 ? Math.abs(d/vorher*100) : 0;
+  const proz = p>=1 ? ` (${vz}${p.toFixed(0)} %)` : '';
+  return {cls: d>0?'hoch':'runter', text: `${vz}${eur(Math.abs(d))}${proz}`};
+}
+
+function renderAll(){ renderSidebar(); renderMain(); }
+
+/* ---------------- SIDEBAR ---------------- */
+function renderSidebar(){
+  /* Uebergreifende Punkte (Idee-Board, Taeglicher Zettel, Monatsuebersicht) */
+  const gWrap = document.getElementById('global-nodes');
+  gWrap.innerHTML = '';
+  GLOBAL_NODES.forEach(g=>{
+    const div = document.createElement('div');
+    div.className = 'main-btn '+g.key+(data.activeId===g.key?' active':'');
+    div.innerHTML = `
+      <div class="main-btn-icon">${g.icon}</div>
+      <div class="main-btn-text">
+        <div class="main-btn-title">${g.title}</div>
+        <div class="main-btn-sub">${g.sub}</div>
+      </div>`;
+    div.addEventListener('click',()=>{ data.activeId=g.key; renderAll(); persist(); });
+    gWrap.appendChild(div);
+  });
+
+  /* Die vier Saeulen mit ihren festen Unterpunkten */
+  const wrap = document.getElementById('saeulen');
+  wrap.innerHTML = '';
+  Object.keys(STRUKTUR).forEach(bereich=>{
+    const zu = !!collapsedSaeulen[bereich];
+    const sec = document.createElement('div');
+    sec.className = 'saeule '+bereich+(zu?' collapsed':'');
+    /* Offene Punkte der ganzen Saeule - sichtbar auch wenn eingeklappt */
+    const saeuleOpen = STRUKTUR[bereich].reduce((s,d)=>s+nodeOpenCount(bereich+':'+d.key, d), 0);
+    const head = document.createElement('div');
+    head.className = 'saeule-head'+(data.activeId==='bereich:'+bereich?' active':'');
+    head.innerHTML = `
+      <button class="saeule-toggle" aria-label="Bereich auf-/zuklappen">${zu?'▸':'▾'}</button>
+      <span class="saeule-dot"></span>
+      <span class="saeule-name">${BEREICHE[bereich].label}</span>
+      ${zu && saeuleOpen>0 ? `<span class="saeule-badge">${saeuleOpen}</span>` : ''}`;
+    /* Pfeil klappt nur um, der Rest oeffnet die Bereichsuebersicht */
+    head.querySelector('.saeule-toggle').addEventListener('click',(e)=>{
+      e.stopPropagation();
+      collapsedSaeulen[bereich] = !collapsedSaeulen[bereich];
+      saveCollapsed(); renderSidebar();
+    });
+    head.addEventListener('click',()=>{ data.activeId='bereich:'+bereich; renderAll(); persist(); });
+    sec.appendChild(head);
+
+    const body = document.createElement('div');
+    body.className = 'saeule-body';
+    sec.appendChild(body);
+
+    STRUKTUR[bereich].forEach(def=>{
+      const nodeId = bereich+':'+def.key;
+      const open = nodeOpenCount(nodeId, def);
+      const item = document.createElement('div');
+      item.className = 'node-item'+(data.activeId===nodeId?' active':'');
+      item.innerHTML = `
+        <span class="node-icon">${def.icon}</span>
+        <span class="node-title">${escapeHtml(def.title)}</span>
+        ${open>0?`<span class="node-badge">${open}</span>`:''}`;
+      item.addEventListener('click',()=>{
+        data.activeId=nodeId; showDetailMobile=false; renderAll(); persist();
+      });
+      body.appendChild(item);
+    });
+    wrap.appendChild(sec);
+  });
+}
+
+/* ---------------- MAIN AREA DISPATCH ---------------- */
+function renderMain(){
+  const c = document.getElementById('main-content');
+  if(data.activeId==='ideaboard'){ setContentBereichClass(null); renderIdeaBoard(c); return; }
+  if(data.activeId==='daily'){ pruneDailyNotes(); setContentBereichClass(null,true); renderDailyNotes(c); return; }
+  if(data.activeId==='months'){ setContentBereichClass(null); renderMonths(c); return; }
+  if(typeof data.activeId==='string' && data.activeId.startsWith('bereich:')){
+    const key = data.activeId.split(':')[1];
+    setContentBereichClass(key);
+    renderBereichOverview(c, key);
+    return;
+  }
+  const def = findNodeDef(data.activeId);
+  if(!def){
+    setContentBereichClass(null);
+    data.activeId = 'ideaboard';
+    renderIdeaBoard(c);
+    return;
+  }
+  setContentBereichClass(def.bereich);
+  if(def.type==='checklist')      renderChecklist(c, def);
+  else if(def.type==='trips')     renderTrips(c, def);
+  else if(def.type==='deadlines') renderDeadlines(c, def);
+  else if(def.type==='expenses')  renderExpenses(c, def);
+  else if(def.type==='ideas')     renderIdeas(c, def);
+  else if(def.type==='timetable') renderTimetable(c, def);
+  else if(def.type==='exams')     renderExams(c, def);
+  else if(def.type==='modules')   renderModules(c, def);
+  else if(def.type==='study')     renderStudy(c, def);
+  else if(def.type==='margin')    renderMargin(c, def);
+}
+
+function renderBereichOverview(c, key){
+  const label = BEREICHE[key].label;
+  const cards = STRUKTUR[key].map(def=>{
+    const nodeId = key+':'+def.key;
+    const n = data.nodes[nodeId] || {};
+    const open = nodeOpenCount(nodeId, def);
+    let sub;
+    if(def.type==='trips')          sub = `${(n.trips||[]).length} Reise(n) · ${open} offen`;
+    else if(def.type==='expenses'){
+      const ym = new Date().toISOString().slice(0,7);
+      const s = expenseSums(n.months ? n.months[ym] : null);
+      const anz = n.months ? Object.keys(n.months).length : 0;
+      sub = `${eur(s.meins)} dein Anteil · ${anz} Monat(e)`;
+    }
+    else if(def.type==='margin'){
+      const rows = n.rows||[];
+      const fees = (n.plats||{})[n.aktiv||'etsy']||[];
+      const best = rows.length ? Math.max(...rows.map(r=>rowMargin(r, fees).proz)) : null;
+      sub = rows.length ? `${rows.length} Zeile(n) · bis ${best.toFixed(0)} % Marge` : 'noch keine Produkte';
+    }
+    else if(def.type==='timetable'){
+      const sl = (n.slots||[]).length;
+      sub = sl ? `${sl} Veranstaltung(en)` : 'noch leer';
+    }
+    else if(def.type==='study'){
+      const mod = data.nodes['uni:module'];
+      const mitPlan = (mod&&mod.items||[]).filter(m=>(m.topics||[]).length).length;
+      sub = mitPlan ? `${mitPlan} Modul(e) geplant · ${open} offen` : 'noch kein Lernplan';
+    }
+    else if(def.type==='modules'){
+      const ms = n.items||[];
+      const cp = ms.filter(m=>m.status==='bestanden').reduce((s,m)=>s+(m.cp||0),0);
+      sub = ms.length ? `${cp} / ${n.zielCp||180} CP` : 'noch keine Module';
+    }
+    else                            sub = `${open} offen`;
+    return `<div class="ov-card" data-node="${nodeId}">
+      <div class="ov-card-bar" style="background:${BEREICHE[key].color}"></div>
+      <div class="ov-card-type">${def.icon} ${TYPE_LABELS[def.type]}</div>
+      <div class="ov-card-title">${escapeHtml(def.title)}</div>
+      <div class="ov-card-sub">${sub}</div>
+    </div>`;
+  }).join('');
+  c.innerHTML = `
+    <div class="head-row"><div><h1 class="zt">${label}</h1><div class="head-meta">Übersicht</div></div></div>
+    <div class="divider"></div>
+    <div class="ov-grid">${cards}</div>
+  `;
+  c.querySelectorAll('.ov-card').forEach(card=>{
+    card.addEventListener('click', ()=>{ data.activeId=card.dataset.node; renderAll(); persist(); });
+  });
+}
+
+/* Kopfzeile eines festen Unterpunkts - ohne Loeschen, die Struktur ist fix. */
+function renderNodeHead(def, meta){
+  const tag = `<span class="bereich-tag ${def.bereich}">${BEREICH_SHORT[def.bereich]}</span>`;
+  return `
+    <div class="head-row">
+      <div><h1 class="zt">${def.icon} ${escapeHtml(def.title)}${tag}</h1>
+      <div class="head-meta">${meta||''}</div></div>
+    </div><div class="divider"></div>
+  `;
+}
+function setContentBereichClass(bereich, narrow){
+  document.getElementById('main-content').className = 'content'
+    + (bereich ? ' bereich-'+bereich : '') + (narrow ? ' narrow' : '');
+}
+
+/* ---------------- LISTE + DETAIL ----------------
+   Gemeinsamer Rahmen fuer Unterpunkte mit mehreren Eintraegen.
+   opts: {def, entries, selectedId, addLabel, listTitle, onSelect, onAdd, renderDetail, itemInfo} */
+function renderEntryLayout(c, opts){
+  const {def, entries, addLabel, listTitle, itemInfo} = opts;
+  const selId = opts.selectedId;
+  c.innerHTML = renderNodeHead(def, opts.headMeta||'') + `
+    <div class="entry-layout${showDetailMobile?' show-detail':''}" id="entry-layout">
+      <div class="entry-list">
+        <div class="entry-list-head"><span class="entry-list-title">${listTitle}</span></div>
+        <div class="entry-list-body" id="entry-list-body"></div>
+        <div class="entry-list-foot">
+          <button class="entry-add-btn" id="entry-add">${addLabel}</button>
+          ${opts.extraFoot||''}
+        </div>
+      </div>
+      <div class="entry-detail" id="entry-detail"></div>
+    </div>
+  `;
+  const listBody = document.getElementById('entry-list-body');
+  if(entries.length===0){
+    listBody.innerHTML = '<div class="entry-empty" style="padding:12px;">Noch nichts angelegt.</div>';
+  } else {
+    entries.forEach(e=>{
+      const info = itemInfo(e);
+      const div = document.createElement('div');
+      div.className = 'entry-item'+(e.id===selId?' active':'')+(info.status?' st-'+info.status:'');
+      div.innerHTML = `<div class="entry-item-title">${escapeHtml(info.title)}</div>
+                       <div class="entry-item-sub">${info.sub}</div>`;
+      div.addEventListener('click',()=>{
+        selectedEntry[def.nodeId] = e.id;
+        showDetailMobile = true;
+        renderMain();
+      });
+      listBody.appendChild(div);
+    });
+  }
+  document.getElementById('entry-add').addEventListener('click', opts.onAdd);
+
+  const detail = document.getElementById('entry-detail');
+  const backBtn = `<button class="entry-back" id="entry-back">← Zurück zur Liste</button>`;
+  const sel = entries.find(e=>e.id===selId);
+  if(!sel){
+    detail.innerHTML = backBtn + `<div class="entry-empty">${opts.emptyHint||'Links einen Eintrag wählen oder neu anlegen.'}</div>`;
+  } else {
+    detail.innerHTML = backBtn + '<div id="entry-detail-body"></div>';
+    opts.renderDetail(document.getElementById('entry-detail-body'), sel);
+  }
+  const bb = document.getElementById('entry-back');
+  if(bb) bb.addEventListener('click',()=>{ showDetailMobile=false; renderMain(); });
+}
+
+/* generic mini list renderer */
+function renderMiniList(ul, items, opts){
+  const showDate = opts && opts.showDate;
+  ul.innerHTML='';
+  if(items.length===0){ ul.innerHTML = '<div class="empty-mini">Noch nichts hier.</div>'; return; }
+  items.forEach(it=>{
+    const li=document.createElement('li');
+    li.className='mini-item'+(it.done?' done':'');
+    const datePart = showDate ? `<span class="mini-date">${it.date?fmtDay(it.date):'—'}</span>` : '';
+    li.innerHTML=`<span class="mini-checkbox" data-id="${it.id}"><svg viewBox="0 0 18 18"><path d="M3 9l4 4 8-8"/></svg></span>
+      ${datePart}<span class="mini-text">${escapeHtml(it.text)}</span>
+      <button class="mini-del" data-id="${it.id}">×</button>`;
+    ul.appendChild(li);
+  });
+}
+function bindMiniList(ul, items, onChanged){
+  ul.addEventListener('click',(e)=>{
+    const cb=e.target.closest('.mini-checkbox'); const del=e.target.closest('.mini-del');
+    if(cb){ const it=items.find(i=>i.id===cb.dataset.id); if(it){it.done=!it.done; onChanged();} }
+    else if(del){ const idx=items.findIndex(i=>i.id===del.dataset.id); if(idx>-1){items.splice(idx,1); onChanged();} }
+  });
+}
+
+/* ---------------- CHECKLIST VIEW ---------------- */
+function renderChecklist(c, def){
+  const z = data.nodes[def.nodeId];
+  c.innerHTML = renderNodeHead(def) + `
+    <div class="input-row"><input type="text" id="cl-input" placeholder="Neuer Punkt und Enter …" maxlength="200"><button id="cl-add">+</button></div>
+    <ul class="mini-list" id="cl-list"></ul>
+    <div class="footer-count" id="cl-count"></div>
+  `;
+  const ul = document.getElementById('cl-list');
+  const refresh = ()=>{ renderMiniList(ul, z.items); updateCount(); persist(); renderSidebar(); };
+  const updateCount = ()=>{
+    const open=z.items.filter(i=>!i.done).length, done=z.items.length-open;
+    document.getElementById('cl-count').textContent = z.items.length===0?'0 offen':`${open} offen · ${done} erledigt`;
+  };
+  renderMiniList(ul, z.items); updateCount();
+  bindMiniList(ul, z.items, refresh);
+  document.getElementById('cl-add').addEventListener('click',()=>addClItem());
+  document.getElementById('cl-input').addEventListener('keydown',(e)=>{if(e.key==='Enter')addClItem();});
+  function addClItem(){
+    const inp=document.getElementById('cl-input'); const t=inp.value.trim(); if(!t)return;
+    z.items.unshift({id:uid(),text:t,done:false}); inp.value=''; refresh();
+  }
+}
+
+/* ---------------- MONTH VIEW ---------------- */
+const MONTH_COLS = [{key:'privat',label:'🏠 Privat'},{key:'business',label:'💼 Business'},{key:'uni',label:'🎓 Uni'},{key:'sport',label:'🏃 Sport'}];
+function fmtMonth(ym){
+  const [y,m] = ym.split('-');
+  const d = new Date(Number(y), Number(m)-1, 1);
+  return d.toLocaleDateString('de-DE',{month:'long', year:'numeric'});
+}
+
+/* Sammlung aller Monate. Pro Monat die vier Saeulen als Spalten. */
+function renderMonths(c){
+  const thisYm = new Date().toISOString().slice(0,7);
+  c.innerHTML = `
+    <div class="head-row"><div><h1 class="zt">📆 Monatsübersicht</h1>
+      <div class="head-meta">alle vier Bereiche · ${data.months.length} Monat(e)</div></div></div>
+    <div class="divider"></div>
+    <div id="months-wrap"></div>
+    <div class="trip-new month-new">
+      <input type="month" id="mn-ym" value="${thisYm}" aria-label="Monat wählen">
+      <button class="ib-btn primary" id="mn-add">Monat anlegen</button>
+    </div>
+  `;
+  document.getElementById('mn-add').addEventListener('click',()=>{
+    const ym = document.getElementById('mn-ym').value;
+    if(!ym) return;
+    if(data.months.some(m=>m.ym===ym)){
+      const ex = data.months.find(m=>m.ym===ym);
+      ex.open = true; persist(); renderMonths(c); return;
+    }
+    data.months.push({id:uid(), ym, open:true,
+      columns:{privat:[],business:[],uni:[],sport:[]}});
+    persist(); renderMonths(c);
+  });
+  renderMonthsWrap(c);
+}
+
+function renderMonthsWrap(c){
+  const wrap = document.getElementById('months-wrap');
+  wrap.innerHTML = '';
+  if(data.months.length===0){
+    wrap.innerHTML = '<div class="empty-mini">Noch kein Monat angelegt.</div>';
+    return;
+  }
+  [...data.months].sort((a,b)=>b.ym.localeCompare(a.ym)).forEach(m=>{
+    const total = MONTH_COLS.reduce((s,mc)=>s+m.columns[mc.key].filter(i=>!i.done).length,0);
+    const card = document.createElement('div');
+    card.className = 'trip-card month-card'+(m.open?' open':'');
+    card.innerHTML = `
+      <div class="trip-head">
+        <div class="trip-head-main">
+          <h4>${fmtMonth(m.ym)}</h4>
+          <div class="trip-range-line">${total} offen</div>
+        </div>
+        <button class="trip-toggle" aria-label="Auf-/zuklappen">${m.open?'▾':'▸'}</button>
+        <button class="del-btn month-del" aria-label="Monat löschen">🗑</button>
+      </div>
+      <div class="trip-body">
+        <div class="month-cols">
+          ${MONTH_COLS.map(mc=>monthColHtml(mc.key,mc.label,m.id)).join('')}
+        </div>
+      </div>
+    `;
+    MONTH_COLS.forEach(({key:col})=>{
+      const ul = card.querySelector('#mc-list-'+col+'-'+m.id);
+      const inp = card.querySelector('#mc-input-'+col+'-'+m.id);
+      const refreshHead = ()=>{
+        const n = MONTH_COLS.reduce((s,mc)=>s+m.columns[mc.key].filter(i=>!i.done).length,0);
+        card.querySelector('.trip-range-line').textContent = `${n} offen`;
+      };
+      const refresh = ()=>{ renderMiniList(ul, m.columns[col]); refreshHead(); persist(); };
+      renderMiniList(ul, m.columns[col]);
+      bindMiniList(ul, m.columns[col], refresh);
+      function addItem(){
+        const t=inp.value.trim(); if(!t)return;
+        m.columns[col].unshift({id:uid(),text:t,done:false}); inp.value=''; refresh();
+      }
+      card.querySelector('#mc-add-'+col+'-'+m.id).addEventListener('click', addItem);
+      inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') addItem(); });
+    });
+    card.querySelector('.trip-toggle').addEventListener('click',()=>{
+      m.open=!m.open; persist(); renderMonthsWrap(c);
+    });
+    card.querySelector('.month-del').addEventListener('click',()=>{
+      const btn = card.querySelector('.month-del');
+      if(card.dataset.confirm==='1'){
+        data.months = data.months.filter(x=>x.id!==m.id);
+        persist(); renderMonths(c);
+      } else {
+        card.dataset.confirm='1'; btn.textContent='Wirklich?';
+        setTimeout(()=>{ if(card.dataset.confirm==='1'){ card.dataset.confirm=''; btn.textContent='🗑'; } },3000);
+      }
+    });
+    wrap.appendChild(card);
+  });
+}
+
+function monthColHtml(col,label,mid){
+  return `<div class="month-col ${col}">
+    <h3>${label}</h3>
+    <div class="input-row"><input type="text" id="mc-input-${col}-${mid}" placeholder="Fokus hinzufügen …" maxlength="150"><button id="mc-add-${col}-${mid}">+</button></div>
+    <ul class="mini-list" id="mc-list-${col}-${mid}"></ul>
+  </div>`;
+}
+
+/* ---------------- REISEN VIEW ----------------
+   Links die Liste aller Reisen, rechts die geoeffnete Reise mit ihren
+   zwei Spalten (ohne festes Datum / mit festem Datum). */
+function renderTrips(c, def){
+  const z = data.nodes[def.nodeId];
+  const sorted = [...z.trips].sort((a,b)=>(a.dateFrom||'9999').localeCompare(b.dateFrom||'9999'));
+  /* Standardauswahl: laufende Reise zuerst, sonst die naechste anstehende */
+  if(!selectedEntry[def.nodeId] || !z.trips.some(t=>t.id===selectedEntry[def.nodeId])){
+    const next = sorted.find(t=>tripStatus(t).cls==='now')
+              || sorted.find(t=>tripStatus(t).cls!=='past')
+              || sorted[sorted.length-1];
+    selectedEntry[def.nodeId] = next ? next.id : null;
+  }
+  renderEntryLayout(c, {
+    def, entries: sorted,
+    selectedId: selectedEntry[def.nodeId],
+    listTitle: `Reisen · ${z.trips.length}`,
+    addLabel: '+ Neue Reise',
+    headMeta: `${z.trips.length} Reise(n)`,
+    emptyHint: 'Wähle links eine Reise oder lege eine neue an.',
+    itemInfo: t=>{
+      const st = tripStatus(t);
+      const open = t.undated.filter(i=>!i.done).length + t.dated.filter(i=>!i.done).length;
+      return {title: t.title, status: st.cls,
+              sub: `${tripRangeText(t)} · ${open} offen`};
+    },
+    onAdd: ()=>openTripForm(c, def, z),
+    renderDetail: (host, t)=>renderTripDetail(host, c, def, z, t)
+  });
+}
+
+/* Anlege-Formular als eigener Schritt - erscheint im Detailbereich, nicht zwischen den Eintraegen. */
+function openTripForm(c, def, z){
+  selectedEntry[def.nodeId] = null;
+  showDetailMobile = true;
+  renderEntryLayout(c, {
+    def, entries: [...z.trips].sort((a,b)=>(a.dateFrom||'9999').localeCompare(b.dateFrom||'9999')),
+    selectedId: null,
+    listTitle: `Reisen · ${z.trips.length}`,
+    addLabel: '+ Neue Reise',
+    headMeta: `${z.trips.length} Reise(n)`,
+    itemInfo: t=>{
+      const st = tripStatus(t);
+      const open = t.undated.filter(i=>!i.done).length + t.dated.filter(i=>!i.done).length;
+      return {title:t.title, status:st.cls, sub:`${tripRangeText(t)} · ${open} offen`};
+    },
+    onAdd: ()=>openTripForm(c, def, z),
+    renderDetail: ()=>{}
+  });
+  const detail = document.getElementById('entry-detail');
+  detail.innerHTML = `<button class="entry-back" id="entry-back">← Zurück zur Liste</button>
+    <h2 class="detail-title">Neue Reise</h2>
+    <div class="trip-new">
+      <input type="text" id="tn-title" placeholder="Reiseziel, z. B. Rom" maxlength="60">
+      <div class="trip-new-dates">
+        <input type="date" id="tn-from" aria-label="von">
+        <span class="trip-arrow">→</span>
+        <input type="date" id="tn-to" aria-label="bis">
+      </div>
+      <button class="ib-btn primary" id="tn-add">Reise anlegen</button>
+    </div>`;
+  document.getElementById('entry-back').addEventListener('click',()=>{ showDetailMobile=false; renderMain(); });
+  const titleInp = document.getElementById('tn-title');
+  titleInp.focus();
+  function create(){
+    const t = titleInp.value.trim();
+    if(!t) return;
+    const neu = { id: uid(), title: t,
+      dateFrom: document.getElementById('tn-from').value,
+      dateTo: document.getElementById('tn-to').value,
+      undated: [], dated: [] };
+    z.trips.push(neu);
+    selectedEntry[def.nodeId] = neu.id;
+    persist(); renderAll();
+  }
+  document.getElementById('tn-add').addEventListener('click', create);
+  titleInp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') create(); });
+}
+
+/* Detail einer einzelnen Reise */
+function renderTripDetail(host, c, def, z, t){
+  const st = tripStatus(t);
+  const n = tripNights(t);
+  host.innerHTML = `
+    <div class="detail-head">
+      <div class="detail-head-main">
+        <h2 class="detail-title">${escapeHtml(t.title)}<span class="trip-badge ${st.cls}">${st.label}</span></h2>
+      </div>
+      <button class="del-btn trip-del" aria-label="Reise löschen">🗑</button>
+    </div>
+    <div class="tt-wrap detail-summary">
+      <table class="trip-table">
+        <thead><tr><th>Von</th><th>Bis</th><th>Dauer</th><th>Offen</th></tr></thead>
+        <tbody><tr class="row-${st.cls}">
+          <td class="tt-date">${t.dateFrom?fmtDay(t.dateFrom):'—'}</td>
+          <td class="tt-date">${t.dateTo?fmtDay(t.dateTo):'—'}</td>
+          <td class="tt-num">${n?n+' Tage':'—'}</td>
+          <td class="tt-num" id="td-open"></td>
+        </tr></tbody>
+      </table>
+    </div>
+    <div class="trip-cols">
+      <div class="trip-col">
+        <h5>Ohne festes Datum</h5>
+        <div class="input-row">
+          <input type="text" class="u-input" placeholder="Was erledigt werden soll …" maxlength="200">
+          <button class="u-add">+</button>
+        </div>
+        <ul class="mini-list u-list"></ul>
+      </div>
+      <div class="trip-col">
+        <h5>Mit festem Datum</h5>
+        <div class="input-row dated-row">
+          <input type="date" class="d-date" aria-label="Datum">
+          <input type="text" class="d-input" placeholder="Was steht an …" maxlength="200">
+          <button class="d-add">+</button>
+        </div>
+        <ul class="mini-list d-list"></ul>
+      </div>
+    </div>
+  `;
+  const uList = host.querySelector('.u-list');
+  const dList = host.querySelector('.d-list');
+  const openEl = host.querySelector('#td-open');
+  const refreshCount = ()=>{
+    const o = t.undated.filter(i=>!i.done).length + t.dated.filter(i=>!i.done).length;
+    openEl.innerHTML = o>0 ? `<span class="tt-open">${o}</span>` : '✓';
+  };
+  const refreshU = ()=>{ renderMiniList(uList, t.undated); refreshCount(); persist(); renderSidebar(); refreshTripList(def, z); };
+  const refreshD = ()=>{
+    t.dated.sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));
+    renderMiniList(dList, t.dated, {showDate:true}); refreshCount(); persist(); renderSidebar(); refreshTripList(def, z);
+  };
+  t.dated.sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));
+  renderMiniList(uList, t.undated);
+  renderMiniList(dList, t.dated, {showDate:true});
+  refreshCount();
+  bindMiniList(uList, t.undated, refreshU);
+  bindMiniList(dList, t.dated, refreshD);
+
+  const uInput = host.querySelector('.u-input');
+  function addUndated(){
+    const v = uInput.value.trim(); if(!v) return;
+    t.undated.unshift({id:uid(), text:v, done:false}); uInput.value=''; refreshU();
+  }
+  host.querySelector('.u-add').addEventListener('click', addUndated);
+  uInput.addEventListener('keydown',(e)=>{ if(e.key==='Enter') addUndated(); });
+
+  const dInput = host.querySelector('.d-input');
+  const dDate = host.querySelector('.d-date');
+  function addDated(){
+    const v = dInput.value.trim(); if(!v) return;
+    t.dated.push({id:uid(), text:v, done:false, date:dDate.value||''});
+    dInput.value=''; refreshD();
+  }
+  host.querySelector('.d-add').addEventListener('click', addDated);
+  dInput.addEventListener('keydown',(e)=>{ if(e.key==='Enter') addDated(); });
+
+  const delBtn = host.querySelector('.trip-del');
+  delBtn.addEventListener('click',()=>{
+    if(delBtn.dataset.confirm==='1'){
+      z.trips = z.trips.filter(x=>x.id!==t.id);
+      selectedEntry[def.nodeId] = null;
+      showDetailMobile = false;
+      persist(); renderAll();
+    } else {
+      delBtn.dataset.confirm='1'; delBtn.textContent='Wirklich?';
+      setTimeout(()=>{ if(delBtn.dataset.confirm==='1'){ delBtn.dataset.confirm=''; delBtn.textContent='🗑'; } },3000);
+    }
+  });
+}
+
+/* Zaehler in der linken Eintragsliste aktualisieren, ohne alles neu zu zeichnen */
+function refreshTripList(def, z){
+  const sorted = [...z.trips].sort((a,b)=>(a.dateFrom||'9999').localeCompare(b.dateFrom||'9999'));
+  const items = document.querySelectorAll('#entry-list-body .entry-item');
+  items.forEach((el,i)=>{
+    const t = sorted[i]; if(!t) return;
+    const open = t.undated.filter(x=>!x.done).length + t.dated.filter(x=>!x.done).length;
+    const sub = el.querySelector('.entry-item-sub');
+    if(sub) sub.textContent = `${tripRangeText(t)} · ${open} offen`;
+  });
+}
+
+/* Tage zwischen zwei Daten (inklusive) */
+function tripNights(t){
+  if(!t.dateFrom || !t.dateTo) return null;
+  const a = new Date(t.dateFrom+'T00:00:00'), b = new Date(t.dateTo+'T00:00:00');
+  const diff = Math.round((b-a)/86400000);
+  return diff >= 0 ? diff+1 : null;
+}
+/* Tage bis zur Abreise; negativ = laeuft schon / vorbei */
+function daysUntil(dateStr){
+  if(!dateStr) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(dateStr+'T00:00:00');
+  return Math.round((d-today)/86400000);
+}
+function tripStatus(t){
+  const from = daysUntil(t.dateFrom), to = daysUntil(t.dateTo);
+  if(from===null && to===null) return {cls:'', label:'—'};
+  if(to!==null && to < 0)      return {cls:'past',    label:'vorbei'};
+  if(from!==null && from <= 0) return {cls:'now',     label:'läuft'};
+  if(from!==null && from <= 30)return {cls:'soon',    label:`in ${from} Tg.`};
+  return {cls:'future', label:`in ${from} Tg.`};
+}
+
+function tripRangeText(t){
+  if(t.dateFrom && t.dateTo) return `${fmtDay(t.dateFrom)} → ${fmtDay(t.dateTo)}`;
+  if(t.dateFrom) return `ab ${fmtDay(t.dateFrom)}`;
+  if(t.dateTo)   return `bis ${fmtDay(t.dateTo)}`;
+  return 'kein Zeitraum';
+}
+
+/* ---------------- ANTRÄGE ----------------
+   Links die Liste aller Anträge mit Status und Frist, rechts der geöffnete
+   Antrag mit Schritten, benötigten Unterlagen und Notizen. */
+function deadlineStatus(it){
+  if(it.status==='erledigt') return {cls:'done', label:'erledigt'};
+  const d = daysUntil(it.due);
+  if(d===null) return {cls:'none', label:'ohne Frist'};
+  if(d < 0)    return {cls:'over', label:`${-d} Tg. über`};
+  if(d === 0)  return {cls:'over', label:'heute fällig'};
+  if(d <= 7)   return {cls:'soon', label:`in ${d} Tg.`};
+  return {cls:'future', label:`in ${d} Tg.`};
+}
+/* Sortierung: offene nach Frist, erledigte ans Ende */
+function sortedDeadlines(items){
+  return [...items].sort((a,b)=>{
+    const ae = a.status==='erledigt', be = b.status==='erledigt';
+    if(ae!==be) return ae?1:-1;
+    return (a.due||'9999').localeCompare(b.due||'9999');
+  });
+}
+
+function renderDeadlines(c, def){
+  const z = data.nodes[def.nodeId];
+  const sorted = sortedDeadlines(z.items);
+  const offen = z.items.filter(i=>i.status!=='erledigt').length;
+
+  /* Standardauswahl: der dringendste offene Antrag */
+  let sel = selectedEntry[def.nodeId];
+  if(!sel || !z.items.some(i=>i.id===sel)){
+    const next = sorted.find(i=>i.status!=='erledigt') || sorted[0];
+    sel = next ? next.id : null;
+  }
+  selectedEntry[def.nodeId] = sel;
+
+  renderEntryLayout(c, {
+    def, entries: sorted, selectedId: sel,
+    listTitle: `Anträge · ${offen} offen`,
+    addLabel: '+ Neuer Antrag',
+    headMeta: `${offen} von ${z.items.length} offen`,
+    emptyHint: 'Wähle links einen Antrag oder lege einen neuen an.',
+    itemInfo: it=>{
+      const st = deadlineStatus(it);
+      const sd = antragStatusDef(it.status);
+      const rest = (it.docs||[]).filter(d=>!d.done).length
+                 + (it.steps||[]).filter(s=>!s.done).length;
+      return {
+        title: it.text,
+        status: st.cls==='done' ? 'past' : (st.cls==='over' ? 'over' : (st.cls==='soon'?'soon':'')),
+        sub: `${sd.icon} ${sd.label} · ${st.label}${rest?` · ${rest} offen`:''}`
+      };
+    },
+    onAdd: ()=>openDeadlineForm(c, def, z),
+    renderDetail: (host, it)=>renderDeadlineDetail(host, c, def, z, it)
+  });
+}
+
+/* Neuen Antrag anlegen */
+function openDeadlineForm(c, def, z){
+  const detail = document.getElementById('entry-detail');
+  detail.innerHTML = `<button class="entry-back" id="entry-back">← Zurück zur Liste</button>
+    <h2 class="detail-title">Neuer Antrag</h2>
+    <div class="dl-new">
+      <input type="text" id="dl-text" placeholder="Worum geht es? z. B. Wohngeld" maxlength="120">
+      <div class="dl-new-date">
+        <label for="dl-due">Frist</label>
+        <input type="date" id="dl-due">
+      </div>
+      <button class="ib-btn primary" id="dl-add">Antrag anlegen</button>
+    </div>
+    <div class="exp-sum-note" style="margin-top:10px;">
+      Schritte, Unterlagen und Notizen trägst du danach im Antrag selbst ein.
+    </div>`;
+  document.getElementById('entry-back').addEventListener('click',()=>{ showDetailMobile=false; renderMain(); });
+  const textInp = document.getElementById('dl-text');
+  textInp.focus();
+  function create(){
+    const text = textInp.value.trim();
+    if(!text) return;
+    const neu = {id:uid(), text, status:'vorbereiten', done:false,
+                 due: document.getElementById('dl-due').value || '',
+                 steps:[], docs:[], note:''};
+    z.items.push(neu);
+    selectedEntry[def.nodeId] = neu.id;
+    showDetailMobile = true;
+    persist(); renderAll();
+  }
+  document.getElementById('dl-add').addEventListener('click', create);
+  textInp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') create(); });
+}
+
+/* Ausführliche Ansicht eines Antrags */
+function renderDeadlineDetail(host, c, def, z, it){
+  const st = deadlineStatus(it);
+  const offeneDocs  = (it.docs ||[]).filter(d=>!d.done).length;
+  const offeneSteps = (it.steps||[]).filter(s=>!s.done).length;
+  host.innerHTML = `
+    <div class="detail-head">
+      <div class="detail-head-main">
+        <h2 class="detail-title" id="dl-title">${escapeHtml(it.text)}</h2>
+        <div class="dl-detail-meta">
+          <span class="tt-dot ${st.cls}"></span><span class="dl-frist-txt">${st.label}</span>
+          <input type="date" id="dl-due-edit" value="${it.due||''}" aria-label="Frist ändern">
+        </div>
+      </div>
+      <button class="del-btn dl-del" aria-label="Antrag löschen">🗑</button>
+    </div>
+
+    <div class="dl-steps-bar" id="dl-status-bar">
+      ${ANTRAG_STATUS.map(s=>`
+        <button class="dl-step${it.status===s.key?' active':''}${
+          ANTRAG_STATUS.findIndex(x=>x.key===it.status) > ANTRAG_STATUS.findIndex(x=>x.key===s.key)?' passed':''}"
+          data-status="${s.key}">
+          <span class="dl-step-icon">${s.icon}</span>
+          <span class="dl-step-label">${s.label}</span>
+          <span class="dl-step-hint">${s.hint}</span>
+        </button>`).join('')}
+    </div>
+
+    <div class="dl-cols">
+      <div class="dl-col">
+        <h5>📋 Schritte${offeneSteps?` <span class="dl-rest">${offeneSteps} offen</span>`:''}</h5>
+        <div class="input-row">
+          <input type="text" class="st-input" placeholder="Was ist zu tun …" maxlength="200">
+          <button class="st-add">+</button>
+        </div>
+        <ul class="mini-list st-list"></ul>
+      </div>
+      <div class="dl-col">
+        <h5>📎 Benötigte Unterlagen${offeneDocs?` <span class="dl-rest">${offeneDocs} fehlen</span>`:''}</h5>
+        <div class="input-row">
+          <input type="text" class="dc-input" placeholder="z. B. Gehaltsnachweis …" maxlength="200">
+          <button class="dc-add">+</button>
+        </div>
+        <ul class="mini-list dc-list"></ul>
+      </div>
+    </div>
+
+    <div class="dl-note-box">
+      <h5>📝 Notizen</h5>
+      <textarea id="dl-note" placeholder="Aktenzeichen, Ansprechpartner, Telefonnotizen …">${escapeHtml(it.note||'')}</textarea>
+    </div>
+  `;
+
+  /* Titel per Klick ändern */
+  const titleEl = host.querySelector('#dl-title');
+  titleEl.classList.add('editable-title');
+  titleEl.addEventListener('click',()=>{
+    if(titleEl.querySelector('input')) return;
+    const inp = document.createElement('input');
+    inp.className = 'dl-title-input'; inp.type='text'; inp.value = it.text;
+    titleEl.textContent=''; titleEl.appendChild(inp); inp.focus(); inp.select();
+    let fertig=false;
+    const save=()=>{ if(fertig)return; fertig=true;
+      const t=inp.value.trim(); if(t) it.text=t;
+      persist(); renderMain(); };
+    inp.addEventListener('blur', save);
+    inp.addEventListener('keydown',(e)=>{
+      if(e.key==='Enter'){ e.preventDefault(); inp.blur(); }
+      else if(e.key==='Escape'){ fertig=true; renderMain(); }
+    });
+  });
+
+  /* Frist ändern */
+  host.querySelector('#dl-due-edit').addEventListener('change',(e)=>{
+    it.due = e.target.value || '';
+    persist(); renderMain(); renderSidebar();
+  });
+
+  /* Status setzen */
+  host.querySelectorAll('[data-status]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      it.status = btn.dataset.status;
+      it.done = it.status === 'erledigt';
+      persist(); renderMain(); renderSidebar();
+    });
+  });
+
+  /* Schritte und Unterlagen - gleiche Mechanik, zwei Listen */
+  [{feld:'steps', list:'.st-list', input:'.st-input', add:'.st-add'},
+   {feld:'docs',  list:'.dc-list', input:'.dc-input', add:'.dc-add'}].forEach(cfg=>{
+    const ul  = host.querySelector(cfg.list);
+    const inp = host.querySelector(cfg.input);
+    const refresh = ()=>{
+      renderMiniList(ul, it[cfg.feld]);
+      persist(); renderSidebar();
+      /* Zähler in der Überschrift mitziehen */
+      const rest = it[cfg.feld].filter(x=>!x.done).length;
+      const h5 = ul.closest('.dl-col').querySelector('h5 .dl-rest');
+      if(h5) h5.textContent = cfg.feld==='docs' ? `${rest} fehlen` : `${rest} offen`;
+      else if(rest>0) renderMain();
+      const aktiv = document.querySelector('.entry-item.active .entry-item-sub');
+      if(aktiv){
+        const stt = deadlineStatus(it), sd = antragStatusDef(it.status);
+        const r = (it.docs||[]).filter(d=>!d.done).length + (it.steps||[]).filter(s=>!s.done).length;
+        aktiv.textContent = `${sd.icon} ${sd.label} · ${stt.label}${r?` · ${r} offen`:''}`;
+      }
+    };
+    renderMiniList(ul, it[cfg.feld]);
+    bindMiniList(ul, it[cfg.feld], refresh);
+    function add(){
+      const t = inp.value.trim(); if(!t) return;
+      it[cfg.feld].push({id:uid(), text:t, done:false});
+      inp.value=''; refresh(); inp.focus();
+    }
+    host.querySelector(cfg.add).addEventListener('click', add);
+    inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') add(); });
+  });
+
+  /* Notizen - beim Verlassen speichern */
+  const note = host.querySelector('#dl-note');
+  note.addEventListener('blur',()=>{ it.note = note.value; persist(); });
+
+  /* Löschen mit Rückfrage */
+  const delBtn = host.querySelector('.dl-del');
+  delBtn.addEventListener('click',()=>{
+    if(delBtn.dataset.confirm==='1'){
+      z.items = z.items.filter(x=>x.id!==it.id);
+      selectedEntry[def.nodeId] = null;
+      showDetailMobile = false;
+      persist(); renderAll();
+    } else {
+      delBtn.dataset.confirm='1'; delBtn.textContent='Wirklich?';
+      setTimeout(()=>{ if(delBtn.dataset.confirm==='1'){ delBtn.dataset.confirm=''; delBtn.textContent='🗑'; } },3000);
+    }
+  });
+}
+
+/* ---------------- AUSGABEN ----------------
+   Ein Datensatz pro Monat. Wohnen + Essen werden geteilt, Sonstiges ist voll deins.
+   Wohnen/Sonstiges: feste Monatsposten (werden in den Folgemonat uebernommen).
+   Essen: Belege mit Datum und Betrag.
+   Abgeschlossene Monate sind gesperrt und fliessen in den Jahresueberblick. */
+function renderExpenses(c, def){
+  const node = data.nodes[def.nodeId];
+  const alleYm = Object.keys(node.months).sort().reverse();
+  const jahre  = [...new Set(alleYm.map(k=>k.slice(0,4)))].sort().reverse();
+  const heute  = new Date().toISOString().slice(0,7);
+
+  /* Auswahl kann ein Monat ("2026-07") oder ein Jahr ("jahr:2026") sein */
+  let sel = selectedEntry[def.nodeId];
+  const gueltig = sel && (node.months[sel] || (sel.startsWith('jahr:') && jahre.includes(sel.slice(5))));
+  if(!gueltig) sel = node.months[heute] ? heute : (alleYm[0] || null);
+  selectedEntry[def.nodeId] = sel;
+
+  c.innerHTML = renderNodeHead(def, `${alleYm.length} Monat(e) · ${jahre.length} Jahr(e)`) + `
+    <div class="entry-layout${showDetailMobile?' show-detail':''}" id="entry-layout">
+      <div class="entry-list">
+        <div class="entry-list-head"><span class="entry-list-title">Jahre &amp; Monate</span></div>
+        <div class="entry-list-body" id="entry-list-body"></div>
+        <div class="entry-list-foot">
+          <button class="entry-add-btn" id="entry-add">+ Neuer Monat</button>
+        </div>
+      </div>
+      <div class="entry-detail" id="entry-detail"></div>
+    </div>
+  `;
+  /* Baum: Jahr als eigener Eintrag, darunter eingerueckt seine Monate */
+  const listBody = document.getElementById('entry-list-body');
+  if(alleYm.length===0){
+    listBody.innerHTML = '<div class="entry-empty" style="padding:12px;">Noch nichts angelegt.</div>';
+  } else {
+    jahre.forEach(j=>{
+      const monateDesJahres = alleYm.filter(k=>k.startsWith(j));
+      const jSum = monateDesJahres.reduce((s,k)=>s + expenseSums(node.months[k]).meins, 0);
+      const jahrId = 'jahr:'+j;
+
+      /* Jahre sind einklappbar; Standard: offen, Zustand bleibt gespeichert */
+      const zu = !!collapsedSaeulen['exp:'+j];
+      const jRow = document.createElement('div');
+      jRow.className = 'entry-year'+(sel===jahrId?' active':'')+(zu?' collapsed':'');
+      jRow.innerHTML = `
+        <button class="entry-year-toggle" aria-label="Monate auf-/zuklappen">${zu?'▸':'▾'}</button>
+        <div class="entry-year-main">
+          <div class="entry-year-title">📊 Jahr ${j}</div>
+          <div class="entry-year-sub">${eur(jSum)} · ${monateDesJahres.length} Monat(e)</div>
+        </div>`;
+      jRow.querySelector('.entry-year-toggle').addEventListener('click',(ev)=>{
+        ev.stopPropagation();
+        collapsedSaeulen['exp:'+j] = !collapsedSaeulen['exp:'+j];
+        saveCollapsed(); renderExpenses(c, def);
+      });
+      jRow.addEventListener('click',()=>{
+        selectedEntry[def.nodeId] = jahrId;
+        showDetailMobile = true;
+        renderExpenses(c, def);
+      });
+      listBody.appendChild(jRow);
+      if(zu) return;   /* eingeklappt: Monate ueberspringen */
+
+      monateDesJahres.forEach(ym=>{
+        const m = node.months[ym];
+        const s = expenseSums(m);
+        const st = m.closed ? 'past' : (ym===heute ? 'now' : '');
+        const item = document.createElement('div');
+        item.className = 'entry-item nested'+(ym===sel?' active':'')+(st?' st-'+st:'');
+        item.innerHTML = `<div class="entry-item-title">${fmtYm(ym).replace(' '+j,'')}</div>
+          <div class="entry-item-sub">${eur(s.meins)} · ${m.closed?'abgeschlossen':'offen'}</div>`;
+        item.addEventListener('click',()=>{
+          selectedEntry[def.nodeId] = ym;
+          showDetailMobile = true;
+          renderExpenses(c, def);
+        });
+        listBody.appendChild(item);
+      });
+    });
+  }
+  document.getElementById('entry-add').addEventListener('click',()=>openExpenseMonthForm(c, def, node));
+
+  /* Detailbereich: Jahresauswertung oder einzelner Monat */
+  const detail = document.getElementById('entry-detail');
+  const backBtn = `<button class="entry-back" id="entry-back">← Zurück zur Liste</button>`;
+  if(!sel){
+    detail.innerHTML = backBtn + '<div class="entry-empty">Wähle links einen Monat oder lege einen neuen an.</div>';
+  } else if(sel.startsWith('jahr:')){
+    detail.innerHTML = backBtn + '<div id="entry-detail-body"></div>';
+    renderExpenseYear(document.getElementById('entry-detail-body'), c, def, node, sel.slice(5));
+  } else {
+    detail.innerHTML = backBtn + '<div id="entry-detail-body"></div>';
+    renderExpenseMonth(document.getElementById('entry-detail-body'), c, def, node, sel);
+  }
+  const bb = document.getElementById('entry-back');
+  if(bb) bb.addEventListener('click',()=>{ showDetailMobile=false; renderMain(); });
+}
+
+/* Neuen Monat anlegen - zeigt die naechsten offenen Monate zur Auswahl */
+function openExpenseMonthForm(c, def, node){
+  const heute = new Date().toISOString().slice(0,7);
+  const vorschlag = node.months[heute] ? naechsterFreierMonat(node, heute) : heute;
+  const detail = document.getElementById('entry-detail');
+  detail.innerHTML = `<button class="entry-back" id="entry-back">← Zurück zur Liste</button>
+    <h2 class="detail-title">Neuer Monat</h2>
+    <div class="exp-newmonth">
+      <input type="month" id="nm-ym" value="${vorschlag}" aria-label="Monat wählen">
+      <button class="ib-btn primary" id="nm-add">Monat anlegen</button>
+    </div>
+    <div class="exp-sum-note" style="margin-top:10px;">
+      Feste Posten (Wohnen, Sonstiges) werden aus dem letzten erfassten Monat übernommen.
+    </div>`;
+  document.getElementById('entry-back').addEventListener('click',()=>{ showDetailMobile=false; renderMain(); });
+  document.getElementById('nm-add').addEventListener('click',()=>{
+    const ym = document.getElementById('nm-ym').value;
+    if(!ym) return;
+    getExpenseMonth(node, ym, true);
+    selectedEntry[def.nodeId] = ym;
+    showDetailMobile = true;
+    persist(); renderAll();
+  });
+}
+function naechsterFreierMonat(node, ab){
+  let [y,m] = ab.split('-').map(Number);
+  for(let i=0;i<36;i++){
+    m++; if(m>12){ m=1; y++; }
+    const k = y+'-'+String(m).padStart(2,'0');
+    if(!node.months[k]) return k;
+  }
+  return ab;
+}
+
+/* Detail eines Monats: Summen, Kategorien, Abschliessen */
+function renderExpenseMonth(host, c, def, node, ym){
+  const monat = node.months[ym];
+  if(!monat) return;
+  const s = expenseSums(monat);
+  const zu = !!monat.closed;
+  /* Vergleich zum vorherigen erfassten Monat */
+  const vmYm = vormonatVon(node, ym);
+  const vs = vmYm ? expenseSums(node.months[vmYm]) : null;
+  const dNote = (jetzt, vorher)=>{
+    if(!vs) return '';
+    const d = diffInfo(jetzt, vorher);
+    return `<span class="exp-diff ${d.cls}">${d.text}</span> ggü. ${fmtYm(vmYm).replace(/ \d{4}$/,'')}`;
+  };
+  host.innerHTML = `
+    <div class="detail-head">
+      <div class="detail-head-main">
+        <h2 class="detail-title">${fmtYm(ym)}
+          ${zu?'<span class="exp-lock">abgeschlossen</span>':'<span class="exp-open">offen</span>'}</h2>
+      </div>
+      <button class="ib-btn ${zu?'ghost':'primary'}" id="exp-close">
+        ${zu ? '↺ Wieder öffnen' : '✓ Monat abschließen'}</button>
+      <button class="del-btn exp-del" aria-label="Monat löschen">🗑</button>
+    </div>
+    <div class="exp-summary">
+      <div class="exp-sum-box main">
+        <div class="exp-sum-label">Dein Anteil</div>
+        <div class="exp-sum-value" id="exp-mine">${eur(s.meins)}</div>
+        <div class="exp-sum-note" id="exp-mine-diff">${
+          vs ? dNote(s.meins, vs.meins) : 'halbes Gemeinsames + Sonstiges'}</div>
+      </div>
+      <div class="exp-sum-box">
+        <div class="exp-sum-label">Gemeinsam (ihr beide)</div>
+        <div class="exp-sum-value sub" id="exp-shared">${eur(s.gemeinsam)}</div>
+        <div class="exp-sum-note" id="exp-shared-diff">${
+          vs ? dNote(s.gemeinsam, vs.gemeinsam) : 'nur Wohnen + Essen'}</div>
+      </div>
+      <div class="exp-sum-box">
+        <div class="exp-sum-label">Alles zusammen</div>
+        <div class="exp-sum-value sub" id="exp-all">${eur(s.alles)}</div>
+        <div class="exp-sum-note" id="exp-all-diff">${
+          vs ? dNote(s.alles, vs.alles) : 'inkl. deiner sonstigen Ausgaben'}</div>
+      </div>
+    </div>
+    <div class="exp-cats${zu?' locked':''}" id="exp-cats"></div>
+  `;
+  document.getElementById('exp-close').addEventListener('click',()=>{
+    monat.closed = !monat.closed;
+    persist(); renderMain(); renderSidebar();
+  });
+  const delBtn = host.querySelector('.exp-del');
+  delBtn.addEventListener('click',()=>{
+    if(delBtn.dataset.confirm==='1'){
+      delete node.months[ym];
+      selectedEntry[def.nodeId] = null;
+      showDetailMobile = false;
+      persist(); renderAll();
+    } else {
+      delBtn.dataset.confirm='1'; delBtn.textContent='Wirklich?';
+      setTimeout(()=>{ if(delBtn.dataset.confirm==='1'){ delBtn.dataset.confirm=''; delBtn.textContent='🗑'; } },3000);
+    }
+  });
+  renderExpenseCats(c, def, node, monat, zu, ym, vs);
+}
+
+function refreshExpenseSums(c, def, monat){
+  const s = expenseSums(monat);
+  const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.textContent = v; };
+  set('exp-mine', eur(s.meins));
+  set('exp-shared', eur(s.gemeinsam));
+  set('exp-all', eur(s.alles));
+  EXPENSE_CATS.forEach(cat=>{
+    set('exp-cat-sum-'+cat.key, eur(s.proKat[cat.key]));
+    set('exp-cat-mine-'+cat.key, cat.shared
+      ? `davon deins ${eur(s.proKat[cat.key]/2)}` : 'komplett deins');
+  });
+  /* Betrag in der linken Monatsliste mitziehen */
+  const aktiv = document.querySelector('.entry-item.active .entry-item-sub');
+  if(aktiv) aktiv.textContent = `${eur(s.meins)} · ${monat.closed?'abgeschlossen':'offen'}`;
+  renderSidebar();
+}
+
+function renderExpenseCats(c, def, node, monat, gesperrt, ym, vs){
+  const wrap = document.getElementById('exp-cats');
+  wrap.innerHTML = '';
+  const s = expenseSums(monat);
+  EXPENSE_CATS.forEach(cat=>{
+    const box = document.createElement('div');
+    box.className = 'exp-cat '+cat.key;
+    box.innerHTML = `
+      <div class="exp-cat-head">
+        <div class="exp-cat-title">${cat.icon} ${cat.title}
+          <span class="exp-tag ${cat.shared?'shared':'own'}">${cat.shared?'geteilt':'nur ich'}</span>
+        </div>
+        <div class="exp-cat-nums">
+          <div class="exp-cat-sum" id="exp-cat-sum-${cat.key}">${eur(s.proKat[cat.key])}</div>
+          <div class="exp-cat-mine" id="exp-cat-mine-${cat.key}">${
+            cat.shared ? `davon deins ${eur(s.proKat[cat.key]/2)}` : 'komplett deins'}</div>
+        </div>
+      </div>
+      <div class="exp-cat-hint">${
+        vs ? (()=>{ const d=diffInfo(s.proKat[cat.key], vs.proKat[cat.key]);
+                    return `<span class="exp-diff ${d.cls}">${d.text}</span> ggü. Vormonat`; })()
+           : cat.hint}</div>
+      <div class="exp-rows" id="exp-rows-${cat.key}"></div>
+      ${gesperrt ? '' : `<div class="exp-add">
+        ${cat.mode==='receipts'
+          ? `<input type="date" class="exp-in-date" aria-label="Datum">
+             <input type="text" class="exp-in-amount" inputmode="decimal" placeholder="Betrag" maxlength="12">
+             <button class="ib-btn primary exp-add-btn">Beleg hinzufügen</button>`
+          : `<input type="text" class="exp-in-label" placeholder="Posten, z. B. Miete" maxlength="60">
+             <input type="text" class="exp-in-amount" inputmode="decimal" placeholder="Betrag" maxlength="12">
+             <button class="ib-btn primary exp-add-btn">Posten hinzufügen</button>`}
+      </div>`}
+    `;
+    wrap.appendChild(box);
+    renderExpenseRows(box, c, def, monat, cat, gesperrt, node, ym);
+    if(gesperrt) return;
+
+    const amountInp = box.querySelector('.exp-in-amount');
+    const labelInp  = box.querySelector('.exp-in-label');
+    const dateInp   = box.querySelector('.exp-in-date');
+    function add(){
+      const amount = parseAmount(amountInp.value);
+      if(amount===null){ amountInp.focus(); return; }
+      const eintrag = {id:uid(), amount};
+      if(cat.mode==='receipts'){
+        /* Standarddatum: erster Tag des angezeigten Monats, damit der Beleg sichtbar bleibt */
+        eintrag.date = dateInp.value || (ym+'-01');
+        if(eintrag.date.slice(0,7)!==ym){
+          /* Beleg gehoert in einen anderen Monat - dort ablegen statt still verschwinden */
+          const zielYm = eintrag.date.slice(0,7);
+          const ziel = getExpenseMonth(node, zielYm, true);
+          if(ziel.closed){ alert(fmtYm(zielYm)+' ist bereits abgeschlossen.'); return; }
+          ziel.cats[cat.key].push(eintrag);
+          selectedEntry[def.nodeId] = zielYm;
+          persist(); renderMain(); renderSidebar();
+          return;
+        }
+      } else {
+        const l = (labelInp.value||'').trim();
+        if(!l){ labelInp.focus(); return; }
+        eintrag.label = l;
+      }
+      monat.cats[cat.key].push(eintrag);
+      amountInp.value = '';
+      if(labelInp) labelInp.value = '';
+      persist();
+      renderExpenseRows(box, c, def, monat, cat, false, node, ym);
+      refreshExpenseSums(c, def, monat);
+      (labelInp || dateInp || amountInp).focus();
+    }
+    box.querySelector('.exp-add-btn').addEventListener('click', add);
+    [amountInp, labelInp, dateInp].forEach(inp=>{
+      if(inp) inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') add(); });
+    });
+  });
+}
+
+/* Akzeptiert "12,50" und "12.50" */
+function parseAmount(raw){
+  const t = (raw||'').trim().replace(/\s|€/g,'').replace(',','.');
+  if(!t) return null;
+  const v = Number(t);
+  return isFinite(v) && v>=0 ? v : null;
+}
+
+function renderExpenseRows(box, c, def, monat, cat, gesperrt, node, ym){
+  const host = box.querySelector('#exp-rows-'+cat.key);
+  let list = monat.cats[cat.key]||[];
+  if(cat.mode==='receipts') list = [...list].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(list.length===0){
+    host.innerHTML = `<div class="empty-mini">${cat.mode==='receipts'?'Keine Belege in diesem Monat.':'Noch kein Posten.'}</div>`;
+    return;
+  }
+  host.innerHTML = list.map(e=>`
+    <div class="exp-row" data-id="${e.id}">
+      <span class="exp-row-label${gesperrt?'':' editable'}" data-edit="label">${cat.mode==='receipts'
+        ? (e.date?fmtDay(e.date):'—') : escapeHtml(e.label||'')}</span>
+      <span class="exp-row-amount${gesperrt?'':' editable'}" data-edit="amount">${eur(e.amount)}</span>
+      ${gesperrt ? '' : `<button class="mini-del" data-del="${e.id}" aria-label="Löschen">×</button>`}
+    </div>`).join('');
+  if(gesperrt) return;
+  host.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      monat.cats[cat.key] = monat.cats[cat.key].filter(x=>x.id!==btn.dataset.del);
+      persist();
+      renderExpenseRows(box, c, def, monat, cat, false, node, ym);
+      refreshExpenseSums(c, def, monat);
+    });
+  });
+  /* Klick auf Text oder Betrag macht das Feld direkt aenderbar */
+  host.querySelectorAll('.editable').forEach(span=>{
+    span.addEventListener('click',()=>{
+      if(span.querySelector('input')) return;
+      const row = span.closest('.exp-row');
+      const eintrag = monat.cats[cat.key].find(x=>x.id===row.dataset.id);
+      if(!eintrag) return;
+      const feld = span.dataset.edit;
+      const istDatum = feld==='label' && cat.mode==='receipts';
+      const inp = document.createElement('input');
+      inp.className = 'exp-edit-input';
+      if(istDatum){ inp.type='date'; inp.value = eintrag.date||''; }
+      else if(feld==='amount'){ inp.type='text'; inp.inputMode='decimal';
+        inp.value = String(eintrag.amount).replace('.',','); }
+      else { inp.type='text'; inp.value = eintrag.label||''; }
+      span.textContent = '';
+      span.appendChild(inp);
+      inp.focus(); inp.select();
+      let fertig = false;
+      const speichern = ()=>{
+        if(fertig) return; fertig = true;
+        if(feld==='amount'){
+          const v = parseAmount(inp.value);
+          if(v!==null) eintrag.amount = v;
+        } else if(istDatum){
+          if(inp.value){
+            if(inp.value.slice(0,7)!==ym){
+              /* Datum aus einem anderen Monat: Beleg dorthin verschieben */
+              const ziel = getExpenseMonth(node, inp.value.slice(0,7), true);
+              if(ziel.closed){ alert(fmtYm(inp.value.slice(0,7))+' ist bereits abgeschlossen.'); }
+              else {
+                monat.cats[cat.key] = monat.cats[cat.key].filter(x=>x.id!==eintrag.id);
+                eintrag.date = inp.value;
+                ziel.cats[cat.key].push(eintrag);
+                persist(); renderMain(); renderSidebar();
+                return;
+              }
+            } else eintrag.date = inp.value;
+          }
+        } else {
+          const t = inp.value.trim();
+          if(t) eintrag.label = t;
+        }
+        persist();
+        renderExpenseRows(box, c, def, monat, cat, false, node, ym);
+        refreshExpenseSums(c, def, monat);
+      };
+      inp.addEventListener('blur', speichern);
+      inp.addEventListener('keydown',(ev)=>{
+        if(ev.key==='Enter'){ ev.preventDefault(); inp.blur(); }
+        else if(ev.key==='Escape'){ fertig = true; renderExpenseRows(box, c, def, monat, cat, false, node, ym); }
+      });
+    });
+  });
+}
+
+/* ---- Jahresauswertung ----
+   Eingebettet als eigener Eintrag pro Jahr. Monate lassen sich ab-/anwaehlen. */
+function renderExpenseYear(host, c, def, node, jahr){
+  const alleYm = Object.keys(node.months).sort();
+  const monateDesJahres = alleYm.filter(k=>k.startsWith(jahr));
+  /* Abwahl merken; standardmaessig ist alles gewaehlt */
+  const abgewaehlt = selectedEntry['__expoff'] || {};
+  selectedEntry['__expoff'] = abgewaehlt;
+  const gewaehlt = monateDesJahres.filter(k=>!abgewaehlt[k]);
+
+  const summe = {gemeinsam:0, eigene:0, meins:0, alles:0, proKat:{}};
+  EXPENSE_CATS.forEach(cat=>{ summe.proKat[cat.key]=0; });
+  gewaehlt.forEach(k=>{
+    const s = expenseSums(node.months[k]);
+    summe.gemeinsam += s.gemeinsam; summe.eigene += s.eigene;
+    summe.meins += s.meins;         summe.alles  += s.alles;
+    EXPENSE_CATS.forEach(cat=>{ summe.proKat[cat.key] += s.proKat[cat.key]; });
+  });
+  const n = gewaehlt.length;
+
+  const zeilen = monateDesJahres.map(k=>{
+    const s = expenseSums(node.months[k]);
+    const an = !abgewaehlt[k];
+    const zu = node.months[k].closed;
+    return `<tr data-ym="${k}" class="${an?'':'row-off'}">
+      <td class="dl-check"><span class="mini-checkbox ${an?'on':''}" data-toggle="${k}">
+        <svg viewBox="0 0 18 18"><path d="M3 9l4 4 8-8"/></svg></span></td>
+      <td class="tt-title">${fmtYm(k)}
+        ${zu?'<span class="exp-lock sm">abgeschlossen</span>':'<span class="exp-open sm">offen</span>'}</td>
+      <td class="tt-num">${eur(s.gemeinsam)}</td>
+      <td class="tt-num">${eur(s.eigene)}</td>
+      <td class="tt-num strong">${eur(s.meins)}</td>
+      <td class="tt-num">${eur(s.alles)}</td>
+    </tr>`;
+  }).join('');
+
+  const alleZu = monateDesJahres.every(k=>node.months[k].closed);
+  host.innerHTML = `
+    <div class="detail-head">
+      <div class="detail-head-main">
+        <h2 class="detail-title">📊 Jahr ${jahr}
+          ${alleZu && monateDesJahres.length ? '<span class="exp-lock">vollständig</span>'
+            : '<span class="exp-open">läuft</span>'}</h2>
+        <div class="exp-sum-note" style="margin-top:4px;">
+          ${n} von ${monateDesJahres.length} Monat(en) in der Auswertung</div>
+      </div>
+    </div>
+    ${monateDesJahres.length===0 ? '<div class="empty-mini">Für dieses Jahr ist noch kein Monat erfasst.</div>' : `
+    <div class="exp-summary">
+      <div class="exp-sum-box main">
+        <div class="exp-sum-label">Dein Anteil ${jahr}</div>
+        <div class="exp-sum-value">${eur(summe.meins)}</div>
+        <div class="exp-sum-note">Ø ${n?eur(summe.meins/n):eur(0)} pro Monat</div>
+      </div>
+      <div class="exp-sum-box">
+        <div class="exp-sum-label">Gemeinsam (ihr beide)</div>
+        <div class="exp-sum-value sub">${eur(summe.gemeinsam)}</div>
+        <div class="exp-sum-note">Ø ${n?eur(summe.gemeinsam/n):eur(0)} pro Monat</div>
+      </div>
+      <div class="exp-sum-box">
+        <div class="exp-sum-label">Alles zusammen</div>
+        <div class="exp-sum-value sub">${eur(summe.alles)}</div>
+        <div class="exp-sum-note">Ø ${n?eur(summe.alles/n):eur(0)} pro Monat</div>
+      </div>
+    </div>
+    <div class="exp-katzeile">
+      ${EXPENSE_CATS.map(cat=>`<div class="exp-katbox ${cat.key}">
+        <div class="exp-sum-label">${cat.icon} ${cat.title}</div>
+        <div class="exp-katsum">${eur(summe.proKat[cat.key])}</div>
+        <div class="exp-sum-note">Ø ${n?eur(summe.proKat[cat.key]/n):eur(0)} / Monat</div>
+      </div>`).join('')}
+    </div>
+    <div class="tt-wrap">
+      <table class="trip-table">
+        <thead><tr>
+          <th></th><th>Monat</th><th>Gemeinsam</th><th>Sonstiges</th><th>Dein Anteil</th><th>Alles</th>
+        </tr></thead>
+        <tbody>${zeilen}</tbody>
+      </table>
+    </div>
+    <div class="exp-sum-note" style="margin-top:10px;">
+      Häkchen entfernen, um einen Monat aus der Auswertung zu nehmen ·
+      Klick auf den Monatsnamen öffnet ihn
+    </div>`}
+  `;
+  /* Klick auf eine Monatszeile springt direkt in diesen Monat */
+  host.querySelectorAll('tr[data-ym] .tt-title').forEach(td=>{
+    td.style.cursor = 'pointer';
+    td.addEventListener('click',()=>{
+      selectedEntry[def.nodeId] = td.closest('tr').dataset.ym;
+      showDetailMobile = true;
+      renderExpenses(c, def);
+    });
+  });
+  host.querySelectorAll('[data-toggle]').forEach(cb=>{
+    cb.addEventListener('click',()=>{
+      const k = cb.dataset.toggle;
+      if(abgewaehlt[k]) delete abgewaehlt[k]; else abgewaehlt[k] = true;
+      renderExpenseYear(host, c, def, node, jahr);
+    });
+  });
+}
+
+/* ---------------- BUSINESS: OPTIMIERUNGEN ----------------
+   Bewusst schlicht: Bereich wählen, Notiz schreiben, abhaken. */
+const OPT_BEREICHE = ['Motive','Listings','Versand','Kunden','Shop','Marketing','Sonstiges'];
+
+function renderIdeas(c, def){
+  const z = data.nodes[def.nodeId];
+  const offen = z.items.filter(i=>!i.done).length;
+  /* Offene zuerst, innerhalb nach Bereich gruppiert bleiben sie in Eingabereihenfolge */
+  const sorted = [...z.items].sort((a,b)=>(a.done?1:0)-(b.done?1:0));
+
+  c.innerHTML = renderNodeHead(def, `${offen} offen`) + `
+    <div class="opt-list" id="opt-list"></div>
+    <div class="tsk-new">
+      <select id="op-bereich" aria-label="Bereich">
+        ${OPT_BEREICHE.map(b=>`<option value="${b}">${b}</option>`).join('')}
+      </select>
+      <input type="text" id="op-text" placeholder="Was könnte besser laufen?" maxlength="300">
+      <button class="ib-btn primary" id="op-add">Hinzufügen</button>
+    </div>
+  `;
+  const host = document.getElementById('opt-list');
+  if(sorted.length===0){
+    host.innerHTML = '<div class="empty-mini">Noch nichts notiert.</div>';
+  } else {
+    host.innerHTML = sorted.map(it=>`
+      <div class="opt-row${it.done?' done':''}" data-id="${it.id}">
+        <span class="mini-checkbox" data-check="${it.id}"><svg viewBox="0 0 18 18"><path d="M3 9l4 4 8-8"/></svg></span>
+        <span class="opt-bereich" data-cycle="${it.id}" title="Bereich wechseln">${escapeHtml(it.bereich||'Sonstiges')}</span>
+        <span class="opt-text" data-edit="${it.id}">${escapeHtml(it.text)}</span>
+        <button class="mini-del" data-del="${it.id}" aria-label="Löschen">×</button>
+      </div>`).join('');
+  }
+  const refresh = ()=>{ persist(); renderIdeas(c, def); renderSidebar(); };
+  host.querySelectorAll('[data-check]').forEach(el=>el.addEventListener('click',()=>{
+    const it = z.items.find(i=>i.id===el.dataset.check);
+    if(it){ it.done=!it.done; refresh(); }
+  }));
+  host.querySelectorAll('[data-del]').forEach(el=>el.addEventListener('click',()=>{
+    z.items = z.items.filter(i=>i.id!==el.dataset.del); refresh();
+  }));
+  /* Klick auf den Bereich schaltet durch die Liste */
+  host.querySelectorAll('[data-cycle]').forEach(el=>el.addEventListener('click',()=>{
+    const it = z.items.find(i=>i.id===el.dataset.cycle); if(!it) return;
+    const i = OPT_BEREICHE.indexOf(it.bereich||'Sonstiges');
+    it.bereich = OPT_BEREICHE[(i+1)%OPT_BEREICHE.length];
+    refresh();
+  }));
+  /* Text per Klick ändern */
+  host.querySelectorAll('[data-edit]').forEach(el=>el.addEventListener('click',()=>{
+    if(el.querySelector('textarea')) return;
+    const it = z.items.find(i=>i.id===el.dataset.edit); if(!it) return;
+    const ta = document.createElement('textarea');
+    ta.className='opt-edit'; ta.value=it.text; ta.rows=Math.max(1, Math.ceil(it.text.length/70));
+    el.textContent=''; el.appendChild(ta); ta.focus(); ta.select();
+    let fertig=false;
+    const save=()=>{ if(fertig)return; fertig=true;
+      const t=ta.value.trim(); if(t) it.text=t; refresh(); };
+    ta.addEventListener('blur', save);
+    ta.addEventListener('keydown',(e)=>{
+      if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); ta.blur(); }
+      else if(e.key==='Escape'){ fertig=true; renderIdeas(c, def); }
+    });
+  }));
+  function add(){
+    const t = document.getElementById('op-text').value.trim();
+    if(!t) return;
+    z.items.push({id:uid(), text:t, done:false,
+      bereich: document.getElementById('op-bereich').value});
+    refresh();
+  }
+  document.getElementById('op-add').addEventListener('click', add);
+  document.getElementById('op-text').addEventListener('keydown',(e)=>{ if(e.key==='Enter') add(); });
+}
+
+/* ---------------- BUSINESS: MARGE ----------------
+   Oben Plattform wählen (Etsy / Shopify), darunter deren Gebühren
+   und eine Tabelle mit allen Produkten und Größen. */
+function platDef(key){ return PLATTFORMEN.find(p=>p.key===key) || PLATTFORMEN[0]; }
+
+/* Rechnet eine Zeile für eine Plattform durch.
+   Versand ist im Verkaufspreis enthalten, zählt also als Kostenblock. */
+function rowMargin(row, fees){
+  const preis = Number(row.price)||0;
+  const druck = Number(row.druck)||0;
+  const versand = Number(row.versand)||0;
+  const gebuehr = (fees||[]).reduce((s,f)=>
+    s + preis*(Number(f.pct)||0)/100 + (Number(f.fix)||0), 0);
+  const kosten = druck + versand + gebuehr;
+  const gewinn = preis - kosten;
+  return {preis, druck, versand, gebuehr, kosten, gewinn,
+          proz: preis>0 ? gewinn/preis*100 : 0};
+}
+function margeKlasse(proz){
+  if(proz >= 40) return 'gut';
+  if(proz >= 20) return 'mittel';
+  return 'schwach';
+}
+
+function renderMargin(c, def){
+  const z = data.nodes[def.nodeId];
+  const aktiv = z.aktiv || 'etsy';
+  z.aktiv = aktiv;
+  const fees = z.plats[aktiv] || [];
+  const pd = platDef(aktiv);
+
+  /* Beispielpreis für die Gebührenanzeige: mittlerer Verkaufspreis */
+  const preise = z.rows.map(r=>Number(r.price)||0).filter(p=>p>0);
+  const beispiel = preise.length ? preise.reduce((a,b)=>a+b,0)/preise.length : 0;
+
+  c.innerHTML = renderNodeHead(def, `${z.rows.length} Produkt(e)`) + `
+    <div class="mg-plat-switch" id="mg-switch">
+      ${PLATTFORMEN.map(p=>`<button class="mg-plat${p.key===aktiv?' active':''}" data-plat="${p.key}">
+        ${p.label}</button>`).join('')}
+    </div>
+
+    <div class="mg-fees">
+      <div class="mg-fees-head">
+        <h5>Kosten bei ${pd.label}</h5>
+        <span class="exp-sum-note">gelten für alle Produkte · Klick zum Ändern</span>
+      </div>
+      <div class="mg-fee-rows" id="mg-fee-rows"></div>
+      <div class="exp-add">
+        <input type="text" class="mg-f-label" placeholder="Gebühr, z. B. Werbung" maxlength="50">
+        <input type="text" class="mg-f-pct" inputmode="decimal" placeholder="%" maxlength="8">
+        <input type="text" class="mg-f-fix" inputmode="decimal" placeholder="fix €" maxlength="8">
+        <button class="ib-btn primary mg-f-add">Gebühr hinzufügen</button>
+      </div>
+    </div>
+
+    <div class="tt-wrap mg-table-wrap">
+      <table class="trip-table mg-table">
+        <thead><tr>
+          <th>Produkt</th><th>Größe</th><th>Preis</th><th>Druck</th><th>Versand</th>
+          <th>${pd.label}-Gebühr</th><th>Gewinn</th><th>Marge</th><th></th>
+        </tr></thead>
+        <tbody id="mg-rows"></tbody>
+      </table>
+    </div>
+
+    <div class="mg-newrow">
+      <input type="text" class="mg-n-produkt" placeholder="Produkt, z. B. Leinwand" maxlength="40">
+      <input type="text" class="mg-n-groesse" placeholder="Größe, z. B. 30×40" maxlength="24">
+      <input type="text" class="mg-n-price" inputmode="decimal" placeholder="Preis" maxlength="10">
+      <input type="text" class="mg-n-druck" inputmode="decimal" placeholder="Druck" maxlength="10">
+      <input type="text" class="mg-n-versand" inputmode="decimal" placeholder="Versand" maxlength="10">
+      <button class="ib-btn primary mg-n-add">Zeile hinzufügen</button>
+    </div>
+  `;
+
+  document.querySelectorAll('[data-plat]').forEach(b=>b.addEventListener('click',()=>{
+    z.aktiv = b.dataset.plat; persist(); renderMargin(c, def);
+  }));
+  renderFeeRows(c, def, z, aktiv, beispiel);
+  renderMarginRows(c, def, z, fees);
+
+  /* Neue Gebühr */
+  const fl = c.querySelector('.mg-f-label'), fp = c.querySelector('.mg-f-pct'), ff = c.querySelector('.mg-f-fix');
+  function addFee(){
+    const l = fl.value.trim(); if(!l){ fl.focus(); return; }
+    const pct = parseAmount(fp.value) || 0;
+    const fix = parseAmount(ff.value) || 0;
+    if(pct===0 && fix===0){ fp.focus(); return; }
+    z.plats[aktiv].push({id:uid(), label:l, pct, fix});
+    persist(); renderMargin(c, def);
+  }
+  c.querySelector('.mg-f-add').addEventListener('click', addFee);
+  [fl,fp,ff].forEach(i=>i.addEventListener('keydown',(e)=>{ if(e.key==='Enter') addFee(); }));
+
+  /* Neue Produktzeile */
+  const np = c.querySelector('.mg-n-produkt'), ng = c.querySelector('.mg-n-groesse');
+  const npr = c.querySelector('.mg-n-price'), nd = c.querySelector('.mg-n-druck'), nv = c.querySelector('.mg-n-versand');
+  function addRow(){
+    const produkt = np.value.trim(); if(!produkt){ np.focus(); return; }
+    z.rows.push({id:uid(), produkt, groesse: ng.value.trim(),
+      price: parseAmount(npr.value)||0, druck: parseAmount(nd.value)||0,
+      versand: parseAmount(nv.value)||0});
+    persist(); renderMargin(c, def);
+    const f = document.querySelector('.mg-n-produkt'); if(f) f.focus();
+  }
+  c.querySelector('.mg-n-add').addEventListener('click', addRow);
+  [np,ng,npr,nd,nv].forEach(i=>i.addEventListener('keydown',(e)=>{ if(e.key==='Enter') addRow(); }));
+}
+
+/* Gebührenliste der aktiven Plattform */
+function renderFeeRows(c, def, z, aktiv, beispiel){
+  const host = document.getElementById('mg-fee-rows');
+  const fees = z.plats[aktiv] || [];
+  if(fees.length===0){
+    host.innerHTML = '<div class="empty-mini">Keine Gebühren hinterlegt.</div>';
+    return;
+  }
+  host.innerHTML = fees.map(f=>{
+    const teile = [];
+    if(f.pct) teile.push(`${String(f.pct).replace('.',',')} %`);
+    if(f.fix) teile.push(`${eur(f.fix)} fix`);
+    const beiBeispiel = beispiel>0
+      ? eur(beispiel*(Number(f.pct)||0)/100 + (Number(f.fix)||0)) : '—';
+    return `<div class="mg-fee-row" data-fid="${f.id}">
+      <span class="mg-fee-label editable" data-ffield="label">${escapeHtml(f.label)}</span>
+      <span class="mg-fee-val editable" data-ffield="pct">${f.pct?String(f.pct).replace('.',',')+' %':'—'}</span>
+      <span class="mg-fee-val editable" data-ffield="fix">${f.fix?eur(f.fix):'—'}</span>
+      <span class="mg-fee-beispiel">≈ ${beiBeispiel}</span>
+      <button class="mini-del" data-fdel="${f.id}" aria-label="Löschen">×</button>
+    </div>`;
+  }).join('');
+  host.querySelectorAll('[data-fdel]').forEach(b=>b.addEventListener('click',()=>{
+    z.plats[aktiv] = z.plats[aktiv].filter(f=>f.id!==b.dataset.fdel);
+    persist(); renderMargin(c, def);
+  }));
+  host.querySelectorAll('.editable').forEach(span=>span.addEventListener('click',()=>{
+    if(span.querySelector('input')) return;
+    const f = z.plats[aktiv].find(x=>x.id===span.closest('.mg-fee-row').dataset.fid);
+    if(!f) return;
+    const feld = span.dataset.ffield;
+    const inp = document.createElement('input');
+    inp.className='exp-edit-input'; inp.type='text';
+    if(feld==='label') inp.value = f.label;
+    else { inp.inputMode='decimal'; inp.value = f[feld] ? String(f[feld]).replace('.',',') : ''; }
+    span.textContent=''; span.appendChild(inp); inp.focus(); inp.select();
+    let fertig=false;
+    const save=()=>{ if(fertig)return; fertig=true;
+      if(feld==='label'){ const t=inp.value.trim(); if(t) f.label=t; }
+      else { const v=parseAmount(inp.value); f[feld] = v===null?0:v; }
+      persist(); renderMargin(c, def); };
+    inp.addEventListener('blur', save);
+    inp.addEventListener('keydown',(e)=>{
+      if(e.key==='Enter'){ e.preventDefault(); inp.blur(); }
+      else if(e.key==='Escape'){ fertig=true; renderMargin(c, def); }
+    });
+  }));
+}
+
+/* Produkttabelle - alle Zeilen, nach Produkt und Größe gruppiert */
+function renderMarginRows(c, def, z, fees){
+  const tbody = document.getElementById('mg-rows');
+  if(z.rows.length===0){
+    tbody.innerHTML = `<tr><td colspan="9" class="mg-empty">Noch keine Produkte – unten eine Zeile hinzufügen.</td></tr>`;
+    return;
+  }
+  /* Nach Produktname gruppieren, innerhalb nach Preis */
+  const sorted = [...z.rows].sort((a,b)=>{
+    const p = (a.produkt||'').localeCompare(b.produkt||'');
+    if(p) return p;
+    return (Number(a.price)||0)-(Number(b.price)||0);
+  });
+  let letztesProdukt = null;
+  tbody.innerHTML = sorted.map(r=>{
+    const m = rowMargin(r, fees);
+    const kl = margeKlasse(m.proz);
+    const neu = r.produkt !== letztesProdukt;
+    letztesProdukt = r.produkt;
+    return `<tr data-rid="${r.id}"${neu?' class="mg-group-start"':''}>
+      <td class="tt-title mg-cell editable" data-rf="produkt">${escapeHtml(r.produkt||'—')}</td>
+      <td class="mg-cell editable mg-groesse" data-rf="groesse">${escapeHtml(r.groesse||'—')}</td>
+      <td class="tt-num mg-cell editable" data-rf="price">${eur(m.preis)}</td>
+      <td class="tt-num mg-cell editable" data-rf="druck">${eur(m.druck)}</td>
+      <td class="tt-num mg-cell editable" data-rf="versand">${eur(m.versand)}</td>
+      <td class="tt-num mg-fee-col">${eur(m.gebuehr)}</td>
+      <td class="tt-num strong">${eur(m.gewinn)}</td>
+      <td class="tt-num mg-${kl}">${m.proz.toFixed(1)} %</td>
+      <td class="dl-del-cell"><button class="mini-del" data-rdel="${r.id}" aria-label="Löschen">×</button></td>
+    </tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('[data-rdel]').forEach(b=>b.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    z.rows = z.rows.filter(x=>x.id!==b.dataset.rdel);
+    persist(); renderMargin(c, def);
+  }));
+  tbody.querySelectorAll('.mg-cell.editable').forEach(td=>td.addEventListener('click',()=>{
+    if(td.querySelector('input')) return;
+    const r = z.rows.find(x=>x.id===td.closest('tr').dataset.rid);
+    if(!r) return;
+    const feld = td.dataset.rf;
+    const zahl = ['price','druck','versand'].includes(feld);
+    const inp = document.createElement('input');
+    inp.className='exp-edit-input'; inp.type='text';
+    if(zahl){ inp.inputMode='decimal'; inp.value = r[feld] ? String(r[feld]).replace('.',',') : ''; }
+    else inp.value = r[feld]||'';
+    td.textContent=''; td.appendChild(inp); inp.focus(); inp.select();
+    let fertig=false;
+    const save=()=>{ if(fertig)return; fertig=true;
+      if(zahl){ const v=parseAmount(inp.value); r[feld] = v===null?0:v; }
+      else r[feld] = inp.value.trim();
+      persist(); renderMargin(c, def); };
+    inp.addEventListener('blur', save);
+    inp.addEventListener('keydown',(e)=>{
+      if(e.key==='Enter'){ e.preventDefault(); inp.blur(); }
+      else if(e.key==='Escape'){ fertig=true; renderMargin(c, def); }
+    });
+  }));
+}
+
+/* ---------------- UNI: STUNDENPLAN ----------------
+   Wochenraster Mo–Fr. Veranstaltungen sitzen nach Uhrzeit an der richtigen Stelle. */
+const WOCHENTAGE = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
+const WT_KURZ = ['Mo','Di','Mi','Do','Fr'];
+
+/* Uhrzeit "10:15" -> Minuten seit 0:00, fuer Sortierung und Platzierung */
+function zeitMin(s){
+  const m = /^(\d{1,2}):(\d{2})$/.exec((s||'').trim());
+  if(!m) return null;
+  return Number(m[1])*60 + Number(m[2]);
+}
+function minZeit(min){
+  const h = Math.floor(min/60), m = min%60;
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+}
+
+function renderTimetable(c, def){
+  const z = data.nodes[def.nodeId];
+  const slots = z.slots;
+
+  /* Zeitraster aus den vorhandenen Terminen ableiten, mit sinnvollem Standard */
+  let von = 8*60, bis = 18*60;
+  slots.forEach(s=>{
+    const a = zeitMin(s.von), b = zeitMin(s.bis);
+    if(a!==null) von = Math.min(von, Math.floor(a/60)*60);
+    if(b!==null) bis = Math.max(bis, Math.ceil(b/60)*60);
+  });
+  const stunden = [];
+  for(let m=von; m<bis; m+=60) stunden.push(m);
+
+  c.innerHTML = renderNodeHead(def, `${slots.length} Veranstaltung(en)`) + `
+    ${slots.length===0 ? `<div class="uni-hint">
+      Noch leer. Sobald du deinen Stundenplan hast, trägst du unten die Veranstaltungen ein –
+      sie erscheinen dann automatisch im Raster.</div>` : ''}
+    <div class="tt-grid-wrap">
+      <div class="tt-grid" style="grid-template-rows:auto repeat(${stunden.length}, 56px);">
+        <div class="tt-corner"></div>
+        ${WOCHENTAGE.map((t,i)=>`<div class="tt-head" style="grid-column:${i+2};grid-row:1;">
+          <span class="tt-head-lang">${t}</span><span class="tt-head-kurz">${WT_KURZ[i]}</span></div>`).join('')}
+        ${stunden.map((m,i)=>`<div class="tt-hour" style="grid-column:1;grid-row:${i+2};">${minZeit(m)}</div>`).join('')}
+        ${stunden.map((m,i)=>WOCHENTAGE.map((t,d)=>
+          `<div class="tt-cell" style="grid-column:${d+2};grid-row:${i+2};"></div>`).join('')).join('')}
+        ${slots.map(s=>{
+          const a = zeitMin(s.von), b = zeitMin(s.bis);
+          if(a===null) return '';
+          const startZeile = Math.floor((a-von)/60) + 2;
+          const dauer = (b!==null && b>a) ? (b-a) : 90;
+          const spanZeilen = Math.max(1, Math.round(dauer/60*10)/10);
+          const offsetMin = a - (Math.floor((a-von)/60)*60 + von);
+          return `<div class="tt-slot" data-sid="${s.id}"
+            style="grid-column:${(s.tag||0)+2};grid-row:${startZeile};
+                   margin-top:${offsetMin/60*56}px;height:${dauer/60*56 - 4}px;">
+            <div class="tt-slot-titel">${escapeHtml(s.titel||'—')}</div>
+            <div class="tt-slot-meta">${escapeHtml(s.von||'')}${s.bis?'–'+escapeHtml(s.bis):''}${
+              s.raum?' · '+escapeHtml(s.raum):''}</div>
+            ${s.dozent?`<div class="tt-slot-meta">${escapeHtml(s.dozent)}</div>`:''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+    <div class="mg-newrow">
+      <input type="text" class="tt-n-titel" placeholder="Veranstaltung" maxlength="50">
+      <select class="tt-n-tag" aria-label="Wochentag">
+        ${WOCHENTAGE.map((t,i)=>`<option value="${i}">${t}</option>`).join('')}
+      </select>
+      <input type="time" class="tt-n-von" aria-label="von">
+      <input type="time" class="tt-n-bis" aria-label="bis">
+      <input type="text" class="tt-n-raum" placeholder="Raum" maxlength="24">
+      <input type="text" class="tt-n-dozent" placeholder="Dozent" maxlength="40">
+      <button class="ib-btn primary tt-n-add">Hinzufügen</button>
+    </div>
+  `;
+  /* Klick auf eine Veranstaltung: löschen mit Rückfrage */
+  c.querySelectorAll('.tt-slot').forEach(el=>el.addEventListener('click',()=>{
+    if(el.dataset.confirm==='1'){
+      z.slots = z.slots.filter(s=>s.id!==el.dataset.sid);
+      persist(); renderTimetable(c, def); renderSidebar();
+    } else {
+      el.dataset.confirm='1'; el.classList.add('confirm');
+      const alt = el.querySelector('.tt-slot-titel').textContent;
+      el.querySelector('.tt-slot-titel').textContent = 'Löschen?';
+      setTimeout(()=>{
+        if(el.dataset.confirm==='1'){
+          el.dataset.confirm=''; el.classList.remove('confirm');
+          const t = el.querySelector('.tt-slot-titel'); if(t) t.textContent = alt;
+        }
+      }, 2500);
+    }
+  }));
+  const q = s=>c.querySelector(s);
+  function add(){
+    const titel = q('.tt-n-titel').value.trim();
+    if(!titel){ q('.tt-n-titel').focus(); return; }
+    const von = q('.tt-n-von').value;
+    if(!von){ q('.tt-n-von').focus(); return; }
+    z.slots.push({id:uid(), titel, tag:Number(q('.tt-n-tag').value)||0,
+      von, bis:q('.tt-n-bis').value, raum:q('.tt-n-raum').value.trim(),
+      dozent:q('.tt-n-dozent').value.trim()});
+    persist(); renderTimetable(c, def); renderSidebar();
+    const f = c.querySelector('.tt-n-titel'); if(f) f.focus();
+  }
+  q('.tt-n-add').addEventListener('click', add);
+  ['.tt-n-titel','.tt-n-raum','.tt-n-dozent'].forEach(sel=>
+    q(sel).addEventListener('keydown',(e)=>{ if(e.key==='Enter') add(); }));
+}
+
+/* ---------------- UNI: PRÜFUNGSTERMINE ----------------
+   Datum, Uhrzeit, Raum, Anmeldefrist und Ergebnis. Sortiert nach Datum. */
+const EXAM_STATUS = [
+  {key:'offen',      label:'Offen',      dot:'future'},
+  {key:'angemeldet', label:'Angemeldet', dot:'now'},
+  {key:'bestanden',  label:'Bestanden',  dot:'done'},
+  {key:'durchgefallen', label:'Nicht bestanden', dot:'over'}
+];
+function examStatusDef(k){ return EXAM_STATUS.find(s=>s.key===k) || EXAM_STATUS[0]; }
+
+function renderExams(c, def){
+  const z = data.nodes[def.nodeId];
+  const offen = z.items.filter(i=>i.status==='offen' || i.status==='angemeldet').length;
+  const sorted = [...z.items].sort((a,b)=>{
+    const ae = (a.status==='bestanden'||a.status==='durchgefallen');
+    const be = (b.status==='bestanden'||b.status==='durchgefallen');
+    if(ae!==be) return ae?1:-1;
+    return (a.date||'9999').localeCompare(b.date||'9999');
+  });
+
+  c.innerHTML = renderNodeHead(def, `${offen} anstehend`) + `
+    ${z.items.length===0 ? `<div class="uni-hint">
+      Noch leer. Trage hier ab dem ersten Semester deine Klausuren ein –
+      mit Anmeldefrist, damit du sie nicht verpasst.</div>` : ''}
+    <div class="tt-wrap mg-table-wrap">
+      <table class="trip-table ex-table">
+        <thead><tr>
+          <th>Prüfung</th><th>Datum</th><th>Zeit</th><th>Raum</th>
+          <th>Anmeldung bis</th><th>Status</th><th></th>
+        </tr></thead>
+        <tbody id="ex-rows"></tbody>
+      </table>
+    </div>
+    <div class="mg-newrow">
+      <input type="text" class="ex-n-text" placeholder="Prüfung, z. B. Mathematik I" maxlength="60">
+      <input type="date" class="ex-n-date" aria-label="Datum">
+      <input type="time" class="ex-n-zeit" aria-label="Uhrzeit">
+      <input type="text" class="ex-n-raum" placeholder="Raum" maxlength="24">
+      <input type="date" class="ex-n-anm" aria-label="Anmeldefrist">
+      <button class="ib-btn primary ex-n-add">Hinzufügen</button>
+    </div>
+  `;
+  const tbody = document.getElementById('ex-rows');
+  if(sorted.length===0){
+    tbody.innerHTML = `<tr><td colspan="7" class="mg-empty">Noch keine Prüfung eingetragen.</td></tr>`;
+  } else {
+    tbody.innerHTML = sorted.map(it=>{
+      const st = examStatusDef(it.status);
+      const f = fristAmpel(it.date, it.status);
+      const anm = fristAmpel(it.anmeldung, it.status);
+      return `<tr data-eid="${it.id}" class="${f.row}">
+        <td class="tt-title mg-cell editable" data-ef="text">${escapeHtml(it.text)}</td>
+        <td class="tt-date mg-cell editable" data-ef="date">${it.date?fmtDay(it.date):'—'}
+          ${f.text?`<span class="ex-rest ${f.cls}">${f.text}</span>`:''}</td>
+        <td class="tt-num mg-cell editable" data-ef="zeit">${it.zeit||'—'}</td>
+        <td class="mg-cell editable mg-groesse" data-ef="raum">${escapeHtml(it.raum||'—')}</td>
+        <td class="tt-date mg-cell editable" data-ef="anmeldung">${it.anmeldung?fmtDay(it.anmeldung):'—'}
+          ${anm.text?`<span class="ex-rest ${anm.cls}">${anm.text}</span>`:''}</td>
+        <td class="ex-status" data-cycle="${it.id}" title="Status wechseln">
+          <span class="tt-dot ${st.dot}"></span>${st.label}</td>
+        <td class="dl-del-cell"><button class="mini-del" data-edel="${it.id}" aria-label="Löschen">×</button></td>
+      </tr>`;
+    }).join('');
+  }
+  const refresh = ()=>{ persist(); renderExams(c, def); renderSidebar(); };
+  tbody.querySelectorAll('[data-edel]').forEach(b=>b.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    z.items = z.items.filter(x=>x.id!==b.dataset.edel); refresh();
+  }));
+  tbody.querySelectorAll('[data-cycle]').forEach(td=>td.addEventListener('click',()=>{
+    const it = z.items.find(x=>x.id===td.dataset.cycle); if(!it) return;
+    const i = EXAM_STATUS.findIndex(s=>s.key===it.status);
+    it.status = EXAM_STATUS[(i+1)%EXAM_STATUS.length].key;
+    it.done = (it.status==='bestanden');
+    refresh();
+  }));
+  tbody.querySelectorAll('.mg-cell.editable').forEach(td=>td.addEventListener('click',()=>{
+    if(td.querySelector('input')) return;
+    const it = z.items.find(x=>x.id===td.closest('tr').dataset.eid); if(!it) return;
+    const feld = td.dataset.ef;
+    const inp = document.createElement('input');
+    inp.className='exp-edit-input';
+    inp.type = feld==='date'||feld==='anmeldung' ? 'date' : (feld==='zeit' ? 'time' : 'text');
+    inp.value = it[feld]||'';
+    td.textContent=''; td.appendChild(inp); inp.focus();
+    if(inp.type==='text') inp.select();
+    let fertig=false;
+    const save=()=>{ if(fertig)return; fertig=true;
+      it[feld] = inp.type==='text' ? inp.value.trim() : inp.value;
+      refresh(); };
+    inp.addEventListener('blur', save);
+    inp.addEventListener('keydown',(e)=>{
+      if(e.key==='Enter'){ e.preventDefault(); inp.blur(); }
+      else if(e.key==='Escape'){ fertig=true; renderExams(c, def); }
+    });
+  }));
+  const q = s=>c.querySelector(s);
+  function add(){
+    const t = q('.ex-n-text').value.trim();
+    if(!t){ q('.ex-n-text').focus(); return; }
+    z.items.push({id:uid(), text:t, status:'offen', done:false,
+      date:q('.ex-n-date').value, zeit:q('.ex-n-zeit').value,
+      raum:q('.ex-n-raum').value.trim(), anmeldung:q('.ex-n-anm').value});
+    refresh();
+    const f = c.querySelector('.ex-n-text'); if(f) f.focus();
+  }
+  q('.ex-n-add').addEventListener('click', add);
+  ['.ex-n-text','.ex-n-raum'].forEach(sel=>
+    q(sel).addEventListener('keydown',(e)=>{ if(e.key==='Enter') add(); }));
+}
+
+/* Ampel für ein Datum, abhängig davon ob die Sache noch relevant ist */
+function fristAmpel(datum, status){
+  if(!datum || status==='bestanden' || status==='durchgefallen') return {cls:'', text:'', row:''};
+  const d = daysUntil(datum);
+  if(d===null) return {cls:'', text:'', row:''};
+  if(d<0)   return {cls:'past',   text:'vorbei',       row:''};
+  if(d===0) return {cls:'over',   text:'heute',        row:'row-over'};
+  if(d<=7)  return {cls:'over',   text:`${d} Tg.`,     row:'row-over'};
+  if(d<=30) return {cls:'soon',   text:`${d} Tg.`,     row:''};
+  return {cls:'future', text:`${d} Tg.`, row:''};
+}
+
+/* ---------------- UNI: MODULE & NOTEN ----------------
+   Fortschritt in Credits, Notendurchschnitt, Liste aller Module. */
+const MODUL_STATUS = [
+  {key:'offen',     label:'Offen',      dot:'future'},
+  {key:'laeuft',    label:'Läuft',      dot:'now'},
+  {key:'bestanden', label:'Bestanden',  dot:'done'},
+  {key:'offen_wdh', label:'Wiederholen',dot:'over'}
+];
+function modulStatusDef(k){ return MODUL_STATUS.find(s=>s.key===k) || MODUL_STATUS[0]; }
+
+function renderModules(c, def){
+  const z = data.nodes[def.nodeId];
+  const bestanden = z.items.filter(m=>m.status==='bestanden');
+  const cpHaben = bestanden.reduce((s,m)=>s+(m.cp||0),0);
+  const ziel = z.zielCp||180;
+  const proz = ziel>0 ? Math.min(100, cpHaben/ziel*100) : 0;
+  /* Notendurchschnitt nach Credits gewichtet - so rechnet die Uni auch */
+  const mitNote = bestanden.filter(m=>parseAmount(m.note)!==null && parseAmount(m.note)>0);
+  const cpMitNote = mitNote.reduce((s,m)=>s+(m.cp||0),0);
+  const schnitt = cpMitNote>0
+    ? mitNote.reduce((s,m)=>s+parseAmount(m.note)*(m.cp||0),0)/cpMitNote : null;
+
+  const sorted = [...z.items].sort((a,b)=>{
+    const s = (a.semester||'zz').localeCompare(b.semester||'zz');
+    if(s) return s;
+    return (a.text||'').localeCompare(b.text||'');
+  });
+
+  c.innerHTML = renderNodeHead(def, `${z.items.length} Modul(e)`) + `
+    ${z.items.length===0 ? `<div class="uni-hint">
+      Noch leer. Sobald du dein Modulhandbuch hast, trägst du die Module ein –
+      die App rechnet dann Credits und Notendurchschnitt mit.</div>` : ''}
+    <div class="exp-summary">
+      <div class="exp-sum-box main">
+        <div class="exp-sum-label">Credits</div>
+        <div class="exp-sum-value">${cpHaben} <span class="mod-ziel">/ ${ziel}</span></div>
+        <div class="mod-bar"><div class="mod-bar-fill" style="width:${proz}%"></div></div>
+        <div class="exp-sum-note">${proz.toFixed(0)} % geschafft · ${ziel-cpHaben} CP offen</div>
+      </div>
+      <div class="exp-sum-box">
+        <div class="exp-sum-label">Notendurchschnitt</div>
+        <div class="exp-sum-value sub">${schnitt!==null ? schnitt.toFixed(2).replace('.',',') : '—'}</div>
+        <div class="exp-sum-note">${cpMitNote>0?`gewichtet über ${cpMitNote} CP`:'noch keine Note'}</div>
+      </div>
+      <div class="exp-sum-box">
+        <div class="exp-sum-label">Bestanden</div>
+        <div class="exp-sum-value sub">${bestanden.length} <span class="mod-ziel">/ ${z.items.length}</span></div>
+        <div class="exp-sum-note">${z.items.filter(m=>m.status==='laeuft').length} laufen gerade</div>
+      </div>
+    </div>
+    <div class="tt-wrap mg-table-wrap">
+      <table class="trip-table mod-table">
+        <thead><tr>
+          <th>Modul</th><th>Semester</th><th>CP</th><th>Note</th><th>Status</th><th></th>
+        </tr></thead>
+        <tbody id="mod-rows"></tbody>
+      </table>
+    </div>
+    <div class="mg-newrow">
+      <input type="text" class="mod-n-text" placeholder="Modul, z. B. Mathematik I" maxlength="60">
+      <input type="text" class="mod-n-sem" placeholder="Sem." maxlength="8">
+      <input type="text" class="mod-n-cp" inputmode="decimal" placeholder="CP" maxlength="5">
+      <button class="ib-btn primary mod-n-add">Hinzufügen</button>
+    </div>
+  `;
+  const tbody = document.getElementById('mod-rows');
+  if(sorted.length===0){
+    tbody.innerHTML = `<tr><td colspan="6" class="mg-empty">Noch kein Modul eingetragen.</td></tr>`;
+  } else {
+    tbody.innerHTML = sorted.map(m=>{
+      const st = modulStatusDef(m.status);
+      return `<tr data-mid="${m.id}"${m.status==='bestanden'?' class="row-done"':''}>
+        <td class="tt-title mg-cell editable" data-mf="text">${escapeHtml(m.text)}</td>
+        <td class="mg-cell editable mg-groesse" data-mf="semester">${escapeHtml(m.semester||'—')}</td>
+        <td class="tt-num mg-cell editable" data-mf="cp">${m.cp||'—'}</td>
+        <td class="tt-num mg-cell editable mod-note" data-mf="note">${
+          m.note ? String(m.note).replace('.',',') : '—'}</td>
+        <td class="ex-status" data-mcycle="${m.id}" title="Status wechseln">
+          <span class="tt-dot ${st.dot}"></span>${st.label}</td>
+        <td class="dl-del-cell"><button class="mini-del" data-mdel="${m.id}" aria-label="Löschen">×</button></td>
+      </tr>`;
+    }).join('');
+  }
+  const refresh = ()=>{ persist(); renderModules(c, def); renderSidebar(); };
+  tbody.querySelectorAll('[data-mdel]').forEach(b=>b.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    z.items = z.items.filter(x=>x.id!==b.dataset.mdel); refresh();
+  }));
+  tbody.querySelectorAll('[data-mcycle]').forEach(td=>td.addEventListener('click',()=>{
+    const m = z.items.find(x=>x.id===td.dataset.mcycle); if(!m) return;
+    const i = MODUL_STATUS.findIndex(s=>s.key===m.status);
+    m.status = MODUL_STATUS[(i+1)%MODUL_STATUS.length].key;
+    refresh();
+  }));
+  tbody.querySelectorAll('.mg-cell.editable').forEach(td=>td.addEventListener('click',()=>{
+    if(td.querySelector('input')) return;
+    const m = z.items.find(x=>x.id===td.closest('tr').dataset.mid); if(!m) return;
+    const feld = td.dataset.mf;
+    const zahl = (feld==='cp');
+    const inp = document.createElement('input');
+    inp.className='exp-edit-input'; inp.type='text';
+    if(zahl || feld==='note') inp.inputMode='decimal';
+    inp.value = m[feld]!==undefined && m[feld]!=='' ? String(m[feld]).replace('.',',') : '';
+    td.textContent=''; td.appendChild(inp); inp.focus(); inp.select();
+    let fertig=false;
+    const save=()=>{ if(fertig)return; fertig=true;
+      if(zahl){ const v=parseAmount(inp.value); m.cp = v===null?0:v; }
+      else if(feld==='note'){ m.note = inp.value.trim(); }
+      else m[feld] = inp.value.trim();
+      refresh(); };
+    inp.addEventListener('blur', save);
+    inp.addEventListener('keydown',(e)=>{
+      if(e.key==='Enter'){ e.preventDefault(); inp.blur(); }
+      else if(e.key==='Escape'){ fertig=true; renderModules(c, def); }
+    });
+  }));
+  const q = s=>c.querySelector(s);
+  function add(){
+    const t = q('.mod-n-text').value.trim();
+    if(!t){ q('.mod-n-text').focus(); return; }
+    z.items.push({id:uid(), text:t, semester:q('.mod-n-sem').value.trim(),
+      cp: parseAmount(q('.mod-n-cp').value)||0, note:'', status:'offen'});
+    refresh();
+    const f = c.querySelector('.mod-n-text'); if(f) f.focus();
+  }
+  q('.mod-n-add').addEventListener('click', add);
+  ['.mod-n-text','.mod-n-sem','.mod-n-cp'].forEach(sel=>
+    q(sel).addEventListener('keydown',(e)=>{ if(e.key==='Enter') add(); }));
+}
+
+/* ---------------- UNI: LERNPLAN ----------------
+   Drei Ebenen: Semester 1–6 → Module des Semesters → Lernplan des Moduls.
+   Die Module kommen aus "Module & Noten" – eine Quelle, nicht doppelt gepflegt. */
+const SEMESTER_ANZAHL = 6;
+const PRUEF_FORMEN = ['Klausur','Mündlich','Hausarbeit','Projekt','Testat','Portfolio','Präsentation'];
+
+function uniModule(){
+  const n = data.nodes['uni:module'];
+  return (n && Array.isArray(n.items)) ? n.items : [];
+}
+function moduleImSemester(sem){
+  return uniModule().filter(m=>String(m.semester||'') === String(sem));
+}
+function modulFortschritt(m){
+  const t = m.topics||[];
+  const fertig = t.filter(x=>x.done).length;
+  return {gesamt:t.length, fertig, offen:t.length-fertig,
+          proz: t.length ? fertig/t.length*100 : 0};
+}
+/* Ampel zum Prüfungstermin */
+function pruefStatus(m){
+  if(m.status==='bestanden') return {cls:'past', label:'bestanden'};
+  if(!m.pruefdatum) return {cls:'', label:'kein Termin'};
+  const d = daysUntil(m.pruefdatum);
+  if(d===null) return {cls:'', label:'kein Termin'};
+  if(d<0)   return {cls:'past', label:'vorbei'};
+  if(d===0) return {cls:'over', label:'heute!'};
+  if(d<=14) return {cls:'over', label:`in ${d} Tg.`};
+  if(d<=42) return {cls:'soon', label:`in ${d} Tg.`};
+  return {cls:'future', label:`in ${d} Tg.`};
+}
+
+function renderStudy(c, def){
+  const mods = uniModule();
+  /* Auswahl: "sem:3" oder eine Modul-ID */
+  let sel = selectedEntry[def.nodeId];
+  const istModul = sel && mods.some(m=>m.id===sel);
+  const istSem = sel && /^sem:\d+$/.test(sel);
+  if(!istModul && !istSem) sel = 'sem:1';
+  selectedEntry[def.nodeId] = sel;
+
+  const geplant = mods.filter(m=>(m.topics||[]).length).length;
+  c.innerHTML = renderNodeHead(def, `${mods.length} Modul(e) · ${geplant} mit Lernplan`) + `
+    <div class="entry-layout${showDetailMobile?' show-detail':''}" id="entry-layout">
+      <div class="entry-list">
+        <div class="entry-list-head"><span class="entry-list-title">Semester &amp; Module</span></div>
+        <div class="entry-list-body" id="entry-list-body"></div>
+        <div class="entry-list-foot">
+          <div class="exp-sum-note" style="text-align:center;">
+            Module pflegst du unter „Module &amp; Noten“</div>
+        </div>
+      </div>
+      <div class="entry-detail" id="entry-detail"></div>
+    </div>
+  `;
+  /* Baum: sechs Semester, darunter eingerückt ihre Module */
+  const listBody = document.getElementById('entry-list-body');
+  for(let s=1; s<=SEMESTER_ANZAHL; s++){
+    const semMods = moduleImSemester(s);
+    const cp = semMods.reduce((a,m)=>a+(m.cp||0),0);
+    const semId = 'sem:'+s;
+    const zu = !!collapsedSaeulen['sem:'+s];
+
+    const row = document.createElement('div');
+    row.className = 'entry-year'+(sel===semId?' active':'')+(zu?' collapsed':'');
+    row.innerHTML = `
+      <button class="entry-year-toggle" aria-label="Module auf-/zuklappen">${zu?'▸':'▾'}</button>
+      <div class="entry-year-main">
+        <div class="entry-year-title">${s}. Semester</div>
+        <div class="entry-year-sub">${semMods.length} Modul(e)${cp?` · ${cp} CP`:''}</div>
+      </div>`;
+    row.querySelector('.entry-year-toggle').addEventListener('click',(ev)=>{
+      ev.stopPropagation();
+      collapsedSaeulen['sem:'+s] = !collapsedSaeulen['sem:'+s];
+      saveCollapsed(); renderStudy(c, def);
+    });
+    row.addEventListener('click',()=>{
+      selectedEntry[def.nodeId] = semId;
+      showDetailMobile = true;
+      renderStudy(c, def);
+    });
+    listBody.appendChild(row);
+    if(zu) continue;
+
+    if(semMods.length===0){
+      const leer = document.createElement('div');
+      leer.className = 'sp-sem-leer';
+      leer.textContent = 'keine Module';
+      listBody.appendChild(leer);
+      continue;
+    }
+    semMods.forEach(m=>{
+      const f = modulFortschritt(m);
+      const ps = pruefStatus(m);
+      const item = document.createElement('div');
+      item.className = 'entry-item nested'+(m.id===sel?' active':'')+(ps.cls?' st-'+ps.cls:'');
+      item.innerHTML = `<div class="entry-item-title">${escapeHtml(m.text)}</div>
+        <div class="entry-item-sub">${f.gesamt?`${f.fertig}/${f.gesamt} Themen`:'kein Plan'} · ${ps.label}</div>`;
+      item.addEventListener('click',()=>{
+        selectedEntry[def.nodeId] = m.id;
+        showDetailMobile = true;
+        renderStudy(c, def);
+      });
+      listBody.appendChild(item);
+    });
+  }
+
+  /* Detail: Semesterübersicht oder Lernplan eines Moduls */
+  const detail = document.getElementById('entry-detail');
+  const back = `<button class="entry-back" id="entry-back">← Zurück zur Liste</button>`;
+  if(sel.startsWith('sem:')){
+    detail.innerHTML = back + '<div id="entry-detail-body"></div>';
+    renderSemesterOverview(document.getElementById('entry-detail-body'), c, def, Number(sel.slice(4)));
+  } else {
+    const m = mods.find(x=>x.id===sel);
+    detail.innerHTML = back + '<div id="entry-detail-body"></div>';
+    renderModulPlan(document.getElementById('entry-detail-body'), c, def, m);
+  }
+  const bb = document.getElementById('entry-back');
+  if(bb) bb.addEventListener('click',()=>{ showDetailMobile=false; renderMain(); });
+}
+
+/* Übersicht eines Semesters: alle Module als Karten */
+function renderSemesterOverview(host, c, def, sem){
+  const mods = moduleImSemester(sem);
+  const cp = mods.reduce((a,m)=>a+(m.cp||0),0);
+  const geplant = mods.filter(m=>(m.topics||[]).length).length;
+  const offen = mods.reduce((a,m)=>a+modulFortschritt(m).offen,0);
+
+  host.innerHTML = `
+    <div class="detail-head"><div class="detail-head-main">
+      <h2 class="detail-title">${sem}. Semester</h2>
+      <div class="exp-sum-note" style="margin-top:4px;">
+        ${mods.length} Modul(e) · ${cp} CP · ${geplant} mit Lernplan</div>
+    </div></div>
+    ${mods.length===0
+      ? `<div class="uni-hint">Für dieses Semester sind noch keine Module hinterlegt.
+         Trage sie unter „Module &amp; Noten“ ein – mit Semester ${sem} – dann erscheinen sie hier.</div>`
+      : `<div class="sp-mod-grid">${mods.map(m=>{
+          const f = modulFortschritt(m), ps = pruefStatus(m);
+          return `<div class="sp-mod-card" data-open="${m.id}">
+            <div class="sp-card-top">
+              <div class="sp-card-titel">${escapeHtml(m.text)}</div>
+              <div class="sp-card-cp">${m.cp||0} CP</div>
+            </div>
+            <div class="sp-card-pruef">
+              <span class="tt-dot ${ps.cls}"></span>
+              ${m.pruefform?escapeHtml(m.pruefform):'Prüfungsform offen'}
+              ${m.pruefdatum?` · ${fmtDay(m.pruefdatum)}`:''}
+              ${m.pruefzeit?` · ${escapeHtml(m.pruefzeit)}`:''}
+            </div>
+            <div class="mod-bar"><div class="mod-bar-fill" style="width:${f.proz}%"></div></div>
+            <div class="sp-card-foot">${f.gesamt
+              ? `${f.fertig} von ${f.gesamt} Themen · ${f.proz.toFixed(0)} %`
+              : 'noch kein Lernplan – klicken zum Anlegen'}</div>
+          </div>`;
+        }).join('')}</div>`}
+  `;
+  host.querySelectorAll('[data-open]').forEach(el=>el.addEventListener('click',()=>{
+    selectedEntry[def.nodeId] = el.dataset.open;
+    showDetailMobile = true;
+    renderStudy(c, def);
+  }));
+}
+
+/* Lernplan eines Moduls: Prüfungsdaten, Themen, Tipps, Fokus */
+function renderModulPlan(host, c, def, m){
+  if(!m){ host.innerHTML = '<div class="entry-empty">Modul nicht gefunden.</div>'; return; }
+  const f = modulFortschritt(m);
+  const ps = pruefStatus(m);
+  const st = modulStatusDef(m.status);
+
+  host.innerHTML = `
+    <div class="detail-head">
+      <div class="detail-head-main">
+        <h2 class="detail-title">${escapeHtml(m.text)}
+          <span class="trip-badge ${ps.cls}">${ps.label}</span></h2>
+        <div class="exp-sum-note" style="margin-top:4px;">
+          ${m.semester?m.semester+'. Semester · ':''}${m.cp||0} CP · ${st.label}</div>
+      </div>
+    </div>
+
+    <div class="sp-pruef-box">
+      <div class="sp-pruef-head">
+        <h5>📝 Prüfung</h5>
+        <span class="exp-sum-note">Klick auf ein Feld zum Ändern</span>
+      </div>
+      <div class="sp-pruef-grid">
+        <div class="sp-pf">
+          <div class="exp-sum-label">Form</div>
+          <select id="sp-form">
+            <option value=""${!m.pruefform?' selected':''}>– wählen –</option>
+            ${PRUEF_FORMEN.map(p=>`<option value="${p}"${m.pruefform===p?' selected':''}>${p}</option>`).join('')}
+          </select>
+        </div>
+        <div class="sp-pf">
+          <div class="exp-sum-label">Datum</div>
+          <input type="date" id="sp-datum" value="${m.pruefdatum||''}">
+        </div>
+        <div class="sp-pf">
+          <div class="exp-sum-label">Uhrzeit</div>
+          <input type="time" id="sp-zeit" value="${m.pruefzeit||''}">
+        </div>
+        <div class="sp-pf">
+          <div class="exp-sum-label">Raum</div>
+          <input type="text" id="sp-raum" value="${escapeHtml(m.pruefraum||'')}" placeholder="z. B. H 1" maxlength="24">
+        </div>
+        <div class="sp-pf">
+          <div class="exp-sum-label">Fortschritt</div>
+          <div class="sp-pf-val">${f.proz.toFixed(0)} %
+            <span class="exp-sum-note">${f.fertig}/${f.gesamt}</span></div>
+          <div class="mod-bar"><div class="mod-bar-fill" style="width:${f.proz}%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sp-cols">
+      <div class="sp-col">
+        <h5>📖 Themen${f.offen?` <span class="dl-rest">${f.offen} offen</span>`:''}</h5>
+        <div class="input-row">
+          <input type="text" class="sp-topic-input" placeholder="Thema, das rankommt …" maxlength="200">
+          <button class="sp-topic-add">+</button>
+        </div>
+        <ul class="mini-list sp-topics"></ul>
+      </div>
+      <div class="sp-col">
+        <h5>💡 Tipps &amp; Hinweise${(m.tips||[]).length?` <span class="dl-rest">${m.tips.length}</span>`:''}</h5>
+        <div class="input-row">
+          <input type="text" class="sp-tip-input" placeholder="Tipp, Quelle, Hinweis …" maxlength="200">
+          <button class="sp-tip-add">+</button>
+        </div>
+        <ul class="mini-list sp-tips"></ul>
+      </div>
+    </div>
+
+    <div class="dl-note-box">
+      <h5>🎯 Fokus &amp; Vorgehen</h5>
+      <textarea id="sp-fokus" placeholder="Worauf liegt der Schwerpunkt, wie gehst du vor …">${escapeHtml(m.fokus||'')}</textarea>
+    </div>
+  `;
+
+  /* Prüfungsfelder */
+  const save = ()=>{ persist(); renderStudy(c, def); renderSidebar(); };
+  host.querySelector('#sp-form').addEventListener('change',(e)=>{ m.pruefform=e.target.value; save(); });
+  host.querySelector('#sp-datum').addEventListener('change',(e)=>{ m.pruefdatum=e.target.value; save(); });
+  host.querySelector('#sp-zeit').addEventListener('change',(e)=>{ m.pruefzeit=e.target.value; persist(); });
+  host.querySelector('#sp-raum').addEventListener('blur',(e)=>{ m.pruefraum=e.target.value.trim(); persist(); });
+
+  /* Themen und Tipps – gleiche Mechanik, zwei Listen */
+  [{feld:'topics', list:'.sp-topics', input:'.sp-topic-input', add:'.sp-topic-add'},
+   {feld:'tips',   list:'.sp-tips',   input:'.sp-tip-input',   add:'.sp-tip-add'}].forEach(cfg=>{
+    const ul = host.querySelector(cfg.list);
+    const inp = host.querySelector(cfg.input);
+    if(!Array.isArray(m[cfg.feld])) m[cfg.feld] = [];
+    const nachAenderung = ()=>{
+      renderMiniList(ul, m[cfg.feld]);
+      persist(); renderSidebar();
+      /* Fortschrittsanzeige und Zähler mitziehen, ohne alles neu zu zeichnen */
+      if(cfg.feld==='topics'){
+        const nf = modulFortschritt(m);
+        const bar = host.querySelector('.sp-pf .mod-bar-fill');
+        if(bar) bar.style.width = nf.proz+'%';
+        const val = host.querySelector('.sp-pf-val');
+        if(val) val.innerHTML = `${nf.proz.toFixed(0)} % <span class="exp-sum-note">${nf.fertig}/${nf.gesamt}</span>`;
+        const rest = ul.closest('.sp-col').querySelector('h5 .dl-rest');
+        if(rest) rest.textContent = `${nf.offen} offen`;
+        const sub = document.querySelector('.entry-item.active .entry-item-sub');
+        if(sub) sub.textContent = `${nf.fertig}/${nf.gesamt} Themen · ${pruefStatus(m).label}`;
+      }
+    };
+    renderMiniList(ul, m[cfg.feld]);
+    bindMiniList(ul, m[cfg.feld], nachAenderung);
+    function add(){
+      const t = inp.value.trim(); if(!t) return;
+      m[cfg.feld].push({id:uid(), text:t, done:false});
+      inp.value=''; nachAenderung(); inp.focus();
+    }
+    host.querySelector(cfg.add).addEventListener('click', add);
+    inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') add(); });
+  });
+
+  const fokus = host.querySelector('#sp-fokus');
+  fokus.addEventListener('blur',()=>{ m.fokus = fokus.value; persist(); });
+}
+
+/* ---------------- TÄGLICHER NOTIZZETTEL ---------------- */
+function pruneDailyNotes(){
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-7);
+  const cutoffIso = cutoff.toISOString().slice(0,10);
+  data.dailyNotes.days = data.dailyNotes.days.filter(d=>d.date>=cutoffIso);
+  const today = new Date().toISOString().slice(0,10);
+  if(!data.dailyNotes.days.find(d=>d.date===today)){
+    data.dailyNotes.days.push({date:today, items:[]});
+  }
+  data.dailyNotes.days.sort((a,b)=>b.date.localeCompare(a.date));
+}
+function renderDailyNotes(c){
+  c.innerHTML = `
+    <div class="head-row"><div><h1 class="zt">🗓️ Täglicher Notizzettel</h1><div class="head-meta">letzte 7 Tage, ältere Tage werden automatisch entfernt</div></div></div>
+    <div class="divider"></div>
+    <div class="ib-quick">
+      <input type="date" id="daily-date-input">
+      <button class="ib-btn primary" id="daily-date-add">Tag hinzufügen / öffnen</button>
+    </div>
+    <div id="daily-days"></div>
+  `;
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('daily-date-add').addEventListener('click',()=>{
+    const picked = document.getElementById('daily-date-input').value;
+    if(!picked) return;
+    if(!data.dailyNotes.days.find(d=>d.date===picked)){
+      data.dailyNotes.days.push({date:picked, items:[]});
+      data.dailyNotes.days.sort((a,b)=>b.date.localeCompare(a.date));
+      persist();
+    }
+    renderDailyNotes(c);
+  });
+  const wrap = document.getElementById('daily-days');
+  data.dailyNotes.days.forEach(day=>{
+    const card = document.createElement('div');
+    card.className='day-card';
+    const label = day.date===today ? 'Heute — '+fmtDay(day.date) : fmtDay(day.date);
+    card.innerHTML = `
+      <div class="head-row" style="margin-bottom:8px;">
+        <h4 style="margin:0;">${label}</h4>
+        <button class="del-btn day-del" aria-label="Tag löschen">🗑</button>
+      </div>
+      <div class="input-row"><input type="text" class="day-input" placeholder="Notiz für diesen Tag …" maxlength="200"><button class="day-add">+</button></div>
+      <ul class="mini-list"></ul>
+    `;
+    const input = card.querySelector('.day-input');
+    const addBtn = card.querySelector('.day-add');
+    const delBtn = card.querySelector('.day-del');
+    const ul = card.querySelector('ul');
+    const refresh = ()=>{ renderMiniList(ul, day.items); persist(); };
+    renderMiniList(ul, day.items);
+    bindMiniList(ul, day.items, refresh);
+    function addDayItem(){
+      const t = input.value.trim(); if(!t) return;
+      day.items.unshift({id:uid(),text:t,done:false}); input.value=''; refresh();
+    }
+    addBtn.addEventListener('click', addDayItem);
+    input.addEventListener('keydown',(e)=>{ if(e.key==='Enter') addDayItem(); });
+    delBtn.addEventListener('click',()=>{
+      data.dailyNotes.days = data.dailyNotes.days.filter(d=>d.date!==day.date);
+      persist(); pruneDailyNotes(); renderDailyNotes(c);
+    });
+    wrap.appendChild(card);
+  });
+}
+
+/* ---------------- IDEA BOARD ---------------- */
+function renderIdeaBoard(c){
+  c.innerHTML = `
+    <div class="head-row"><div><h1 class="zt">📇 Idee-Board</h1><div class="head-meta">automatisch einsortiert</div></div></div>
+    <div class="divider"></div>
+    <div class="ib-inbox">
+      <div class="ib-status" style="margin-bottom:8px;">Rohtext in einer Claude-Unterhaltung sortieren lassen, JSON-Antwort hier einfügen:</div>
+      <textarea id="ib-import" placeholder='JSON-Antwort von Claude einfügen, z.B. [{"text":"...","category":"Steuern"}]'></textarea>
+      <div class="ib-row"><button class="ib-btn primary" id="ib-import-btn">Einfügen</button><span class="ib-status" id="ib-sort-status"></span></div>
+    </div>
+    <div class="ib-quick">
+      <input type="text" id="ib-quick-text" placeholder="…oder einzelnen Punkt direkt hinzufügen">
+      <select id="ib-quick-cat"></select>
+      <button class="ib-btn primary" id="ib-quick-add">Hinzufügen</button>
+      <div class="newcat-box" id="ib-newcat-box">
+        <input type="text" class="emoji" id="ib-newcat-emoji" placeholder="📌" maxlength="2">
+        <input type="text" id="ib-newcat-title" placeholder="Name der Kategorie">
+        <button class="ib-btn" style="background:#2A2E33;color:var(--ink)" id="ib-newcat-confirm">Anlegen</button>
+      </div>
+    </div>
+    <div class="ib-board" id="ib-board"></div>
+  `;
+  renderIbBoard();
+  renderIbCatSelect();
+  document.getElementById('ib-import-btn').addEventListener('click', ibImportJson);
+  document.getElementById('ib-quick-add').addEventListener('click', ibQuickAdd);
+  document.getElementById('ib-quick-text').addEventListener('keydown',(e)=>{if(e.key==='Enter')ibQuickAdd();});
+  document.getElementById('ib-quick-cat').addEventListener('change', ()=>{
+    document.getElementById('ib-newcat-box').classList.toggle('show', document.getElementById('ib-quick-cat').value==='__new__');
+  });
+  document.getElementById('ib-newcat-confirm').addEventListener('click', ibConfirmNewCat);
+}
+
+function renderIbBoard(){
+  const board = document.getElementById('ib-board');
+  board.innerHTML='';
+  const ib = data.ideaBoard;
+  ib.categories.forEach(cat=>{
+    const items = ib.items.filter(i=>i.categoryId===cat.id);
+    const openCount = items.filter(i=>!i.done).length;
+    const card = document.createElement('div');
+    card.className='ib-card';
+    card.innerHTML = `
+      <div class="ib-tab" style="background:${cat.color}">${cat.emoji} ${escapeHtml(cat.title.toUpperCase())}</div>
+      <div class="ib-card-head">
+        <span class="ib-card-title">${cat.emoji} ${escapeHtml(cat.title)}</span>
+        <span class="ib-card-count">${openCount} offen <button class="ib-card-del" data-id="${cat.id}">✕</button></span>
+      </div>
+      <div class="ib-items"></div>
+    `;
+    const itemsWrap = card.querySelector('.ib-items');
+    if(items.length===0){ itemsWrap.innerHTML='<div class="empty-mini">Noch keine Einträge</div>'; }
+    else {
+      items.sort((a,b)=>(a.done===b.done)?0:(a.done?1:-1));
+      items.forEach(it=>{
+        const row=document.createElement('div');
+        row.className='mini-item'+(it.done?' done':'');
+        row.innerHTML=`<span class="mini-checkbox" data-id="${it.id}"><svg viewBox="0 0 18 18"><path d="M3 9l4 4 8-8"/></svg></span>
+          <span class="mini-text">${escapeHtml(it.text)}</span>
+          <button class="mini-del" data-id="${it.id}">×</button>`;
+        itemsWrap.appendChild(row);
+      });
+    }
+    itemsWrap.addEventListener('click',(e)=>{
+      const cb=e.target.closest('.mini-checkbox'); const del=e.target.closest('.mini-del');
+      if(cb){ const it=ib.items.find(i=>i.id===cb.dataset.id); if(it){it.done=!it.done; persist(); renderIbBoard();} }
+      else if(del){ ib.items = ib.items.filter(i=>i.id!==del.dataset.id); persist(); renderIbBoard(); }
+    });
+    card.querySelector('.ib-card-del').addEventListener('click', ()=>ibDeleteCategory(cat.id));
+    board.appendChild(card);
+  });
+}
+
+function renderIbCatSelect(){
+  const sel = document.getElementById('ib-quick-cat');
+  const current = sel.value;
+  sel.innerHTML='';
+  data.ideaBoard.categories.forEach(c=>{
+    const opt=document.createElement('option'); opt.value=c.id; opt.textContent=c.emoji+' '+c.title; sel.appendChild(opt);
+  });
+  const newOpt=document.createElement('option'); newOpt.value='__new__'; newOpt.textContent='+ Neue Kategorie…'; sel.appendChild(newOpt);
+  if([...sel.options].some(o=>o.value===current)) sel.value=current;
+}
+
+function ibDeleteCategory(id){
+  if(pendingDeleteCat!==id){
+    pendingDeleteCat=id;
+    document.getElementById('ib-sort-status').textContent='Nochmal auf ✕ tippen zum wirklich Löschen.';
+    document.getElementById('ib-sort-status').className='ib-status err';
+    setTimeout(()=>{if(pendingDeleteCat===id)pendingDeleteCat=null;},4000);
+    return;
+  }
+  pendingDeleteCat=null;
+  data.ideaBoard.categories = data.ideaBoard.categories.filter(c=>c.id!==id);
+  data.ideaBoard.items = data.ideaBoard.items.filter(i=>i.categoryId!==id);
+  persist(); renderIbBoard(); renderIbCatSelect();
+}
+
+function ibConfirmNewCat(){
+  const emoji = document.getElementById('ib-newcat-emoji').value.trim() || '📌';
+  const title = document.getElementById('ib-newcat-title').value.trim();
+  if(!title) return;
+  const color = PALETTE[data.ideaBoard.categories.length % PALETTE.length];
+  const id = 'cat_'+uid();
+  data.ideaBoard.categories.push({id,title,emoji,color});
+  document.getElementById('ib-newcat-emoji').value='';
+  document.getElementById('ib-newcat-title').value='';
+  document.getElementById('ib-newcat-box').classList.remove('show');
+  persist(); renderIbBoard(); renderIbCatSelect();
+  document.getElementById('ib-quick-cat').value = id;
+}
+
+function ibQuickAdd(){
+  const textEl = document.getElementById('ib-quick-text');
+  const text = textEl.value.trim();
+  const catSel = document.getElementById('ib-quick-cat').value;
+  if(!text) return;
+  if(catSel==='__new__'){ 
+    document.getElementById('ib-sort-status').textContent='Erst Kategorie-Namen anlegen.';
+    document.getElementById('ib-sort-status').className='ib-status err';
+    return;
+  }
+  if(data.ideaBoard.categories.length===0){
+    document.getElementById('ib-sort-status').textContent='Erst eine Kategorie anlegen.';
+    return;
+  }
+  data.ideaBoard.items.push({id:uid(), categoryId:catSel, text, done:false});
+  textEl.value='';
+  persist(); renderIbBoard();
+}
+
+function ibImportJson(){
+  const raw = document.getElementById('ib-import').value.trim();
+  const statusEl = document.getElementById('ib-sort-status');
+  if(!raw){ statusEl.textContent='Erst JSON einfügen.'; statusEl.className='ib-status err'; return; }
+  try{
+    const cleaned = raw.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(cleaned);
+    if(!Array.isArray(parsed)) throw new Error('Erwartet ein JSON-Array.');
+    let added=0;
+    parsed.forEach(entry=>{
+      if(!entry || !entry.text) return;
+      let catId;
+      const title = (entry.category||'').trim();
+      if(title){
+        const existing = data.ideaBoard.categories.find(c=>c.title.toLowerCase()===title.toLowerCase());
+        if(existing){ catId = existing.id; }
+        else {
+          catId = 'cat_'+uid();
+          data.ideaBoard.categories.push({id:catId,title,emoji:entry.emoji||'📌',color:PALETTE[data.ideaBoard.categories.length % PALETTE.length]});
+        }
+      }
+      if(!catId){
+        if(data.ideaBoard.categories.length===0) return;
+        catId = data.ideaBoard.categories[0].id;
+      }
+      data.ideaBoard.items.push({id:uid(),categoryId:catId,text:entry.text,done:false});
+      added++;
+    });
+    persist();
+    renderIbBoard(); renderIbCatSelect();
+    document.getElementById('ib-import').value='';
+    statusEl.textContent = `${added} Punkt(e) übernommen.`;
+    statusEl.className='ib-status';
+  }catch(e){
+    statusEl.textContent = 'Import fehlgeschlagen: ' + (e.message||e);
+    statusEl.className='ib-status err';
+  }
+}
+
+/* ---------------- EXPORT / IMPORT ---------------- */
+function exportData(){
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=`notizblock-sicherung-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function importData(file){
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const parsed = JSON.parse(e.target.result);
+      /* Akzeptiert alte Sicherungen (zettel) und neue (nodes) - migrateData
+         bringt beides auf den aktuellen Stand. */
+      const valid = parsed && (Array.isArray(parsed.zettel) || parsed.nodes || parsed.ideaBoard);
+      if(!valid) throw new Error('Ungültiges Format');
+      data = parsed;
+      if(!data.activeId) data.activeId = 'ideaboard';
+      pendingDeleteCat=null;
+      migrateData(); pruneDailyNotes();
+      renderAll(); persist();
+    }catch(err){ alert('Diese Datei sieht nicht wie eine gültige Sicherung aus.'); }
+  };
+  reader.readAsText(file);
+}
+document.getElementById('export-btn').addEventListener('click', exportData);
+document.getElementById('import-btn').addEventListener('click', ()=>document.getElementById('import-file').click());
+document.getElementById('import-file').addEventListener('change',(e)=>{
+  const f = e.target.files[0]; if(f) importData(f); e.target.value='';
+});
+
+load();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('/sw.js').catch(e=>console.error('SW-Registrierung fehlgeschlagen', e)); });
+}
+</script>
+</body>
+</html>

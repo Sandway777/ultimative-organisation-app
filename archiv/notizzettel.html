@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Notizzettel</title>
+<style>
+  :root {
+    --paper: #FBF4EF;
+    --wine: #6E1F33;
+    --wine-dark: #3E1220;
+    --wine-soft: #E7CDD4;
+    --wine-pale: #F3E3E7;
+    --ink: #2E1A1F;
+    --ink-muted: #93767D;
+    --danger: #A32C3E;
+  }
+  * { box-sizing: border-box; }
+  html, body { height:100%; margin:0; }
+  body {
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: var(--wine-dark);
+  }
+  .app { display:flex; height:100vh; width:100%; }
+
+  /* Sidebar = "Legende" - alle Zettel, sortiert nach Datum */
+  .sidebar {
+    width: 230px;
+    flex-shrink:0;
+    background: var(--wine-dark);
+    color:#fff;
+    display:flex;
+    flex-direction:column;
+    overflow-y:auto;
+  }
+  .sidebar-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 14px 10px 14px;
+  }
+  .sidebar-title {
+    font-family: Georgia, 'Palatino Linotype', 'Book Antiqua', serif;
+    font-style: italic;
+    font-size: 1.05rem;
+    color: rgba(255,255,255,0.92);
+  }
+  .sidebar-add {
+    width:28px; height:28px; border-radius:50%;
+    background: rgba(255,255,255,0.14);
+    color:#fff; border:none; font-size:1.1rem; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition: background .15s ease, transform .15s ease;
+    flex-shrink:0;
+  }
+  .sidebar-add:hover { background: rgba(255,255,255,0.28); transform: scale(1.06); }
+
+  .new-list-row {
+    display:none;
+    flex-direction:column;
+    gap:6px;
+    padding: 0 14px 12px 14px;
+  }
+  .new-list-row.show { display:flex; }
+  #new-list-input {
+    border:none; border-radius:6px;
+    padding: 8px 10px;
+    font-size:0.88rem;
+    font-family:inherit;
+    outline:none;
+    background: rgba(255,255,255,0.94);
+    color: var(--ink);
+  }
+  #new-list-input::placeholder { color: var(--ink-muted); }
+  .new-list-confirm {
+    border:none; border-radius:6px;
+    background: var(--wine-soft);
+    color: var(--wine-dark);
+    font-weight:600;
+    padding: 7px 12px;
+    font-size:0.82rem;
+    cursor:pointer;
+  }
+
+  .sidebar-list { flex:1; overflow-y:auto; padding: 4px 8px 14px 8px; }
+  .sidebar-item {
+    padding: 9px 10px;
+    border-radius: 8px;
+    cursor:pointer;
+    margin-bottom: 2px;
+    transition: background .15s ease;
+  }
+  .sidebar-item:hover { background: rgba(255,255,255,0.08); }
+  .sidebar-item.active { background: var(--paper); }
+  .sidebar-item-title {
+    font-size:0.9rem; font-weight:600;
+    color: rgba(255,255,255,0.92);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .sidebar-item.active .sidebar-item-title { color: var(--wine-dark); }
+  .sidebar-item-date {
+    font-size:0.72rem;
+    color: rgba(255,255,255,0.55);
+    margin-top:2px;
+  }
+  .sidebar-item.active .sidebar-item-date { color: var(--wine); }
+  .sidebar-empty {
+    padding: 8px 10px;
+    font-size:0.8rem;
+    color: rgba(255,255,255,0.5);
+    font-style:italic;
+  }
+
+  .sidebar-footer {
+    flex-shrink:0;
+    padding: 12px 14px 14px 14px;
+    border-top: 1px solid rgba(255,255,255,0.12);
+  }
+  .backup-row { display:flex; gap:6px; margin-bottom:6px; }
+  .backup-btn {
+    flex:1;
+    border:none; border-radius:6px;
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.9);
+    font-size:0.76rem;
+    font-family:inherit;
+    padding: 7px 6px;
+    cursor:pointer;
+    transition: background .15s ease;
+  }
+  .backup-btn:hover { background: rgba(255,255,255,0.22); }
+  .backup-hint {
+    font-size:0.68rem;
+    color: rgba(255,255,255,0.45);
+    line-height:1.35;
+  }
+
+  /* Hauptbereich */
+  .main {
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    background: var(--paper);
+    overflow:hidden;
+    min-width:0;
+  }
+  .body-area {
+    flex:1;
+    overflow-y:auto;
+    padding: 28px 30px 24px 30px;
+  }
+  .content-inner { max-width: 640px; }
+
+  .heading-row {
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap: 10px;
+    margin-bottom: 2px;
+  }
+  h1 {
+    font-family: Georgia, 'Palatino Linotype', 'Book Antiqua', serif;
+    font-style: italic;
+    font-size: 1.9rem;
+    margin: 0;
+    color: var(--wine);
+    font-weight:700;
+    line-height:1.15;
+    word-break: break-word;
+  }
+  .meta { font-size: 0.76rem; color: var(--ink-muted); margin-bottom: 18px; }
+
+  .delete-list-btn {
+    flex-shrink:0;
+    border:none; background:none;
+    color: var(--ink-muted);
+    font-size: 1.05rem;
+    cursor:pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: background .15s ease, color .15s ease;
+  }
+  .delete-list-btn:hover { background: var(--wine-pale); color: var(--danger); }
+
+  .confirm-row {
+    display:flex; align-items:center; gap:8px;
+    font-size:0.82rem; color: var(--ink); flex-shrink:0;
+  }
+  .confirm-row button {
+    border:none; border-radius:6px; padding: 5px 11px;
+    font-size:0.78rem; cursor:pointer; font-family:inherit;
+  }
+  .confirm-yes { background: var(--danger); color:#fff; }
+  .confirm-no { background: #EDE2E5; color: var(--ink); }
+
+  .divider { height:1px; background: var(--wine-soft); margin: 4px 0 16px 0; }
+
+  .input-row { display:flex; gap:8px; margin-bottom: 10px; align-items:center; }
+  #new-note {
+    flex:1; border:none; border-bottom: 1px solid var(--wine-soft);
+    background:transparent; font-size:1rem; color:var(--ink);
+    padding: 6px 2px; outline:none; font-family: inherit;
+  }
+  #new-note:focus { border-bottom-color: var(--wine); }
+  #new-note::placeholder { color: var(--ink-muted); }
+  #add-btn {
+    border:none; background: var(--wine); color: #fff;
+    width:30px; height:30px; border-radius:50%;
+    font-size:1.15rem; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; transition: transform .15s ease, background .15s ease;
+  }
+  #add-btn:hover { background: var(--wine-dark); transform: scale(1.06); }
+  #add-btn:active { transform: scale(0.92); }
+
+  ul#list { list-style:none; margin:0; padding:0; }
+  li.item {
+    display:flex; align-items:flex-start; gap:10px;
+    padding: 10px 0; border-bottom: 1px solid #F2E7E9;
+  }
+  li.item:last-child { border-bottom:none; }
+  .checkbox {
+    width:18px; height:18px; border:2px solid var(--ink-muted);
+    border-radius:4px; flex-shrink:0; cursor:pointer; position:relative;
+    margin-top: 2px;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .checkbox svg {
+    position:absolute; inset:-3px; stroke: var(--wine); stroke-width:3;
+    fill:none; stroke-linecap:round; stroke-linejoin:round;
+    stroke-dasharray: 24; stroke-dashoffset: 24;
+    transition: stroke-dashoffset .25s ease;
+  }
+  li.item.done .checkbox { border-color: var(--wine); background: var(--wine-pale); }
+  li.item.done .checkbox svg { stroke-dashoffset:0; }
+  .item-text {
+    flex:1; font-size:0.98rem; color: var(--ink);
+    overflow-wrap: break-word; word-break: break-word; white-space: normal;
+    line-height: 1.4;
+    transition: color .2s ease;
+  }
+  li.item.done .item-text {
+    color: var(--ink-muted); text-decoration: line-through;
+    text-decoration-color: var(--ink-muted);
+  }
+  .delete-btn {
+    border:none; background:none; color: var(--ink-muted);
+    font-size:1.15rem; cursor:pointer; opacity:0.4;
+    transition: opacity .15s ease, color .15s ease;
+    flex-shrink:0; padding:2px 6px; margin-top: -2px;
+  }
+  li.item:hover .delete-btn { opacity:1; }
+  .delete-btn:hover { color: var(--danger); }
+
+  .empty-state, .empty-lists {
+    color: var(--ink-muted); font-size:0.95rem; font-style:italic; padding-top: 6px;
+  }
+  .empty-lists { padding: 30px 4px; text-align:center; }
+  .empty-lists button {
+    margin-top: 14px; border:none; background: var(--wine); color:#fff;
+    padding: 9px 18px; border-radius: 8px; font-size:0.88rem;
+    font-family:inherit; cursor:pointer;
+  }
+
+  .footer {
+    margin-top: 16px; font-size:0.76rem; color: var(--ink-muted);
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .save-indicator { display:flex; align-items:center; gap:5px; }
+  .dot {
+    width:6px; height:6px; border-radius:50%; background: var(--wine);
+    opacity:0; transition: opacity .3s ease;
+  }
+  .dot.show { opacity:1; }
+
+  @media (max-width: 680px) {
+    .app { flex-direction:column; }
+    .sidebar { width:100%; max-height: 34vh; }
+    .sidebar-list {
+      flex:1; display:flex; flex-direction:row; gap:8px;
+      overflow-x:auto; overflow-y:hidden;
+      padding: 4px 12px 12px 12px;
+    }
+    .sidebar-item { flex-shrink:0; min-width: 130px; }
+    .new-list-row { padding: 0 12px 12px 12px; }
+    .body-area { padding: 22px 18px 20px 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">Notizzettel</span>
+      <button class="sidebar-add" id="sidebar-add" aria-label="Neuer Zettel">+</button>
+    </div>
+    <div class="new-list-row" id="new-list-row">
+      <input id="new-list-input" type="text" placeholder="Titel, z. B. Rom-Trip Mai" maxlength="40"/>
+      <button class="new-list-confirm" id="new-list-confirm">Anlegen</button>
+    </div>
+    <div class="sidebar-list" id="sidebar-list"></div>
+    <div class="sidebar-footer">
+      <div class="backup-row">
+        <button class="backup-btn" id="export-btn">⬇ Exportieren</button>
+        <button class="backup-btn" id="import-btn">⬆ Importieren</button>
+        <input type="file" id="import-file" accept=".json" style="display:none;">
+      </div>
+      <div class="backup-hint">Sicherung als Datei — unabhängig vom Speicher hier drin.</div>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="body-area" id="body-area"></div>
+  </main>
+</div>
+<script>
+const STORAGE_KEY = 'notizzettel-data';
+let data = { lists: [], activeListId: null };
+let confirmingDeleteListId = null;
+
+function uid() { return 'id' + Date.now() + Math.random().toString(36).slice(2,7); }
+
+function formatDate(ts) {
+  return new Date(ts).toLocaleDateString('de-DE', { day:'2-digit', month:'short', year:'2-digit' });
+}
+
+function getSortedLists() {
+  return [...data.lists].sort((a, b) => b.createdAt - a.createdAt);
+}
+
+async function load() {
+  try {
+    const res = await window.storage.get(STORAGE_KEY, false);
+    data = res ? JSON.parse(res.value) : { lists: [], activeListId: null };
+  } catch (e) {
+    data = { lists: [], activeListId: null };
+  }
+  if (!data.activeListId && data.lists.length > 0) {
+    data.activeListId = getSortedLists()[0].id;
+  }
+  renderAll();
+}
+
+async function persist() {
+  try {
+    await window.storage.set(STORAGE_KEY, JSON.stringify(data), false);
+    flashSaved();
+  } catch (e) {
+    console.error('Speichern fehlgeschlagen', e);
+  }
+}
+
+function flashSaved() {
+  const dot = document.getElementById('save-dot');
+  if (!dot) return;
+  dot.classList.add('show');
+  clearTimeout(flashSaved._t);
+  flashSaved._t = setTimeout(() => dot.classList.remove('show'), 900);
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function getActiveList() {
+  return data.lists.find(l => l.id === data.activeListId) || null;
+}
+
+function renderAll() {
+  renderSidebar();
+  renderBody();
+}
+
+function renderSidebar() {
+  const wrap = document.getElementById('sidebar-list');
+  wrap.innerHTML = '';
+  const sorted = getSortedLists();
+  if (sorted.length === 0) {
+    wrap.innerHTML = '<div class="sidebar-empty">Noch keine Zettel</div>';
+    return;
+  }
+  sorted.forEach(l => {
+    const div = document.createElement('div');
+    div.className = 'sidebar-item' + (l.id === data.activeListId ? ' active' : '');
+    div.innerHTML = `
+      <div class="sidebar-item-title">${escapeHtml(l.title)}</div>
+      <div class="sidebar-item-date">${formatDate(l.createdAt)}</div>
+    `;
+    div.addEventListener('click', () => {
+      data.activeListId = l.id;
+      confirmingDeleteListId = null;
+      renderAll();
+      persist();
+    });
+    wrap.appendChild(div);
+  });
+}
+
+function showNewListRow() {
+  document.getElementById('new-list-row').classList.add('show');
+  const input = document.getElementById('new-list-input');
+  input.value = '';
+  input.focus();
+}
+
+function hideNewListRow() {
+  document.getElementById('new-list-row').classList.remove('show');
+}
+
+function renderBody() {
+  const area = document.getElementById('body-area');
+  const list = getActiveList();
+
+  if (!list) {
+    area.innerHTML = `
+      <div class="empty-lists">
+        Noch kein Notizzettel angelegt.<br>Leg einen für deine nächste Reise oder Phase an.
+        <div><button id="empty-add-btn">+ Neuer Zettel</button></div>
+      </div>
+    `;
+    document.getElementById('empty-add-btn').addEventListener('click', showNewListRow);
+    return;
+  }
+
+  const isConfirming = confirmingDeleteListId === list.id;
+
+  area.innerHTML = `
+    <div class="content-inner">
+      <div class="heading-row">
+        <div>
+          <h1>${escapeHtml(list.title)}</h1>
+          <div class="meta">angelegt ${formatDate(list.createdAt)}</div>
+        </div>
+        ${isConfirming ? `
+          <div class="confirm-row">
+            Zettel löschen?
+            <button class="confirm-yes" id="confirm-yes">Ja</button>
+            <button class="confirm-no" id="confirm-no">Abbrechen</button>
+          </div>
+        ` : `<button class="delete-list-btn" id="delete-list-btn" aria-label="Zettel löschen">🗑</button>`}
+      </div>
+      <div class="divider"></div>
+      <div class="input-row">
+        <input id="new-note" type="text" placeholder="Neue Aufgabe schreiben und Enter drücken …" maxlength="200"/>
+        <button id="add-btn" aria-label="Hinzufügen">+</button>
+      </div>
+      <ul id="list"></ul>
+      <div id="empty" class="empty-state" style="display:none;">Noch nichts notiert. Leg los.</div>
+      <div class="footer">
+        <span id="counter">0 offen</span>
+        <span class="save-indicator"><span class="dot" id="save-dot"></span>gespeichert</span>
+      </div>
+    </div>
+  `;
+
+  renderItems(list);
+
+  if (isConfirming) {
+    document.getElementById('confirm-yes').addEventListener('click', () => deleteList(list.id));
+    document.getElementById('confirm-no').addEventListener('click', () => {
+      confirmingDeleteListId = null;
+      renderBody();
+    });
+  } else {
+    document.getElementById('delete-list-btn').addEventListener('click', () => {
+      confirmingDeleteListId = list.id;
+      renderBody();
+    });
+  }
+
+  document.getElementById('add-btn').addEventListener('click', addNote);
+  document.getElementById('new-note').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addNote();
+  });
+  document.getElementById('list').addEventListener('click', handleListClick);
+}
+
+function renderItems(list) {
+  const ul = document.getElementById('list');
+  const empty = document.getElementById('empty');
+  ul.innerHTML = '';
+  if (list.items.length === 0) {
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    list.items.forEach(item => {
+      const li = document.createElement('li');
+      li.className = 'item' + (item.done ? ' done' : '');
+      li.innerHTML = `
+        <span class="checkbox" data-id="${item.id}">
+          <svg viewBox="0 0 18 18"><path d="M3 9l4 4 8-8"/></svg>
+        </span>
+        <span class="item-text">${escapeHtml(item.text)}</span>
+        <button class="delete-btn" data-id="${item.id}" aria-label="Löschen">×</button>
+      `;
+      ul.appendChild(li);
+    });
+  }
+  const open = list.items.filter(i => !i.done).length;
+  const doneCount = list.items.length - open;
+  document.getElementById('counter').textContent =
+    list.items.length === 0 ? '0 offen' : `${open} offen · ${doneCount} erledigt`;
+}
+
+function handleListClick(e) {
+  const list = getActiveList();
+  if (!list) return;
+  const cb = e.target.closest('.checkbox');
+  const del = e.target.closest('.delete-btn');
+  if (cb) {
+    const id = cb.dataset.id;
+    const item = list.items.find(i => i.id === id);
+    if (item) { item.done = !item.done; renderItems(list); persist(); }
+  } else if (del) {
+    const id = del.dataset.id;
+    list.items = list.items.filter(i => i.id !== id);
+    renderItems(list);
+    persist();
+  }
+}
+
+function addNote() {
+  const list = getActiveList();
+  if (!list) return;
+  const input = document.getElementById('new-note');
+  const text = input.value.trim();
+  if (!text) return;
+  list.items.unshift({ id: uid(), text, done: false, createdAt: Date.now() });
+  input.value = '';
+  renderItems(list);
+  persist();
+}
+
+function createList(title) {
+  const newList = { id: uid(), title, createdAt: Date.now(), items: [] };
+  data.lists.push(newList);
+  data.activeListId = newList.id;
+  confirmingDeleteListId = null;
+  hideNewListRow();
+  renderAll();
+  persist();
+}
+
+function deleteList(id) {
+  data.lists = data.lists.filter(l => l.id !== id);
+  if (data.activeListId === id) {
+    const sorted = getSortedLists();
+    data.activeListId = sorted.length > 0 ? sorted[0].id : null;
+  }
+  confirmingDeleteListId = null;
+  renderAll();
+  persist();
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `notizzettel-sicherung-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (!parsed || !Array.isArray(parsed.lists)) throw new Error('Ungültiges Format');
+      data = parsed;
+      confirmingDeleteListId = null;
+      renderAll();
+      persist();
+    } catch (err) {
+      alert('Diese Datei sieht nicht wie eine gültige Notizzettel-Sicherung aus.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById('export-btn').addEventListener('click', exportData);
+document.getElementById('import-btn').addEventListener('click', () => {
+  document.getElementById('import-file').click();
+});
+document.getElementById('import-file').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) importData(file);
+  e.target.value = '';
+});
+
+document.getElementById('sidebar-add').addEventListener('click', showNewListRow);
+document.getElementById('new-list-confirm').addEventListener('click', () => {
+  const input = document.getElementById('new-list-input');
+  const title = input.value.trim();
+  if (title) createList(title);
+});
+document.getElementById('new-list-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const title = e.target.value.trim();
+    if (title) createList(title);
+  } else if (e.key === 'Escape') {
+    hideNewListRow();
+  }
+});
+
+load();
+</script>
+</body>
+</html>
