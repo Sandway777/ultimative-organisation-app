@@ -16,9 +16,12 @@ del "%TEMP%\nb_neu.txt" >nul 2>&1
 
 if "%HAT_AENDERUNG%"=="0" if "%NEU_GROESSE%"=="0" (
     echo Keine Aenderungen vorhanden - nichts zu speichern.
-    echo.
-    echo Hole trotzdem neuesten Stand vom Laptop...
-    git pull --rebase
+    git remote get-url origin >nul 2>&1
+    if not errorlevel 1 (
+        echo.
+        echo Hole trotzdem neuesten Stand vom Laptop...
+        git pull --rebase
+    )
     echo.
     pause
     exit /b 0
