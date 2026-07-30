@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Notizblock</title>
+<!-- Safari am iPhone haelt die Seite sonst tagelang in seinem eigenen
+     Speicher fest - Aenderungen kamen dort nie an, egal wie oft neu geladen
+     wurde. Diese drei Zeilen verbieten das Zwischenspeichern der Seite selbst;
+     fuer den Offline-Betrieb ist der Service Worker zustaendig. -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#141618">
 <!-- iPhone: ohne diese drei Zeilen oeffnet die App vom Homescreen mit
@@ -2368,14 +2375,6 @@ function migrateData(){
   if(!data.dailyNotes) data.dailyNotes = {days:[]};
   if(!data.ideaBoard)  data.ideaBoard = {categories:[],items:[]};
   if(!data.ideaBoard.zu || typeof data.ideaBoard.zu!=='object') data.ideaBoard.zu = {};
-  /* Kategorien starten zugeklappt - alle acht offen ist am Handy eine Wand
-     aus Punkten, in der man nichts findet. Einmaliger Schnitt, damit es auch
-     auf Geraeten greift, die die App schon vorher offen hatten; danach zaehlt
-     wieder, was Leon selbst einstellt. */
-  if(!data.ideaBoard.zu.__zuGesetzt){
-    (data.ideaBoard.categories||[]).forEach(c=>{ data.ideaBoard.zu[c.id] = true; });
-    data.ideaBoard.zu.__zuGesetzt = true;
-  }
   if(!data.nodes)      data.nodes = {};
   if(!Array.isArray(data.months)) data.months = [];
 
@@ -2730,6 +2729,19 @@ function migrateData(){
   ideenUebernehmen();
   augustAntraegeUebernehmen();
   studiumUebernehmen();
+
+  /* Ganz zum Schluss, wenn auch die uebernommenen Kategorien stehen: alle
+     Idee-Board-Karten einmal zuklappen. Weiter oben lief das ins Leere, weil
+     die Kategorien dort noch gar nicht angelegt waren - es wurde nur der
+     Merker gesetzt und nichts zugeklappt. */
+  /* Der Merker traegt eine Nummer: der erste Versuch lief zu frueh und klappte
+     nichts zu (die Kategorien gab es da noch nicht). Mit v2 laeuft er genau
+     einmal neu, danach zaehlt wieder, was Leon selbst einstellt. */
+  const kats = data.ideaBoard.categories || [];
+  if(data.ideaBoard.zu.__zuGesetzt !== 'v2' && kats.length){
+    kats.forEach(c=>{ data.ideaBoard.zu[c.id] = true; });
+    data.ideaBoard.zu.__zuGesetzt = 'v2';
+  }
 }
 
 async function load(){
@@ -6567,6 +6579,38 @@ window.addEventListener('online', cloudAbgleich);
 
 /* Beim Start einmal abgleichen - das andere Geraet koennte neuer sein. */
 cloudAbgleich();
+
+/* Fassung dieser Datei. Beim Start wird die Datei frisch vom Server geholt
+   und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
+   einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
+   eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
+const APP_FASSUNG = 12;
+async function fassungPruefen(){
+  if(!navigator.onLine) return;
+  if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
+  try{
+    const res = await fetch('index.html?nr=' + Date.now(), {cache:'no-store'});
+    if(!res.ok) return;
+    const txt = await res.text();
+    const m = txt.match(/const APP_FASSUNG = (\d+)/);
+    if(!m) return;
+    if(Number(m[1]) > APP_FASSUNG){
+      sessionStorage.setItem('fassung-geprueft','1');   /* verhindert Endlosschleife */
+      if(window.caches){
+        const namen = await caches.keys();
+        await Promise.all(namen.map(n=>caches.delete(n)));
+      }
+      location.replace('index.html?nr=' + Date.now());
+    }
+  }catch(e){ /* offline oder Netz weg - dann eben beim naechsten Mal */ }
+}
+fassungPruefen();
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'){
+    sessionStorage.removeItem('fassung-geprueft');
+    fassungPruefen();
+  }
+});
 
 if('serviceWorker' in navigator){
   /* Relativer Pfad - unter GitHub Pages liegt die App in einem Unterordner. */
