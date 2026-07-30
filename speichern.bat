@@ -64,11 +64,21 @@ if errorlevel 1 (
     echo.
     echo Gespeichert als: !VERB! (!STAMP!)
     echo.
-    echo HINWEIS: Es ist noch kein GitHub-Repo verbunden,
-    echo deshalb wurde nur lokal gespeichert.
+    echo ############################################
+    echo #                                          #
+    echo #   ACHTUNG: NICHT AUF GITHUB!             #
+    echo #                                          #
+    echo ############################################
+    echo.
+    echo Es ist kein GitHub-Repo verbunden. Dein Stand liegt
+    echo NUR auf diesem Computer - nicht in der Cloud.
+    echo.
+    echo So verbindest du es einmalig:
+    echo    git remote add origin https://github.com/DEIN-NAME/DEIN-REPO.git
+    echo    git push -u origin main
     echo.
     pause
-    exit /b 0
+    exit /b 1
 )
 
 REM --- Erst holen (Laptop-Stand), dann hochladen ---
@@ -90,8 +100,15 @@ echo Lade auf GitHub hoch...
 git push
 if errorlevel 1 (
     echo.
-    echo FEHLER beim Hochladen. Dein Stand ist aber lokal gespeichert.
-    echo Moegliche Ursache: noch kein GitHub-Repo verbunden oder nicht angemeldet.
+    echo ############################################
+    echo #   FEHLER: NICHT HOCHGELADEN!             #
+    echo ############################################
+    echo.
+    echo Dein Stand ist lokal gespeichert, aber NICHT auf GitHub.
+    echo.
+    echo Haeufigste Ursache: du bist nicht bei GitHub angemeldet.
+    echo Anmelden mit:  gh auth login
+    echo Pruefen mit:   gh auth status
     echo.
     pause
     exit /b 1
@@ -101,5 +118,8 @@ echo.
 echo ============================================
 echo   Fertig! Gespeichert als: !VERB! (!STAMP!)
 echo ============================================
+echo.
+echo Erfolgreich auf GitHub hochgeladen:
+for /f "delims=" %%U in ('git remote get-url origin 2^>nul') do echo    %%U
 echo.
 pause
