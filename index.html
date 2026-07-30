@@ -788,6 +788,14 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .save-toast.show{opacity:1;transform:translateY(0);}
 .save-toast.err{background:var(--danger);}
 
+/* Beispiele entfernen - nur sichtbar, solange welche da sind. */
+.beispiel-weg{width:100%;background:none;border:1px dashed var(--sidebar-line);border-radius:7px;
+  color:var(--ink-soft);font-family:inherit;font-size:0.74rem;padding:7px 10px;
+  margin-bottom:8px;cursor:pointer;text-align:left;}
+.beispiel-weg:hover{border-color:var(--idea);color:var(--idea);}
+.beispiel-weg.confirm{border-color:var(--danger);color:var(--danger);border-style:solid;}
+.beispiel-weg[hidden]{display:none;}
+
 /* ---- Cloud-Sync ---- */
 .cloud-status{width:100%;background:none;border:1px solid var(--sidebar-line);border-radius:7px;
   color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;font-size:0.7rem;
@@ -1101,6 +1109,7 @@ tr.row-off .tt-num{text-decoration:line-through;}
     <div class="main-actions" id="global-nodes"></div>
     <div class="saeulen" id="saeulen"></div>
     <div class="sidebar-footer">
+      <button class="beispiel-weg" id="beispiel-weg" hidden>🧹 Beispiele entfernen</button>
       <button class="cloud-status" id="cloud-status">○ Cloud aus</button>
       <div class="backup-row">
         <button class="backup-btn" id="export-btn">⬇ Exportieren</button>
@@ -1446,6 +1455,132 @@ function emptyNodeContent(type){
   return {};
 }
 
+/* Beispiel-Eintraege fuer die Bereiche mit eigener Funktion.
+   Zweck: man sieht sofort, welche Felder es gibt und wie ein Eintrag aussieht -
+   dann kann man die echten Daten danebenlegen oder das Beispiel ueberschreiben.
+   Einfache Checklisten bleiben bewusst leer, die erklaeren sich von selbst.
+   Alle Beispiele tragen beispiel:true und lassen sich damit spaeter auf einen
+   Schlag entfernen (siehe beispieleEntfernen). */
+function beispielDaten(nodes){
+  const heute = new Date();
+  const inTagen = (n)=>{ const d = new Date(heute); d.setDate(d.getDate()+n); return isoLocal(d); };
+  const ym = isoToday().slice(0,7);
+
+  /* PRIVAT ---------------------------------------------------------------- */
+  nodes['privat:reisen'].trips = [{
+    id:uid(), beispiel:true, title:'Beispiel: Wochenende Amsterdam',
+    dateFrom: inTagen(30), dateTo: inTagen(33), open:true,
+    undated:[{id:uid(), text:'Zugticket buchen', done:false},
+             {id:uid(), text:'Unterkunft suchen', done:true}],
+    dated:[{id:uid(), text:'Anreise 09:12 ab Hbf', date: inTagen(30), done:false},
+           {id:uid(), text:'Van-Gogh-Museum', date: inTagen(31), done:false},
+           {id:uid(), text:'Rückfahrt 17:40', date: inTagen(33), done:false}]
+  }];
+  nodes['privat:antraege'].items = [{
+    id:uid(), beispiel:true, text:'Beispiel: BAföG-Folgeantrag',
+    due: inTagen(21), status:'vorbereiten', done:false,
+    note:'Einkommensnachweis der Eltern fehlt noch',
+    steps:[{id:uid(), text:'Formular herunterladen', done:true},
+           {id:uid(), text:'Nachweise sammeln', done:false},
+           {id:uid(), text:'Abschicken', done:false}],
+    docs:[{id:uid(), text:'Einkommensnachweis Eltern', done:false},
+          {id:uid(), text:'Immatrikulationsbescheinigung', done:true}]
+  }];
+  nodes['privat:ausgaben'].months = { [ym]: { beispiel:true, closed:false, cats:{
+    wohnen:[{id:uid(), label:'Beispiel: Miete', amount:820},
+            {id:uid(), label:'Beispiel: Strom', amount:65}],
+    essen:[{id:uid(), label:'Beispiel: Wocheneinkauf', amount:74.30, date: isoToday()}],
+    sonstiges:[{id:uid(), label:'Beispiel: Handyvertrag', amount:19.99}]
+  }}};
+
+  /* BUSINESS -------------------------------------------------------------- */
+  nodes['business:prozesse'].items = [{
+    id:uid(), beispiel:true, bereich:'Versand',
+    text:'Beispiel: Etiketten werden einzeln gedruckt – Sammeldruck prüfen',
+    done:false
+  }];
+  nodes['business:marge'].rows = [{
+    id:uid(), beispiel:true, produkt:'Beispiel: Poster', groesse:'50x70',
+    price:29.90, druck:8.40, versand:4.90
+  }];
+
+  /* UNI ------------------------------------------------------------------- */
+  nodes['uni:stundenplan'].slots = [
+    {id:uid(), beispiel:true, titel:'Beispiel: Mathematik I', tag:0,
+     von:'10:15', bis:'11:45', raum:'H2', dozent:'Prof. Beispiel'},
+    {id:uid(), beispiel:true, titel:'Beispiel: Übung Mathe', tag:2,
+     von:'14:00', bis:'15:30', raum:'S12', dozent:''}
+  ];
+  nodes['uni:pruefungen'].items = [{
+    id:uid(), beispiel:true, text:'Beispiel: Klausur Mathematik I',
+    date: inTagen(60), zeit:'09:00', raum:'Audimax',
+    anmeldung: inTagen(30), status:'offen', done:false
+  }];
+  nodes['uni:module'].items = [{
+    id:uid(), beispiel:true, text:'Beispiel: Mathematik I', cp:6, note:'',
+    status:'laeuft', semester:'1. Semester',
+    pruefform:'Klausur', pruefdatum: inTagen(60), pruefzeit:'09:00', pruefraum:'Audimax',
+    fokus:'Grenzwerte und Ableitungen',
+    topics:[{id:uid(), text:'Folgen und Reihen', done:true},
+            {id:uid(), text:'Differentialrechnung', done:false},
+            {id:uid(), text:'Integralrechnung', done:false}],
+    tips:[{id:uid(), text:'Altklausuren ab Woche 8 durchrechnen', done:false}]
+  }];
+
+  /* SPORT ----------------------------------------------------------------- */
+  nodes['sport:training'].weeks = { [ym]: { beispiel:true, days:{
+    0:[{id:uid(), fokus:'ok',    text:'Beispiel: Bankdrücken', sets:'4x8 @60kg', done:false},
+       {id:uid(), fokus:'bauch', text:'Beispiel: Plank',       sets:'3x45s',     done:false}],
+    1:[], 2:[{id:uid(), fokus:'beine', text:'Beispiel: Kniebeuge', sets:'4x8 @80kg', done:false}],
+    3:[], 4:[{id:uid(), fokus:'ok', text:'Beispiel: Klimmzüge', sets:'4x6', done:false}],
+    5:[], 6:[]
+  }}};
+  nodes['sport:kuren'].cures = [{
+    id:uid(), beispiel:true, title:'Beispiel: Magnesium-Kur',
+    dateFrom: isoToday(), dateTo: inTagen(27),
+    items:[{id:uid(), text:'Magnesium', dose:'400 mg', zeiten:['abends'], days:[]},
+           {id:uid(), text:'Vitamin D', dose:'1 Tropfen', zeiten:['morgens'], days:[]},
+           {id:uid(), text:'Basenbad',  dose:'20 Min',    zeiten:['abends'], days:[0,3]}],
+    done:{}
+  }];
+
+  /* Uebergreifend: ein Monatszettel als Muster */
+  return [{
+    id:uid(), beispiel:true, ym, open:true, columns:{
+      privat:[{id:uid(), text:'Beispiel: Wohnung ausmisten', done:false}],
+      business:[{id:uid(), text:'Beispiel: Shop-Fotos erneuern', done:false}],
+      uni:[{id:uid(), text:'Beispiel: Stundenplan festlegen', done:false}],
+      sport:[{id:uid(), text:'Beispiel: 3x pro Woche Training', done:false}]
+    }
+  }];
+}
+
+/* Entfernt alle Eintraege mit beispiel:true - egal in welcher Liste sie stecken.
+   Laeuft rekursiv, damit auch verschachtelte Sachen (Reise-Punkte, Modul-Themen)
+   erwischt werden. Echte Eintraege haben die Markierung nie. */
+function beispieleEntfernen(){
+  let weg = 0;
+  const durch = (obj)=>{
+    if(Array.isArray(obj)){
+      for(let i=obj.length-1;i>=0;i--){
+        if(obj[i] && typeof obj[i]==='object' && obj[i].beispiel===true){ obj.splice(i,1); weg++; }
+        else durch(obj[i]);
+      }
+      return;
+    }
+    if(obj && typeof obj==='object'){
+      Object.keys(obj).forEach(k=>{
+        const v = obj[k];
+        if(v && typeof v==='object' && !Array.isArray(v) && v.beispiel===true){
+          delete obj[k]; weg++;                 /* z.B. ein ganzer Beispiel-Monat */
+        } else durch(v);
+      });
+    }
+  };
+  durch(data);
+  return weg;
+}
+
 function defaultData(){
   const nodes = {};
   Object.keys(STRUKTUR).forEach(bereich=>{
@@ -1453,11 +1588,16 @@ function defaultData(){
       nodes[bereich+':'+def.key] = emptyNodeContent(def.type);
     });
   });
+  const months = beispielDaten(nodes);
   return {
-    ideaBoard:{categories:[],items:[]},
+    ideaBoard:{categories:[
+      {id:uid(), title:'Beispiel-Kategorie', emoji:'💡', color:'var(--idea)'}
+    ], items:[
+      {id:uid(), beispiel:true, text:'Beispiel: Rohtext hier einwerfen, Kategorien lassen sich frei anlegen', cat:null}
+    ]},
     dailyNotes:{days:[]},
     nodes,
-    months:[],
+    months,
     activeId:'ideaboard'
   };
 }
@@ -1920,7 +2060,10 @@ function diffInfo(jetzt, vorher){
   return {cls: d>0?'hoch':'runter', text: `${vz}${eur(Math.abs(d))}${proz}`};
 }
 
-function renderAll(){ renderSidebar(); renderMain(); }
+function renderAll(){
+  renderSidebar(); renderMain();
+  if(typeof beispielKnopfZeigen === 'function') beispielKnopfZeigen();
+}
 
 /* ---------------- SIDEBAR ---------------- */
 function renderSidebar(){
@@ -5213,6 +5356,38 @@ function cloudModalOeffnen(){
   if(m){ m.textContent=''; m.className='cloud-meldung'; }
   document.getElementById('cloud-modal').hidden = false;
 }
+/* Beispiele entfernen - erscheint nur, solange welche da sind. Zwei Klicks. */
+function beispieleZaehlen(){
+  let n = 0;
+  const durch = (o)=>{
+    if(Array.isArray(o)){ o.forEach(x=>{ if(x&&typeof x==='object'&&x.beispiel===true) n++; else durch(x); }); return; }
+    if(o && typeof o==='object'){ Object.values(o).forEach(v=>{
+      if(v && typeof v==='object' && !Array.isArray(v) && v.beispiel===true) n++; else durch(v); }); }
+  };
+  durch(data);
+  return n;
+}
+function beispielKnopfZeigen(){
+  const b = document.getElementById('beispiel-weg');
+  if(!b) return;
+  const n = beispieleZaehlen();
+  b.hidden = n === 0;
+  if(!b.dataset.confirm) b.textContent = '🧹 Beispiele entfernen';
+}
+document.getElementById('beispiel-weg').addEventListener('click', function(){
+  if(this.dataset.confirm==='1'){
+    const weg = beispieleEntfernen();
+    this.dataset.confirm=''; this.classList.remove('confirm');
+    persist(); renderAll();
+    showSaveToast(weg + ' Beispiel(e) entfernt');
+  } else {
+    this.dataset.confirm='1'; this.textContent='Wirklich? Nochmal tippen'; this.classList.add('confirm');
+    setTimeout(()=>{ if(this.dataset.confirm==='1'){
+      this.dataset.confirm=''; this.classList.remove('confirm');
+      this.textContent='🧹 Beispiele entfernen'; } }, 2500);
+  }
+});
+
 document.getElementById('cloud-status').addEventListener('click', cloudModalOeffnen);
 document.getElementById('cloud-close').addEventListener('click',
   ()=>{ document.getElementById('cloud-modal').hidden = true; });
