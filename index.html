@@ -242,6 +242,26 @@ ul.mini-list{list-style:none;margin:0;padding:0;}
 .mini-item.done .mini-text{color:var(--ink-soft);text-decoration:line-through;}
 .mini-del{border:none;background:none;color:var(--ink-soft);font-size:1.05rem;cursor:pointer;opacity:.4;padding:2px 5px;flex-shrink:0;}
 .mini-del:hover{color:var(--danger);opacity:1;}
+/* Punkt auf einen anderen Tag schieben - sichtbar, nicht nur bei Hover (Touch). */
+.mini-move{border:none;background:none;color:var(--ink-soft);font-size:1rem;cursor:pointer;
+  opacity:.4;padding:2px 5px;flex-shrink:0;line-height:1;}
+.mini-move:hover{color:var(--idea);opacity:1;}
+.mini-item.done .mini-move{opacity:.2;}
+
+/* Auswahl, wohin verschoben wird - klappt unter dem Punkt auf. */
+.move-box{background:var(--card-soft,rgba(255,255,255,.04));border:1px solid var(--line);
+  border-radius:9px;padding:10px 12px;margin:6px 0 10px;}
+.move-box .move-label{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;
+  text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:7px;}
+.move-box .move-ziele{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px;}
+.move-ziel{border:1px solid var(--line);background:none;border-radius:7px;color:var(--ink);
+  font-family:inherit;font-size:0.76rem;padding:5px 10px;cursor:pointer;}
+.move-ziel:hover{border-color:var(--idea);color:var(--idea);}
+.move-box .move-neu{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.move-box input[type=date]{background:var(--bg);border:1px solid var(--line);border-radius:7px;
+  color:var(--ink);font-family:inherit;font-size:0.76rem;padding:5px 8px;}
+.move-abbruch{border:none;background:none;color:var(--ink-soft);font-size:0.72rem;
+  cursor:pointer;text-decoration:underline;padding:4px 2px;}
 .empty-mini{color:var(--ink-soft);font-size:0.85rem;font-style:italic;padding:4px 0;}
 
 /* checklist view */
@@ -1613,6 +1633,77 @@ function beispieleEinfuegen(){
   return dazu;
 }
 
+/* Einmalige Uebernahme alter Notizen (Stand 30.07.2026).
+   Die Punkte lagen vorher in einer separaten Listen-App und werden hier einmal
+   eingespielt - danach merkt sich der Schluessel, dass es passiert ist, und die
+   Uebernahme laeuft nie wieder. Bereits vorhandene Texte werden uebersprungen,
+   damit nichts doppelt landet, wenn Leon einen Punkt schon selbst angelegt hat. */
+const UEBERNAHME_KEY = 'uebernahme-2026-07-30';
+function alteNotizenUebernehmen(){
+  if(data.uebernommen && data.uebernommen[UEBERNAHME_KEY]) return 0;
+  let dazu = 0;
+
+  /* --- PETIVO: naechste Schritte ------------------------------------------ */
+  const petivo = [
+    'Buchhaltung verbessern mit Claude',
+    'Marge erhöhen – Taktik und Optionen durchgehen',
+    'Ablauf Etsy und Shopify allgemein optimieren',
+    'Prozesse mit GPT vereinfachen – Optimierung überlegen',
+    'Video abwägen: wo wirklich sinnvoll',
+    'Vor dem 22.08.26: Shopify-Abo beenden und auf Building umsteigen – oder neuer Shop mit Übertrag und wieder 3 Monate für 1 €',
+    'Shopify: alle Einstellungen und Probleme durchgehen',
+    'Bilder verbessern',
+    'Alle Texte richtig verbessern',
+    'Rechtliche Aspekte: was fehlt noch (Rechnungstool für Shopify …)',
+    'Buchhaltung und Steuererklärung vereinfachen',
+    'Wichtige Petivo-Ordner auf beiden Rechnern synchron halten (Kunden …)'
+  ];
+  const ziel = data.nodes['business:schritte'];
+  if(ziel){
+    if(!Array.isArray(ziel.items)) ziel.items = [];
+    const da = new Set(ziel.items.map(i=>(i.text||'').toLowerCase().trim()));
+    petivo.forEach(t=>{
+      if(da.has(t.toLowerCase().trim())) return;
+      ziel.items.push({id:uid(), text:t, done:false});
+      dazu++;
+    });
+  }
+
+  /* --- Taegliche Notizzettel: 31.07. und 01.08. --------------------------- */
+  const tage = {
+    '2026-07-31': [
+      'Fragen beantworten (wer bin ich, wohin will ich) + Ziele 2026 +++',
+      'Uni-Portal mit Account angucken',
+      'Alles packen',
+      'Clara-Vertrag drucken',
+      'Frau Purohit anrufen/fragen – vielleicht auch erst im August (Fragen nochmal checken)',
+      'Uni-Vorbereitung synchronisieren'
+    ],
+    '2026-08-01': [
+      'Arbeitslosengeld und ALG 1 beantragen',
+      'Deutschlandticket holen',
+      'Stundenzettel an Kühn schicken'
+    ]
+  };
+  if(!data.dailyNotes) data.dailyNotes = {days:[]};
+  if(!Array.isArray(data.dailyNotes.days)) data.dailyNotes.days = [];
+  Object.keys(tage).forEach(datum=>{
+    let tag = data.dailyNotes.days.find(d=>d.date===datum);
+    if(!tag){ tag = {date:datum, items:[]}; data.dailyNotes.days.push(tag); }
+    const da = new Set(tag.items.map(i=>(i.text||'').toLowerCase().trim()));
+    tage[datum].forEach(t=>{
+      if(da.has(t.toLowerCase().trim())) return;
+      tag.items.push({id:uid(), text:t, done:false});
+      dazu++;
+    });
+  });
+  data.dailyNotes.days.sort((a,b)=>b.date.localeCompare(a.date));
+
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[UEBERNAHME_KEY] = true;
+  return dazu;
+}
+
 /* Entfernt alle Eintraege mit beispiel:true - egal in welcher Liste sie stecken.
    Laeuft rekursiv, damit auch verschachtelte Sachen (Reise-Punkte, Modul-Themen)
    erwischt werden. Echte Eintraege haben die Markierung nie. */
@@ -1990,6 +2081,11 @@ function migrateData(){
     m.columns = m.columns || {};
     ['privat','business','uni','sport'].forEach(c=>{ if(!m.columns[c]) m.columns[c]=[]; });
   });
+
+  /* Zum Schluss, wenn die Struktur steht: einmalige Uebernahme der alten Notizen.
+     Steht hier und nicht in load(), damit sie auch greift, wenn der Stand aus der
+     Cloud oder aus einer Sicherung kommt - der Merker reist im JSON mit. */
+  alteNotizenUebernehmen();
 }
 
 async function load(){
@@ -2344,15 +2440,17 @@ function renderEntryLayout(c, opts){
 /* generic mini list renderer */
 function renderMiniList(ul, items, opts){
   const showDate = opts && opts.showDate;
+  const showMove = opts && opts.showMove;   /* Pfeil zum Verschieben auf einen anderen Tag */
   ul.innerHTML='';
   if(items.length===0){ ul.innerHTML = '<div class="empty-mini">Noch nichts hier.</div>'; return; }
   items.forEach(it=>{
     const li=document.createElement('li');
     li.className='mini-item'+(it.done?' done':'');
     const datePart = showDate ? `<span class="mini-date">${it.date?fmtDay(it.date):'—'}</span>` : '';
+    const movePart = showMove ? `<button class="mini-move" data-id="${it.id}" title="Auf einen anderen Tag schieben">→</button>` : '';
     li.innerHTML=`<span class="mini-checkbox" data-id="${it.id}"><svg viewBox="0 0 18 18"><path d="M3 9l4 4 8-8"/></svg></span>
       ${datePart}<span class="mini-text">${escapeHtml(it.text)}</span>
-      <button class="mini-del" data-id="${it.id}">×</button>`;
+      ${movePart}<button class="mini-del" data-id="${it.id}">×</button>`;
     ul.appendChild(li);
   });
 }
@@ -5127,16 +5225,74 @@ function kurDeleteHandler(z, def, k){
 function pruneDailyNotes(){
   const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-7);
   const cutoffIso = isoLocal(cutoff);
-  data.dailyNotes.days = data.dailyNotes.days.filter(d=>d.date>=cutoffIso);
   const today = isoToday();
-  if(!data.dailyNotes.days.find(d=>d.date===today)){
-    data.dailyNotes.days.push({date:today, items:[]});
-  }
+  /* Alte Tage fallen weg - aber niemals mit offenen Punkten darin. Was nicht
+     erledigt wurde, wandert auf heute, statt still geloescht zu werden. */
+  const gerettet = [];
+  data.dailyNotes.days.forEach(d=>{
+    if(d.date < cutoffIso) gerettet.push(...d.items.filter(i=>!i.done));
+  });
+  data.dailyNotes.days = data.dailyNotes.days.filter(d=>d.date>=cutoffIso);
+  let heuteTag = data.dailyNotes.days.find(d=>d.date===today);
+  if(!heuteTag){ heuteTag = {date:today, items:[]}; data.dailyNotes.days.push(heuteTag); }
+  if(gerettet.length) heuteTag.items.unshift(...gerettet);
   data.dailyNotes.days.sort((a,b)=>b.date.localeCompare(a.date));
 }
+/* Klappt unter dem Punkt eine Auswahl auf: entweder auf einen Tag, den es schon
+   gibt, oder auf ein frei gewaehltes Datum (der Tag wird dann angelegt).
+   Der Punkt wandert unerledigt hinueber - was man nicht geschafft hat, faengt
+   am neuen Tag wieder bei offen an. */
+function verschiebeBoxOeffnen(knopf, vonTag, item, c){
+  const li = knopf.closest('li');
+  const offen = li.parentElement.querySelector('.move-box');
+  if(offen) offen.remove();                 /* immer nur eine Box gleichzeitig */
+  if(knopf.dataset.offen==='1'){ knopf.dataset.offen=''; return; }
+  li.parentElement.querySelectorAll('.mini-move').forEach(b=>b.dataset.offen='');
+  knopf.dataset.offen='1';
+
+  const morgen = new Date(); morgen.setDate(morgen.getDate()+1);
+  const andere = data.dailyNotes.days.filter(d=>d.date!==vonTag.date)
+                                     .sort((a,b)=>a.date.localeCompare(b.date));
+  const box = document.createElement('div');
+  box.className='move-box';
+  box.innerHTML = `
+    <div class="move-label">Verschieben auf</div>
+    <div class="move-ziele">
+      ${andere.map(d=>`<button class="move-ziel" data-datum="${d.date}">${fmtDay(d.date)}</button>`).join('')}
+      ${andere.length===0?'<span class="move-label" style="margin:0">Noch kein anderer Tag angelegt</span>':''}
+    </div>
+    <div class="move-neu">
+      <input type="date" class="move-datum" value="${isoLocal(morgen)}">
+      <button class="ib-btn primary move-los">Auf dieses Datum</button>
+      <button class="move-abbruch">Abbrechen</button>
+    </div>
+  `;
+  li.insertAdjacentElement('afterend', box);
+
+  const schieben = (ziel)=>{
+    if(!ziel || ziel===vonTag.date) return;
+    let tag = data.dailyNotes.days.find(d=>d.date===ziel);
+    if(!tag){ tag = {date:ziel, items:[]}; data.dailyNotes.days.push(tag); }
+    const idx = vonTag.items.findIndex(i=>i.id===item.id);
+    if(idx>-1) vonTag.items.splice(idx,1);
+    item.done = false;                      /* nicht geschafft heisst wieder offen */
+    tag.items.unshift(item);
+    data.dailyNotes.days.sort((a,b)=>b.date.localeCompare(a.date));
+    persist(); renderDailyNotes(c);
+    showSaveToast('Verschoben auf '+fmtDay(ziel));
+  };
+  box.querySelectorAll('.move-ziel').forEach(b=>
+    b.addEventListener('click',()=>schieben(b.dataset.datum)));
+  box.querySelector('.move-los').addEventListener('click',()=>
+    schieben(box.querySelector('.move-datum').value));
+  box.querySelector('.move-abbruch').addEventListener('click',()=>{
+    knopf.dataset.offen=''; box.remove();
+  });
+}
+
 function renderDailyNotes(c){
   c.innerHTML = `
-    <div class="head-row"><div><h1 class="zt">🗓️ Täglicher Notizzettel</h1><div class="head-meta">letzte 7 Tage, ältere Tage werden automatisch entfernt</div></div></div>
+    <div class="head-row"><div><h1 class="zt">🗓️ Täglicher Notizzettel</h1><div class="head-meta">letzte 7 Tage · offene Punkte mit → auf einen anderen Tag schieben</div></div></div>
     <div class="divider"></div>
     <div class="ib-quick">
       <input type="date" id="daily-date-input">
@@ -5172,9 +5328,16 @@ function renderDailyNotes(c){
     const addBtn = card.querySelector('.day-add');
     const delBtn = card.querySelector('.day-del');
     const ul = card.querySelector('ul');
-    const refresh = ()=>{ renderMiniList(ul, day.items); persist(); };
-    renderMiniList(ul, day.items);
+    const refresh = ()=>{ renderMiniList(ul, day.items, {showMove:true}); persist(); };
+    renderMiniList(ul, day.items, {showMove:true});
     bindMiniList(ul, day.items, refresh);
+    /* Nicht geschaffte Punkte auf einen anderen Tag schieben. */
+    ul.addEventListener('click',(e)=>{
+      const mv = e.target.closest('.mini-move');
+      if(!mv) return;
+      const it = day.items.find(i=>i.id===mv.dataset.id);
+      if(it) verschiebeBoxOeffnen(mv, day, it, c);
+    });
     function addDayItem(){
       const t = input.value.trim(); if(!t) return;
       day.items.unshift({id:uid(),text:t,done:false}); input.value=''; refresh();
