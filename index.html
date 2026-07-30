@@ -548,6 +548,26 @@ tr.is-done .mini-checkbox svg{stroke-dashoffset:0;}
 .mod-bar{height:6px;border-radius:3px;background:rgba(255,255,255,.1);margin:8px 0 6px;overflow:hidden;}
 .mod-bar-fill{height:100%;border-radius:3px;background:var(--uni);transition:width .3s;}
 .mod-note{font-weight:600;}
+/* Semester-Leiste: der ganze Studienverlauf auf einen Blick, ueber der Tabelle. */
+.mod-semleiste{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));
+  gap:8px;margin:0 0 20px;}
+.mod-sem{background:var(--card);border:1px solid var(--line);border-radius:9px;
+  padding:9px 10px;}
+.mod-sem.fertig{border-color:var(--uni);}
+.mod-sem-kopf{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;
+  letter-spacing:.05em;color:var(--ink-soft);text-transform:uppercase;}
+.mod-sem-cp{font-family:'Fraunces',serif;font-size:1.05rem;color:var(--ink);margin:3px 0 6px;}
+.mod-sem-bar{height:3px;background:var(--line-soft);border-radius:2px;overflow:hidden;}
+.mod-sem-bar>div{height:100%;background:var(--uni);border-radius:2px;}
+.mod-sem-fuss{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;
+  color:var(--ink-soft);margin-top:5px;}
+@media(max-width:720px){.mod-semleiste{grid-template-columns:repeat(3,1fr);}}
+
+/* Wahlpflicht-Platzhalter: steht da, bis der echte Modulname eingetragen wird. */
+.mod-wahl{display:inline-block;margin-left:7px;padding:1px 6px;border-radius:5px;
+  background:rgba(255,255,255,.07);border:1px dashed var(--line);
+  font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:.05em;
+  color:var(--ink-soft);text-transform:uppercase;vertical-align:middle;}
 tr.row-done .tt-title{color:var(--ink-soft);}
 
 /* ---- Business: Optimierungen ---- */
@@ -1745,6 +1765,98 @@ function alteNotizenUebernehmen(){
   return dazu;
 }
 
+/* Fuenfte Uebernahme: der komplette Studienverlauf Medizininformatik (TH
+   Brandenburg, Stand 24.06.2025). Alle sechs Semester, damit Leon von Anfang an
+   sieht, was kommt - Credits und Notenschnitt rechnen sich daraus mit.
+
+   Wahlpflichtmodule: welche er nimmt, steht noch nicht fest (haengt auch am
+   Angebot). Sie stehen darum als Platzhalter drin - "WPF I" usw. mit ihren
+   5 CP, damit die Rechnung stimmt. Sobald er weiss, welches es wird, tippt er
+   den Namen einfach in die Zelle; das Feld `wahl:true` markiert sie bis dahin
+   und faerbt sie in der Tabelle. Kein eigener Bereich, keine zweite Liste -
+   die App soll klein bleiben. */
+const STUDIUM_KEY = 'studium-2026-07-30';
+function studiumUebernehmen(){
+  if(data.uebernommen && data.uebernommen[STUDIUM_KEY]) return 0;
+  const n = data.nodes['uni:module'];
+  if(!n) return 0;
+  if(!Array.isArray(n.items)) n.items = [];
+
+  /* [Semester, Modul, CP, istWahlpflicht] */
+  const plan = [
+    [1,'Einführung in die Praktische Informatik',5,0],
+    [1,'Einführung in die Informationsverarbeitung',5,0],
+    [1,'Projektorientiertes Studium',2,0],
+    [1,'Englisch',2,0],
+    [1,'Mathematik I',5,0],
+    [1,'Medizin I',5,0],
+    [1,'Medizinisch-technische Grundlagen',5,0],
+
+    [2,'Programmierung I',5,0],
+    [2,'Algorithmen und Datenstrukturen',5,0],
+    [2,'Betriebssysteme / Webcomputing',5,0],
+    [2,'Mathematik II',5,0],
+    [2,'Medizin II',5,0],
+    [2,'Grundlagen der Medizininformatik',5,0],
+
+    [3,'Programmierung II',5,0],
+    [3,'Datenbanken',5,0],
+    [3,'Betriebssysteme / Rechnernetze',5,0],
+    [3,'Biometrie und Statistik',3,0],
+    [3,'Einführung in das wissenschaftliche Schreiben',3,0],
+    [3,'Grundlagen der Sicherheit',5,0],
+    [3,'Digitales Gesundheitssystem',5,0],
+
+    [4,'Software-Bewertung und Auswahl',5,0],
+    [4,'Software Engineering',5,0],
+    [4,'Grundlagen der KI',5,0],
+    [4,'Komplexpraktikum',5,0],
+    [4,'WPF I',5,1],
+    [4,'Interoperabilität im Gesundheitswesen',5,0],
+
+    [5,'WP Studium Generale',5,1],
+    [5,'WP Studium Generale',5,1],
+    [5,'Projekt (1 aus N)',5,0],
+    [5,'WPF II',5,1],
+    [5,'WPF III',5,1],
+    [5,'Medizinische Prozesse und IT-Systeme',5,0],
+
+    [6,'Praxisphase',12,0],
+    [6,'Praxisseminar',3,0],
+    [6,'Bachelorarbeit',12,0],
+    [6,'Bachelorseminar',3,0]
+  ];
+
+  let dazu = 0;
+  /* Doppelte erkennen ueber Semester+Name - "WP Studium Generale" kommt im
+     5. Semester zweimal vor, das ist so gewollt und darf nicht zusammenfallen. */
+  const zaehler = {};
+  const da = {};
+  n.items.forEach(m=>{
+    const k = (m.semester||'')+'|'+(m.text||'').toLowerCase().trim();
+    da[k] = (da[k]||0) + 1;
+  });
+  plan.forEach(([sem, titel, cp, wahl])=>{
+    const semLabel = sem+'. Semester';
+    const k = semLabel+'|'+titel.toLowerCase().trim();
+    zaehler[k] = (zaehler[k]||0) + 1;
+    if((da[k]||0) >= zaehler[k]) return;      /* so oft schon vorhanden */
+    n.items.push({
+      id:uid(), text:titel, cp, note:'', status:'offen', semester:semLabel,
+      wahl: !!wahl,
+      pruefform:'', pruefdatum:'', pruefzeit:'', pruefraum:'', fokus:'',
+      topics:[], tips:[]
+    });
+    dazu++;
+  });
+
+  if(typeof n.zielCp !== 'number' || !n.zielCp) n.zielCp = 180;
+
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[STUDIUM_KEY] = true;
+  return dazu;
+}
+
 /* Vierte Uebernahme: zwei Antraege fuer August. Beide fangen mit einem Anruf an -
    solange nicht klar ist, was die Stelle ueberhaupt braucht, kann man keine
    Unterlagen sammeln. Darum steht der Anruf jeweils als erster Schritt. */
@@ -2281,6 +2393,7 @@ function migrateData(){
           if(typeof m.note!=='string') m.note = '';
           if(!m.status) m.status = 'offen';
           if(typeof m.semester!=='string') m.semester = '';
+          if(typeof m.wahl!=='boolean') m.wahl = false;   /* Wahlpflicht-Platzhalter */
           /* Lernplan-Felder direkt am Modul - eine Quelle fuer alles */
           if(!Array.isArray(m.topics)) m.topics = [];
           if(!Array.isArray(m.tips))   m.tips   = [];
@@ -2367,6 +2480,7 @@ function migrateData(){
   umzugUebernehmen();
   ideenUebernehmen();
   augustAntraegeUebernehmen();
+  studiumUebernehmen();
 }
 
 async function load(){
@@ -4456,6 +4570,33 @@ const MODUL_STATUS = [
 ];
 function modulStatusDef(k){ return MODUL_STATUS.find(s=>s.key===k) || MODUL_STATUS[0]; }
 
+/* Eine Zeile pro Semester: wie viele CP darin stecken und wie viel schon
+   bestanden ist. Gibt den Ueberblick ueber die ganze Studienzeit, ohne eine
+   zweite Ansicht zu bauen - die Tabelle darunter bleibt die Wahrheit. */
+function modSemesterLeiste(z){
+  const sem = {};
+  z.items.forEach(m=>{
+    const k = m.semester || 'ohne Semester';
+    if(!sem[k]) sem[k] = {cp:0, hab:0, offen:0, wahl:0};
+    sem[k].cp += m.cp||0;
+    if(m.status==='bestanden') sem[k].hab += m.cp||0; else sem[k].offen++;
+    if(m.wahl) sem[k].wahl++;
+  });
+  const keys = Object.keys(sem).sort();
+  if(keys.length===0) return '';
+  return `<div class="mod-semleiste">` + keys.map(k=>{
+    const s = sem[k];
+    const proz = s.cp>0 ? Math.round(s.hab/s.cp*100) : 0;
+    const kurz = k.replace('. Semester','. Sem.');
+    return `<div class="mod-sem${s.hab>0&&s.hab===s.cp?' fertig':''}">
+      <div class="mod-sem-kopf">${escapeHtml(kurz)}</div>
+      <div class="mod-sem-cp">${s.cp} CP</div>
+      <div class="mod-sem-bar"><div style="width:${proz}%"></div></div>
+      <div class="mod-sem-fuss">${s.offen} offen${s.wahl?` · ${s.wahl}× Wahl`:''}</div>
+    </div>`;
+  }).join('') + `</div>`;
+}
+
 function renderModules(c, def){
   const z = data.nodes[def.nodeId];
   const bestanden = z.items.filter(m=>m.status==='bestanden');
@@ -4496,6 +4637,7 @@ function renderModules(c, def){
         <div class="exp-sum-note">${z.items.filter(m=>m.status==='laeuft').length} laufen gerade</div>
       </div>
     </div>
+    ${modSemesterLeiste(z)}
     <div class="tt-wrap mg-table-wrap">
       <table class="trip-table mod-table">
         <thead><tr>
@@ -4518,7 +4660,8 @@ function renderModules(c, def){
     tbody.innerHTML = sorted.map(m=>{
       const st = modulStatusDef(m.status);
       return `<tr data-mid="${m.id}"${m.status==='bestanden'?' class="row-done"':''}>
-        <td class="tt-title mg-cell editable" data-mf="text">${escapeHtml(m.text)}</td>
+        <td class="tt-title mg-cell editable" data-mf="text">${escapeHtml(m.text)}${
+          m.wahl ? '<span class="mod-wahl" title="Wahlpflicht – Namen eintragen, sobald die Wahl steht">Wahl</span>' : ''}</td>
         <td class="mg-cell editable mg-groesse" data-mf="semester">${escapeHtml(m.semester||'—')}</td>
         <td class="tt-num mg-cell editable" data-mf="cp">${m.cp||'—'}</td>
         <td class="tt-num mg-cell editable mod-note" data-mf="note">${
@@ -4554,7 +4697,12 @@ function renderModules(c, def){
     const save=()=>{ if(fertig)return; fertig=true;
       if(zahl){ const v=parseAmount(inp.value); m.cp = v===null?0:v; }
       else if(feld==='note'){ m.note = inp.value.trim(); }
-      else m[feld] = inp.value.trim();
+      else {
+        m[feld] = inp.value.trim();
+        /* Steht statt des Platzhalters ein echter Modulname da, ist die Wahl
+           getroffen - die Markierung faellt weg. */
+        if(feld==='text' && m.wahl && !/^(WPF|WP Studium Generale)/i.test(m[feld])) m.wahl = false;
+      }
       refresh(); };
     inp.addEventListener('blur', save);
     inp.addEventListener('keydown',(e)=>{

@@ -86,6 +86,26 @@ braucht zwei Klicks.
 `migrateData` wandelt eine alte flache Liste in eine Gruppe „Übernommen" unter
 *Vor dem Umzug* um, Häkchen bleiben erhalten.
 
+### Uni: Module und Wahlpflicht
+
+In `uni:module` steht der **komplette Studienverlauf Medizininformatik**
+(TH Brandenburg, Stand 24.06.2025): alle 6 Semester, 36 Module, zusammen genau
+180 CP – die Summe ist die Probe, ob der Plan vollständig ist. Alles startet auf
+`status:'offen'`; Credits-Balken und gewichteter Notenschnitt rechnen sich daraus.
+
+Über der Tabelle liegt `modSemesterLeiste()` – eine schmale Kachel je Semester
+mit CP, Fortschritt und Anzahl offener Module. Bewusst **keine zweite Ansicht**:
+die App soll klein bleiben, die Tabelle bleibt die Wahrheit.
+
+**Wahlpflichtmodule** (`wahl:true`) stehen als Platzhalter drin – „WPF I–III"
+und zweimal „WP Studium Generale" mit ihren 5 CP, damit die Rechnung von Anfang
+an stimmt. Sobald Leon weiß, welches Modul es wird, tippt er den Namen in die
+Zelle; erkennt der Code dort keinen Platzhalter mehr, fällt `wahl` automatisch
+auf `false` und die Markierung verschwindet. Kein eigener Bereich dafür.
+
+Dubletten werden über **Semester + Name** erkannt, mit Zähler – „WP Studium
+Generale" kommt im 5. Semester zweimal vor und darf nicht zusammenfallen.
+
 ### Sport: Training und Kuren
 
 - **Training** (`training`): **ein Wochenplan pro Monat**, Schlüssel `"YYYY-MM"`
