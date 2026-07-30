@@ -62,11 +62,11 @@ REM --- Ist ueberhaupt ein GitHub-Repo verbunden? ---
 git remote get-url origin >nul 2>&1
 if errorlevel 1 (
     echo.
-    echo Gespeichert als: !VERB! (!STAMP!)
+    echo Gespeichert als: !VERB! ^(!STAMP!^)
     echo.
     echo ############################################
     echo #                                          #
-    echo #   ACHTUNG: NICHT AUF GITHUB!             #
+    echo #   ACHTUNG: NICHT AUF GITHUB^^!            #
     echo #                                          #
     echo ############################################
     echo.
@@ -116,7 +116,7 @@ if errorlevel 1 (
 
 echo.
 echo ============================================
-echo   Fertig! Gespeichert als: !VERB! (!STAMP!)
+echo   Fertig^^! Gespeichert als: !VERB! ^(!STAMP!^)
 echo ============================================
 echo.
 echo Erfolgreich auf GitHub hochgeladen:
