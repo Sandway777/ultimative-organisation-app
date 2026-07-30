@@ -2,11 +2,19 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Notizblock</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#141618">
+<!-- iPhone: ohne diese drei Zeilen oeffnet die App vom Homescreen mit
+     Safari-Leisten drumherum. Erst damit laeuft sie im Vollbild wie ein
+     richtiges Programm. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Notizblock">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
@@ -29,7 +37,12 @@
 *{box-sizing:border-box;}
 html,body{height:100%;margin:0;}
 body{font-family:'IBM Plex Sans',sans-serif;color:var(--ink);background:var(--sidebar-bg);}
-.app{display:flex;height:100vh;width:100%;}
+/* 100dvh statt 100vh: am iPhone aendert sich die sichtbare Hoehe, wenn die
+   Adressleiste ein- und ausfaehrt - mit 100vh waere unten immer ein Stueck
+   abgeschnitten. Der Abstand oben/unten haelt Uhrzeit und Home-Indikator frei,
+   wenn die App im Vollbild vom Homescreen laeuft. */
+.app{display:flex;height:100vh;height:100dvh;width:100%;
+  padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);}
 
 /* ---------- Sidebar ---------- */
 .sidebar{width:250px;flex-shrink:0;background:var(--sidebar-bg);color:#fff;display:flex;flex-direction:column;overflow-y:auto;}
@@ -103,7 +116,9 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--ink);background:var(--si
 
 /* ---------- Main ---------- */
 .main{flex:1;display:flex;flex-direction:column;background:var(--paper);overflow:hidden;min-width:0;}
-.main-scroll{flex:1;overflow-y:auto;padding:30px 34px;display:flex;flex-direction:column;}
+.main-scroll{flex:1;overflow-y:auto;padding:30px 34px;display:flex;flex-direction:column;
+  padding-left:max(34px,env(safe-area-inset-left));
+  padding-right:max(34px,env(safe-area-inset-right));}
 .content{flex:1;min-height:0;display:flex;flex-direction:column;}
 /* Inhalt nutzt die Fensterbreite, bleibt aber lesbar begrenzt */
 .content{max-width:1600px;}
@@ -879,7 +894,9 @@ tr.row-off .tt-num{text-decoration:line-through;}
   .sidebar-footer .cloud-status{width:auto;flex:1 1 auto;margin-bottom:0;padding:6px 9px;}
   .sidebar-footer .backup-row{flex:1 1 auto;margin-top:0;gap:6px;}
   .sidebar-footer .backup-btn{padding:6px 9px;font-size:0.72rem;}
-  .main-scroll{padding:20px 18px;}
+  .main-scroll{padding:20px 18px;
+    padding-left:max(18px,env(safe-area-inset-left));
+    padding-right:max(18px,env(safe-area-inset-right));}
   /* Kompaktere Navigation, damit oben nicht der halbe Schirm draufgeht */
   .sidebar-header{padding:12px 16px 6px;}
   .sidebar-title{font-size:1.1rem;}
