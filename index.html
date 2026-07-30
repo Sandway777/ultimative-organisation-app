@@ -1066,6 +1066,9 @@ tr.row-off .tt-num{text-decoration:line-through;}
   padding:7px 10px;margin-bottom:8px;cursor:pointer;text-align:left;letter-spacing:.02em;}
 .cloud-status:hover{border-color:var(--business);color:var(--ink);}
 .cloud-status.an{color:var(--business);border-color:rgba(79,168,162,.35);}
+/* Schluessel abgelaufen oder zurueckgezogen - muss auffallen, sonst wartet
+   man auf einen Sync, der nie kommt. */
+.cloud-status.err{color:var(--danger);border-color:var(--danger);}
 .cloud-modal{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);
   display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
 .cloud-modal[hidden]{display:none;}
@@ -1492,6 +1495,13 @@ async function cloudPush(){
       headers:{'Authorization':'Bearer '+c.token, 'Accept':'application/vnd.github+json'},
       body: JSON.stringify({files:{[CLOUD_DATEI]:{content: inhalt}}})
     });
+    if(res.status===401 || res.status===404){
+      /* Schluessel zurueckgezogen oder Datei geloescht. Das ist etwas anderes
+         als "kein Netz" und muss auch anders gemeldet werden - sonst wartet
+         Leon ewig auf einen Sync, der nie kommt. */
+      cloudProblemMelden(res.status);
+      return;
+    }
     if(!res.ok) throw new Error('HTTP '+res.status);
     c.stand = new Date().toISOString();
     cloudCfgSet(c);
@@ -1505,6 +1515,18 @@ async function cloudPush(){
   }
 }
 
+/* Meldet einen ungueltigen Schluessel deutlich statt ihn als Netzproblem zu
+   verkleiden. Der Knopf oben wird rot, damit man es auch spaeter noch sieht. */
+function cloudProblemMelden(status){
+  const k = document.getElementById('kopf-cloud');
+  if(k) k.className = 'kopf-cloud aus';
+  const el = document.getElementById('cloud-status');
+  if(el){ el.textContent = '⚠ Cloud getrennt'; el.className = 'cloud-status err'; }
+  showSaveToast(status===401
+    ? 'Zugangs-Schlüssel gilt nicht mehr – neu verbinden'
+    : 'Cloud-Datei nicht gefunden – neu verbinden', true);
+}
+
 /* Holt den Cloud-Stand. true, wenn etwas uebernommen wurde. */
 async function cloudPull(){
   if(!cloudAktiv()) return false;
@@ -1513,6 +1535,7 @@ async function cloudPull(){
     headers:{'Authorization':'Bearer '+c.token, 'Accept':'application/vnd.github+json'},
     cache:'no-store'
   });
+  if(res.status===401 || res.status===404){ cloudProblemMelden(res.status); return false; }
   if(!res.ok) throw new Error('HTTP '+res.status);
   const gist = await res.json();
   const datei = gist.files && gist.files[CLOUD_DATEI];
@@ -6620,7 +6643,7 @@ cloudAbgleich();
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 16;
+const APP_FASSUNG = 17;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
