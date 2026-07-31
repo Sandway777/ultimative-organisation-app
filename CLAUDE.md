@@ -62,7 +62,7 @@ Jede Säule hat eine eigene Akzentfarbe, die sich konsequent durchs ganze UI zie
 (Titel, Häkchen, Tags) – nicht nur als kleiner Punkt irgendwo.
 
 Inhaltstypen: `checklist`, `trips`, `deadlines`, `expenses`, `ideas`, `margin`,
-`timetable`, `exams`, `study`, `modules`, `training`, `cures`, `moving`.
+`timetable`, `exams`, `study`, `modules`, `training`, `cures`, `moving`, `clients`.
 
 Ein neuer Typ braucht vier Dinge: Eintrag in `STRUKTUR`, Default in
 `emptyNodeContent`, ein Zweig im Dispatch von `renderMain`, plus Absicherung in
@@ -85,6 +85,27 @@ braucht zwei Klicks.
 
 `migrateData` wandelt eine alte flache Liste in eine Gruppe „Übernommen" unter
 *Vor dem Umzug* um, Häkchen bleiben erhalten.
+
+### Business: Kunden Design
+
+`clients` – Nachweis, wie viele Designs pro Jahr entstanden sind und **auf
+welchem Gerät**. Letzteres ist der eigentliche Zweck: beim Suchen einer alten
+Datei zählt, ob sie auf dem Main PC oder dem Laptop liegt.
+
+`jahre: {"2026": {kunden:[{id, nr, geraet, name}], zu}}` – ein Block je Jahr,
+neueste zuerst, ältere zugeklappt. Geräte stehen in `GERAETE` (pc / laptop).
+
+**Zwei Darstellungen, automatisch gewählt:** Solange kein Kunde einen Namen
+trägt, erscheinen sie als **Raster kleiner Kacheln** (Nummer + PC/LT) – 26
+Zeilen „ohne Namen" untereinander wären nur Scrollerei. Sobald irgendwo ein
+Name steht, wechselt der Block auf die Listenform. Ein Tipp auf Kachel oder
+Geräte-Knopf schaltet zwischen den Geräten um.
+
+Löschen geht im Raster nur beim **letzten** Eintrag, damit die Nummern
+fortlaufend bleiben; `kdNeuNummerieren` zieht danach nach.
+
+Stand bei Anlage (31.07.2026): 2025 = 36 Kunden, alle PC. 2026 = 26 Kunden,
+davon Nr. 26 auf dem Laptop.
 
 ### Uni: Module und Wahlpflicht
 
