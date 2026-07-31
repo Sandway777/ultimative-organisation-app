@@ -57,6 +57,30 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--ink);background:var(--si
 
 /* ---------- Sidebar ---------- */
 .sidebar{width:250px;flex-shrink:0;background:var(--sidebar-bg);color:#fff;display:flex;flex-direction:column;overflow-y:auto;}
+/* ---- Ladeschirm ----
+   Nur ganz kurz sichtbar, aber er nimmt der App das "Webseite baut sich auf"-
+   Gefuehl. Drei Punkte in den Saeulenfarben, dann blendet er weich aus. */
+.ladeschirm{position:fixed;inset:0;z-index:200;display:flex;
+  align-items:center;justify-content:center;background:var(--sidebar-bg);
+  transition:opacity .32s ease, visibility .32s ease;}
+.ladeschirm.weg{opacity:0;visibility:hidden;}
+.lade-mitte{display:flex;flex-direction:column;align-items:center;gap:16px;}
+.lade-logo{display:flex;gap:7px;}
+.lade-punkt{width:10px;height:10px;border-radius:50%;
+  animation:ladehuepf 1.1s ease-in-out infinite;}
+.lade-punkt:nth-child(1){background:var(--privat);animation-delay:0s;}
+.lade-punkt:nth-child(2){background:var(--business);animation-delay:.16s;}
+.lade-punkt:nth-child(3){background:var(--uni);animation-delay:.32s;}
+@keyframes ladehuepf{
+  0%,70%,100%{transform:translateY(0);opacity:.45;}
+  35%{transform:translateY(-9px);opacity:1;}
+}
+.lade-titel{font-family:'Fraunces',serif;font-size:1.25rem;color:#fff;
+  letter-spacing:.01em;opacity:.92;}
+@media(prefers-reduced-motion:reduce){
+  .lade-punkt{animation:none;opacity:.8;}
+}
+
 /* ---- Handy-Kopfzeile und Menue-Schublade (am Desktop alles aus) ---- */
 .handy-kopf{display:none;position:fixed;top:0;left:0;right:0;height:50px;
   z-index:50;align-items:center;gap:12px;padding:0 14px;
@@ -1029,6 +1053,27 @@ tr.row-off .tt-num{text-decoration:line-through;}
     transition:transform .22s ease;box-shadow:2px 0 20px rgba(0,0,0,.5);
     padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);}
   .sidebar.auf{transform:translateX(0);}
+  /* Startzustand: das Menue steht ueber die volle Breite da, wie eine
+     Startseite. Erst die Auswahl schiebt den Inhalt darueber. */
+  /* 100vw statt 100%: die Seitenleiste haengt in einem Flex-Container, mit
+     Prozent bezoege sie sich auf dessen Breite und liefe rechts heraus. */
+  .sidebar.start{width:100vw;max-width:none;transform:translateX(0);box-shadow:none;
+    box-sizing:border-box;}
+  .sidebar.start .nav-zu{visibility:hidden;}   /* nichts zum Schliessen da */
+  /* Auf voller Breite darf es luftiger sein - aber die Kacheln muessen den
+     Rand einhalten, sonst laufen sie rechts heraus. */
+  .sidebar.start .main-actions{padding:14px 16px;}
+  .sidebar.start .main-btn{width:100%;box-sizing:border-box;}
+  .sidebar.start .saeulen{padding:0 16px;}
+  .sidebar.start .saeule-head{padding:11px 4px;}
+  .sidebar.start .node-item{margin-left:10px;}
+  /* Der Inhalt faehrt von rechts herein, sobald ein Bereich gewaehlt ist.
+     100vw statt 100%: der Inhaltsbereich ist im Startzustand schmaler als der
+     Schirm, mit Prozent bliebe er halb sichtbar stehen. */
+  .app.start .main{transform:translateX(100vw);}
+  .main{transition:transform .26s cubic-bezier(.22,.61,.36,1);}
+  .app.start .handy-kopf{transform:translateY(-100%);}
+  .handy-kopf{transition:transform .26s ease;}
   .saeulen{flex:1;min-height:0;}
   .nav-zu{display:block;}
   .nav-schatten.zeigen{display:block;}
@@ -1443,6 +1488,20 @@ tr.row-off .tt-num{text-decoration:line-through;}
 <!-- Nur am Handy sichtbar: Kopfzeile mit Menue-Knopf. Die Navigation liegt
      dort ueber dem Inhalt statt darueber zu kleben - sonst frisst sie die
      halbe Bildschirmhoehe. -->
+<!-- Ladeschirm: liegt beim Start ueber allem und blendet sich aus, sobald die
+     Daten stehen. Verdeckt das Aufbauen der Ansicht - ohne ihn sieht man am
+     Handy kurz eine halbfertige Seite. -->
+<div class="ladeschirm" id="ladeschirm">
+  <div class="lade-mitte">
+    <div class="lade-logo">
+      <span class="lade-punkt"></span>
+      <span class="lade-punkt"></span>
+      <span class="lade-punkt"></span>
+    </div>
+    <div class="lade-titel">Notizblock</div>
+  </div>
+</div>
+
 <div class="handy-kopf">
   <button class="nav-auf" id="nav-auf" aria-label="Menü öffnen"><span></span><span></span><span></span></button>
   <span class="handy-titel" id="handy-titel">Notizblock</span>
@@ -2936,7 +2995,26 @@ async function load(){
   migrateData();
   pruneDailyNotes();
   renderAll();
+  /* Am Handy zuerst das Menue in voller Breite - man soll sehen, was es gibt,
+     bevor irgendein Bereich aufgeht. */
+  startMenueZeigen();
+  ladeschirmAus();
 }
+
+/* Blendet den Ladeschirm weich aus und raeumt ihn danach weg, damit er keine
+   Klicks abfaengt. Mindestens kurz stehen lassen: ein Aufblitzen von zwei
+   Bildern waere unruhiger als eine kurze, ruhige Anzeige. */
+function ladeschirmAus(){
+  const s = document.getElementById('ladeschirm');
+  if(!s) return;
+  const seitStart = performance.now();
+  const wartet = Math.max(0, 620 - seitStart);
+  setTimeout(()=>{
+    s.classList.add('weg');
+    setTimeout(()=>{ s.remove(); }, 400);
+  }, wartet);
+}
+
 async function persist(){
   try{
     await window.storage.set(STORAGE_KEY, JSON.stringify(data), false);
@@ -3071,6 +3149,30 @@ function navAuf(){
 function navZu(){
   document.querySelector('.sidebar').classList.remove('auf');
   document.getElementById('nav-schatten').classList.remove('zeigen');
+}
+
+/* Startzustand am Handy: das Menue liegt ueber die volle Breite da, der Inhalt
+   wartet rechts daneben. Beim ersten Antippen eines Bereichs faehrt er herein
+   und das Menue wird wieder zur schmalen Schublade. Am Desktop passiert
+   nichts davon - dort stehen Navigation und Inhalt ohnehin nebeneinander. */
+let startAnsicht = false;
+function istHandy(){ return window.matchMedia('(max-width:820px)').matches; }
+
+function startMenueZeigen(){
+  if(!istHandy()) return;
+  startAnsicht = true;
+  document.querySelector('.app').classList.add('start');
+  document.querySelector('.sidebar').classList.add('start');
+}
+function startMenueVerlassen(){
+  if(!startAnsicht) return;
+  startAnsicht = false;
+  document.querySelector('.app').classList.remove('start');
+  const sb = document.querySelector('.sidebar');
+  /* Erst die volle Breite abgeben, wenn der Inhalt darueber liegt - sonst
+     zuckt das Menue waehrend der Bewegung schmal. */
+  setTimeout(()=>{ sb.classList.remove('start'); }, 260);
+  navZu();
 }
 /* In der Kopfzeile steht, wo man gerade ist - sonst weiss man es bei
    geschlossener Navigation nicht. */
@@ -6874,7 +6976,10 @@ document.getElementById('nav-schatten').addEventListener('click', navZu);
    jedes Mal zweimal tippen. Nicht beim Auf-/Zuklappen einer Saeule: da will
    man ja gerade weiterschauen. */
 document.querySelector('.sidebar').addEventListener('click',(e)=>{
-  if(e.target.closest('.node-item, .main-btn')) navZu();
+  if(!e.target.closest('.node-item, .main-btn')) return;
+  /* Aus der Startansicht faehrt der Inhalt herein, sonst schliesst nur die
+     Schublade. Beides fuehrt zum selben Zustand. */
+  if(startAnsicht) startMenueVerlassen(); else navZu();
 });
 
 document.getElementById('cloud-status').addEventListener('click', cloudModalOeffnen);
@@ -6941,7 +7046,7 @@ cloudAbgleich();
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 18;
+const APP_FASSUNG = 19;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
