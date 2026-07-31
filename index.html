@@ -251,6 +251,7 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--ink);background:var(--si
 /* Monate unter ihrem Jahr eingerueckt */
 .entry-item.nested{margin-left:14px;padding-left:14px;}
 .entry-item.nested::before{left:3px;}
+.entry-year.moebel{border-top:2px solid var(--privat);margin-bottom:10px;}
 /* display:block, damit Inhalte im Detail nicht vom Flex-Layout gestaucht werden */
 .entry-detail{flex:1;min-width:0;overflow-y:auto;padding:24px 30px;display:block;}
 .entry-empty{color:var(--ink-soft);font-size:0.88rem;font-style:italic;padding:30px 4px;}
@@ -829,6 +830,9 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .exp-sum-note{font-size:0.7rem;color:var(--ink-soft);margin-top:5px;line-height:1.35;}
 .exp-sum-box input[type=month]{margin-top:6px;width:100%;border:1px solid var(--line);border-radius:7px;
   background:var(--field);color:var(--ink);font-family:inherit;font-size:0.85rem;padding:7px 9px;outline:none;}
+.mo-budget-input{width:100px;border:1px solid var(--line);border-radius:6px;background:var(--field);
+  color:var(--ink);font-family:inherit;font-size:1.05rem;padding:3px 8px;outline:none;}
+.mo-budget-input:focus{border-color:var(--privat);}
 
 .exp-cats{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;max-width:1400px;}
 .exp-cat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;
@@ -1948,8 +1952,10 @@ function emptyNodeContent(type){
     return {rows: [], plats, aktiv: 'etsy'};
   }
   if(type==='expenses'){
-    /* months: {ym: {cats:{...}, closed:bool}} - ein Datensatz pro Monat */
-    return {months:{}};
+    /* months: {ym: {cats:{...}, closed:bool}} - ein Datensatz pro Monat.
+       moebel: eigener Topf fuer die Wohnungseinrichtung nach dem Umzug -
+       zaehlt bewusst NICHT in expenseSums() mit rein, eigenes Budget. */
+    return {months:{}, moebel:{budget:10000, items:[]}};
   }
   if(type==='training'){
     /* weeks: {isoWoche: {days:{0..6: [uebung,...]}}} - eine Tabelle pro Woche.
@@ -2534,6 +2540,35 @@ function umzugUebernehmen(){
   return dazu;
 }
 
+/* Dritte Uebernahme: die ersten Einrichtungs-Posten im Moebel-Topf unter Ausgaben. */
+const MOEBEL_KEY = 'ausgaben-moebel-2026-07-31';
+function moebelUebernehmen(){
+  if(data.uebernommen && data.uebernommen[MOEBEL_KEY]) return 0;
+  const n = data.nodes['privat:ausgaben'];
+  if(!n) return 0;
+  if(!n.moebel || typeof n.moebel!=='object') n.moebel = {budget:10000, items:[]};
+  if(!Array.isArray(n.moebel.items)) n.moebel.items = [];
+
+  const neu = [
+    {label:'Swirl Maya', amount:222, ym:'2026-07'},
+    {label:'Osmofresh', amount:499, ym:'2026-07'},
+    {label:'Matratzentopper', amount:74.98, ym:'2026-07'},
+    {label:'Wassersteine', amount:20, ym:'2026-07'},
+    {label:'WLAN-Router (einmalig 19,98 € + monatlich 30,98 €)', amount:50.96, ym:'2026-07'}
+  ];
+  const da = new Set(n.moebel.items.map(e=>(e.label||'').toLowerCase().trim()));
+  let dazu = 0;
+  neu.forEach(e=>{
+    if(da.has(e.label.toLowerCase().trim())) return;
+    n.moebel.items.push({id:uid(), ...e});
+    dazu++;
+  });
+
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[MOEBEL_KEY] = true;
+  return dazu;
+}
+
 /* Entfernt alle Eintraege mit beispiel:true - egal in welcher Liste sie stecken.
    Laeuft rekursiv, damit auch verschachtelte Sachen (Reise-Punkte, Modul-Themen)
    erwischt werden. Echte Eintraege haben die Markierung nie. */
@@ -2734,6 +2769,9 @@ function migrateData(){
           EXPENSE_CATS.forEach(cat=>{ if(!Array.isArray(m.cats[cat.key])) m.cats[cat.key] = []; });
           if(typeof m.closed!=='boolean') m.closed = false;
         });
+        if(!n.moebel || typeof n.moebel!=='object') n.moebel = {budget:10000, items:[]};
+        if(typeof n.moebel.budget!=='number') n.moebel.budget = 10000;
+        if(!Array.isArray(n.moebel.items)) n.moebel.items = [];
       } else if(def.type==='margin'){
         if(!Array.isArray(n.rows)) n.rows = [];
         /* Alte Fassung (products mit Kostenposten) wird zu Zeilen */
@@ -2959,6 +2997,7 @@ function migrateData(){
      Cloud oder aus einer Sicherung kommt - der Merker reist im JSON mit. */
   alteNotizenUebernehmen();
   umzugUebernehmen();
+  moebelUebernehmen();
   ideenUebernehmen();
   augustAntraegeUebernehmen();
   studiumUebernehmen();
@@ -3113,6 +3152,11 @@ function expenseSums(monat){
     if(cat.shared) gemeinsam += sum; else eigene += sum;
   });
   return {proKat, gemeinsam, eigene, meins: gemeinsam/2 + eigene, alles: gemeinsam + eigene};
+}
+/* Eigener Topf "Wohnungseinrichtung" - bewusst nicht Teil von expenseSums(),
+   damit er nicht in die monatlichen Auswertungen einrechnet. */
+function moebelSumme(moebel){
+  return (moebel.items||[]).reduce((s,e)=>s + (Number(e.amount)||0), 0);
 }
 function fmtYm(ym){
   const [y,m] = ym.split('-');
@@ -4329,9 +4373,10 @@ function renderExpenses(c, def){
   const jahre  = [...new Set(alleYm.map(k=>k.slice(0,4)))].sort().reverse();
   const heute  = new Date().toISOString().slice(0,7);
 
-  /* Auswahl kann ein Monat ("2026-07") oder ein Jahr ("jahr:2026") sein */
+  /* Auswahl kann ein Monat ("2026-07"), ein Jahr ("jahr:2026") oder der
+     angepinnte Moebel-Topf ("moebel") sein */
   let sel = selectedEntry[def.nodeId];
-  const gueltig = sel && (node.months[sel] || (sel.startsWith('jahr:') && jahre.includes(sel.slice(5))));
+  const gueltig = sel && (node.months[sel] || (sel.startsWith('jahr:') && jahre.includes(sel.slice(5))) || sel==='moebel');
   if(!gueltig) sel = node.months[heute] ? heute : (alleYm[0] || null);
   selectedEntry[def.nodeId] = sel;
 
@@ -4347,10 +4392,31 @@ function renderExpenses(c, def){
       <div class="entry-detail" id="entry-detail"></div>
     </div>
   `;
-  /* Baum: Jahr als eigener Eintrag, darunter eingerueckt seine Monate */
+  /* Baum: Jahr als eigener Eintrag, darunter eingerueckt seine Monate.
+     Der Moebel-Topf steht immer oben angepinnt, unabhaengig von den
+     Monaten - er wird ja separat gerechnet, nicht als Jahr/Monat gefuehrt. */
   const listBody = document.getElementById('entry-list-body');
+  listBody.innerHTML = '';
+  const moebelRow = document.createElement('div');
+  moebelRow.className = 'entry-year moebel'+(sel==='moebel'?' active':'');
+  moebelRow.innerHTML = `
+    <div class="entry-year-main">
+      <div class="entry-year-title">🛋️ Wohnungseinrichtung</div>
+      <div class="entry-year-sub">${eur(moebelSumme(node.moebel))} von ${eur(node.moebel.budget)} Budget</div>
+    </div>`;
+  moebelRow.addEventListener('click',()=>{
+    selectedEntry[def.nodeId] = 'moebel';
+    showDetailMobile = true;
+    renderExpenses(c, def);
+  });
+  listBody.appendChild(moebelRow);
+
   if(alleYm.length===0){
-    listBody.innerHTML = '<div class="entry-empty" style="padding:12px;">Noch nichts angelegt.</div>';
+    const empty = document.createElement('div');
+    empty.className = 'entry-empty';
+    empty.style.padding = '12px';
+    empty.textContent = 'Noch keine Monate angelegt.';
+    listBody.appendChild(empty);
   } else {
     jahre.forEach(j=>{
       const monateDesJahres = alleYm.filter(k=>k.startsWith(j));
@@ -4407,6 +4473,9 @@ function renderExpenses(c, def){
   } else if(sel.startsWith('jahr:')){
     detail.innerHTML = backBtn + '<div id="entry-detail-body"></div>';
     renderExpenseYear(document.getElementById('entry-detail-body'), c, def, node, sel.slice(5));
+  } else if(sel==='moebel'){
+    detail.innerHTML = backBtn + '<div id="entry-detail-body"></div>';
+    renderExpenseMoebel(document.getElementById('entry-detail-body'), c, def, node);
   } else {
     detail.innerHTML = backBtn + '<div id="entry-detail-body"></div>';
     renderExpenseMonth(document.getElementById('entry-detail-body'), c, def, node, sel);
@@ -4694,6 +4763,123 @@ function renderExpenseRows(box, c, def, monat, cat, gesperrt, node, ym){
       });
     });
   });
+}
+
+/* ---- Wohnungseinrichtung: eigener Topf ----
+   Bewusst getrennt von den Monats-Kategorien oben: eigenes Budget, das
+   sich mit jedem Posten runterzaehlt, keine Vermischung mit den
+   laufenden Ausgaben. Jeder Posten wird zur Haelfte getragen. */
+function renderExpenseMoebel(host, c, def, node){
+  const m = node.moebel;
+  const summe = moebelSumme(m);
+  const rest = m.budget - summe;
+  const proz = m.budget>0 ? Math.max(0, Math.min(100, summe/m.budget*100)) : 0;
+
+  host.innerHTML = `
+    <div class="detail-head">
+      <div class="detail-head-main"><h2 class="detail-title">🛋️ Wohnungseinrichtung</h2></div>
+    </div>
+    <div class="exp-sum-note" style="margin-bottom:16px;max-width:640px;">
+      Eigener Topf fürs Einrichten nach dem Umzug – eigenes Budget, zählt nicht in
+      die Monatsauswertungen der Ausgaben oben mit rein. Jeder Posten wird zur
+      Hälfte getragen.
+    </div>
+    <div class="exp-summary" style="max-width:720px;">
+      <div class="exp-sum-box main">
+        <div class="exp-sum-label">Ausgegeben</div>
+        <div class="exp-sum-value" id="mo-spent">${eur(summe)}</div>
+        <div class="exp-sum-note">pro Person <span id="mo-half">${eur(summe/2)}</span></div>
+      </div>
+      <div class="exp-sum-box">
+        <div class="exp-sum-label">Budget</div>
+        <div class="exp-sum-value sub"><input type="text" id="mo-budget-input"
+          class="mo-budget-input" inputmode="decimal" value="${String(m.budget).replace('.',',')}"> €</div>
+      </div>
+      <div class="exp-sum-box">
+        <div class="exp-sum-label">Noch übrig</div>
+        <div class="exp-sum-value sub" id="mo-rest">${eur(rest)}</div>
+      </div>
+    </div>
+    <div class="mod-bar" style="max-width:500px;"><div class="mod-bar-fill" id="mo-bar-fill"
+      style="width:${proz}%;background:var(--privat);"></div></div>
+    <div class="exp-rows" id="mo-rows" style="max-width:640px;margin-top:20px;"></div>
+    <div class="exp-add" style="max-width:640px;">
+      <input type="text" id="mo-in-label" placeholder="Was, z. B. Sofa" maxlength="80">
+      <input type="text" id="mo-in-amount" inputmode="decimal" placeholder="Betrag" maxlength="12">
+      <input type="month" id="mo-in-ym" value="${new Date().toISOString().slice(0,7)}" aria-label="Monat">
+      <button class="ib-btn primary" id="mo-add-btn">Hinzufügen</button>
+    </div>
+  `;
+
+  const budgetInp = document.getElementById('mo-budget-input');
+  budgetInp.addEventListener('change',()=>{
+    const v = parseAmount(budgetInp.value);
+    if(v===null){ budgetInp.value = String(m.budget).replace('.',','); return; }
+    m.budget = v;
+    persist();
+    refreshMoebelSums(host, node);
+    renderSidebar();
+  });
+
+  renderMoebelRows(host, c, def, node);
+
+  const labelInp = document.getElementById('mo-in-label');
+  const amountInp = document.getElementById('mo-in-amount');
+  const ymInp = document.getElementById('mo-in-ym');
+  function add(){
+    const l = (labelInp.value||'').trim();
+    if(!l){ labelInp.focus(); return; }
+    const amount = parseAmount(amountInp.value);
+    if(amount===null){ amountInp.focus(); return; }
+    m.items.push({id:uid(), label:l, amount, ym: ymInp.value || new Date().toISOString().slice(0,7)});
+    labelInp.value=''; amountInp.value='';
+    persist();
+    renderMoebelRows(host, c, def, node);
+    refreshMoebelSums(host, node);
+    renderSidebar();
+    labelInp.focus();
+  }
+  document.getElementById('mo-add-btn').addEventListener('click', add);
+  [labelInp, amountInp].forEach(inp=>inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') add(); }));
+}
+
+function renderMoebelRows(host, c, def, node){
+  const m = node.moebel;
+  const wrap = host.querySelector('#mo-rows');
+  const items = [...m.items].sort((a,b)=>(b.ym||'').localeCompare(a.ym||''));
+  if(items.length===0){
+    wrap.innerHTML = '<div class="empty-mini">Noch nichts eingetragen.</div>';
+    return;
+  }
+  wrap.innerHTML = items.map(e=>`
+    <div class="exp-row" data-id="${e.id}">
+      <span class="exp-row-label">${escapeHtml(e.label)} <span style="color:var(--ink-soft);
+        font-family:'IBM Plex Mono',monospace;font-size:0.68rem;">${fmtYm(e.ym).replace(/ \d{4}$/,'')}</span></span>
+      <span class="exp-row-amount">${eur(e.amount)}</span>
+      <button class="mini-del" data-del="${e.id}" aria-label="Löschen">×</button>
+    </div>`).join('');
+  wrap.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      m.items = m.items.filter(x=>x.id!==btn.dataset.del);
+      persist();
+      renderMoebelRows(host, c, def, node);
+      refreshMoebelSums(host, node);
+      renderSidebar();
+    });
+  });
+}
+
+function refreshMoebelSums(host, node){
+  const m = node.moebel;
+  const summe = moebelSumme(m);
+  const rest = m.budget - summe;
+  const proz = m.budget>0 ? Math.max(0, Math.min(100, summe/m.budget*100)) : 0;
+  const set = (id,v)=>{ const el=host.querySelector('#'+id); if(el) el.textContent=v; };
+  set('mo-spent', eur(summe));
+  set('mo-half', eur(summe/2));
+  set('mo-rest', eur(rest));
+  const fill = host.querySelector('#mo-bar-fill');
+  if(fill) fill.style.width = proz+'%';
 }
 
 /* ---- Jahresauswertung ----
