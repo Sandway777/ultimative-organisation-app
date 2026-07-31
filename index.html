@@ -846,6 +846,8 @@ tr.row-off .tt-num{text-decoration:line-through;}
   font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:.04em;text-transform:uppercase;}
 .exp-tag.shared{background:var(--business-bg);color:var(--business);}
 .exp-tag.own{background:var(--uni-bg);color:var(--uni);}
+.exp-tag.fix{background:var(--sport-bg);color:var(--sport);}
+.exp-tag.var{background:var(--privat-bg);color:var(--privat);}
 .exp-cat-nums{text-align:right;flex-shrink:0;}
 .exp-cat-sum{font-family:'IBM Plex Mono',monospace;font-size:1.02rem;font-weight:600;white-space:nowrap;}
 .exp-cat-mine{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;color:var(--ink-soft);
@@ -4406,7 +4408,41 @@ function renderExpenses(c, def){
   if(!gueltig) sel = node.months[heute] ? heute : (alleYm[0] || null);
   selectedEntry[def.nodeId] = sel;
 
+  /* Gesamtueberblick oben, ohne erst in einen Monat klicken zu muessen:
+     aktuelle Fixkosten, Durchschnitt der variablen Kosten, Moebel-Rest. */
+  const neuesterYm = node.months[heute] ? heute : alleYm[0];
+  const neuester = neuesterYm ? node.months[neuesterYm] : null;
+  const fixSumme = neuester
+    ? EXPENSE_CATS.filter(cat=>cat.mode==='fixed')
+        .reduce((s,cat)=>s + expenseSums(neuester).proKat[cat.key], 0)
+    : 0;
+  const varCats = EXPENSE_CATS.filter(cat=>cat.mode==='receipts');
+  const varWerte = alleYm.map(k=>{
+    const s = expenseSums(node.months[k]);
+    return varCats.reduce((sum,cat)=>sum + s.proKat[cat.key], 0);
+  });
+  const varDurchschnitt = varWerte.length ? varWerte.reduce((a,b)=>a+b,0)/varWerte.length : 0;
+  const moebelRest = node.moebel.budget - moebelSumme(node.moebel);
+
   c.innerHTML = renderNodeHead(def, `${alleYm.length} Monat(e) · ${jahre.length} Jahr(e)`) + `
+    <div class="exp-summary" style="margin-bottom:22px;">
+      <div class="exp-sum-box">
+        <div class="exp-sum-label">Fixkosten aktuell</div>
+        <div class="exp-sum-value sub">${eur(fixSumme)}</div>
+        <div class="exp-sum-note">${neuesterYm ? fmtYm(neuesterYm) : 'noch kein Monat'} · ${
+          EXPENSE_CATS.filter(cat=>cat.mode==='fixed').map(cat=>cat.title).join(' + ')}</div>
+      </div>
+      <div class="exp-sum-box">
+        <div class="exp-sum-label">Ø ${varCats.map(cat=>cat.title).join(' + ')||'Variabel'} / Monat</div>
+        <div class="exp-sum-value sub">${eur(varDurchschnitt)}</div>
+        <div class="exp-sum-note">über ${alleYm.length} erfasste Monat(e)</div>
+      </div>
+      <div class="exp-sum-box">
+        <div class="exp-sum-label">🛋️ Wohnungseinrichtung</div>
+        <div class="exp-sum-value sub">${eur(moebelRest)}</div>
+        <div class="exp-sum-note">noch übrig von ${eur(node.moebel.budget)}</div>
+      </div>
+    </div>
     <div class="entry-layout${showDetailMobile?' show-detail':''}" id="entry-layout">
       <div class="entry-list">
         <div class="entry-list-head"><span class="entry-list-title">Jahre &amp; Monate</span></div>
@@ -4613,6 +4649,7 @@ function renderExpenseCats(c, def, node, monat, gesperrt, ym, vs){
       <div class="exp-cat-head">
         <div class="exp-cat-title">${cat.icon} ${cat.title}
           <span class="exp-tag ${cat.shared?'shared':'own'}">${cat.shared?'geteilt':'nur ich'}</span>
+          <span class="exp-tag ${cat.mode==='fixed'?'fix':'var'}">${cat.mode==='fixed'?'fix':'variabel'}</span>
         </div>
         <div class="exp-cat-nums">
           <div class="exp-cat-sum" id="exp-cat-sum-${cat.key}">${eur(s.proKat[cat.key])}</div>
@@ -4895,6 +4932,14 @@ function renderExpenseYear(host, c, def, node, jahr){
   });
   const n = gewaehlt.length;
 
+  /* Spanne je Kategorie ueber die gewaehlten Monate - zeigt auf einen Blick,
+     was stabil bleibt (Wohnen) und was schwankt (Essen). */
+  const spanne = {};
+  EXPENSE_CATS.forEach(cat=>{
+    const werte = gewaehlt.map(k=>expenseSums(node.months[k]).proKat[cat.key]);
+    spanne[cat.key] = werte.length ? {min:Math.min(...werte), max:Math.max(...werte)} : {min:0, max:0};
+  });
+
   const zeilen = monateDesJahres.map(k=>{
     const s = expenseSums(node.months[k]);
     const an = !abgewaehlt[k];
@@ -4904,8 +4949,7 @@ function renderExpenseYear(host, c, def, node, jahr){
         <svg viewBox="0 0 18 18"><path d="M3 9l4 4 8-8"/></svg></span></td>
       <td class="tt-title">${fmtYm(k)}
         ${zu?'<span class="exp-lock sm">abgeschlossen</span>':'<span class="exp-open sm">offen</span>'}</td>
-      <td class="tt-num">${eur(s.gemeinsam)}</td>
-      <td class="tt-num">${eur(s.eigene)}</td>
+      ${EXPENSE_CATS.map(cat=>`<td class="tt-num">${eur(s.proKat[cat.key])}</td>`).join('')}
       <td class="tt-num strong">${eur(s.meins)}</td>
       <td class="tt-num">${eur(s.alles)}</td>
     </tr>`;
@@ -4941,16 +4985,21 @@ function renderExpenseYear(host, c, def, node, jahr){
       </div>
     </div>
     <div class="exp-katzeile">
-      ${EXPENSE_CATS.map(cat=>`<div class="exp-katbox ${cat.key}">
-        <div class="exp-sum-label">${cat.icon} ${cat.title}</div>
+      ${EXPENSE_CATS.map(cat=>{
+        const sp = spanne[cat.key];
+        const stabil = Math.abs(sp.max-sp.min) < 0.005;
+        return `<div class="exp-katbox ${cat.key}">
+        <div class="exp-sum-label">${cat.icon} ${cat.title}
+          <span class="exp-tag ${cat.mode==='fixed'?'fix':'var'}">${cat.mode==='fixed'?'fix':'variabel'}</span></div>
         <div class="exp-katsum">${eur(summe.proKat[cat.key])}</div>
-        <div class="exp-sum-note">Ø ${n?eur(summe.proKat[cat.key]/n):eur(0)} / Monat</div>
-      </div>`).join('')}
+        <div class="exp-sum-note">Ø ${n?eur(summe.proKat[cat.key]/n):eur(0)} / Monat ·
+          ${stabil ? 'konstant' : `Spanne ${eur(sp.min)} – ${eur(sp.max)}`}</div>
+      </div>`;}).join('')}
     </div>
     <div class="tt-wrap">
       <table class="trip-table">
         <thead><tr>
-          <th></th><th>Monat</th><th>Gemeinsam</th><th>Sonstiges</th><th>Dein Anteil</th><th>Alles</th>
+          <th></th><th>Monat</th>${EXPENSE_CATS.map(cat=>`<th>${cat.title}</th>`).join('')}<th>Dein Anteil</th><th>Alles</th>
         </tr></thead>
         <tbody>${zeilen}</tbody>
       </table>
