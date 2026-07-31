@@ -2184,7 +2184,7 @@ function alteNotizenUebernehmen(){
       dazu++;
     });
   });
-  data.dailyNotes.days.sort((a,b)=>b.date.localeCompare(a.date));
+  dailySortieren();
 
   if(!data.uebernommen) data.uebernommen = {};
   data.uebernommen[UEBERNAHME_KEY] = true;
@@ -6607,8 +6607,22 @@ function pruneDailyNotes(){
   let heuteTag = data.dailyNotes.days.find(d=>d.date===today);
   if(!heuteTag){ heuteTag = {date:today, items:[]}; data.dailyNotes.days.push(heuteTag); }
   if(gerettet.length) heuteTag.items.unshift(...gerettet);
-  data.dailyNotes.days.sort((a,b)=>b.date.localeCompare(a.date));
+  dailySortieren();
 }
+/* Reihenfolge der Tageszettel: heute zuerst, dann was als naechstes ansteht,
+   Vergangenes ganz unten. Vorher stand schlicht der neueste Tag oben - dann
+   liegt ein Zettel fuer naechste Woche ueber dem von heute, und man scrollt
+   an dem vorbei, was gerade zaehlt. */
+function dailySortieren(){
+  const heute = isoToday();
+  data.dailyNotes.days.sort((a,b)=>{
+    const aWeg = a.date < heute, bWeg = b.date < heute;
+    if(aWeg !== bWeg) return aWeg ? 1 : -1;      /* Vergangenes nach hinten */
+    if(aWeg) return b.date.localeCompare(a.date); /* dort: zuletzt zuerst */
+    return a.date.localeCompare(b.date);          /* heute und kuenftig: naechster zuerst */
+  });
+}
+
 /* Klappt unter dem Punkt eine Auswahl auf: entweder auf einen Tag, den es schon
    gibt, oder auf ein frei gewaehltes Datum (der Tag wird dann angelegt).
    Der Punkt wandert unerledigt hinueber - was man nicht geschafft hat, faengt
@@ -6648,7 +6662,7 @@ function verschiebeBoxOeffnen(knopf, vonTag, item, c){
     if(idx>-1) vonTag.items.splice(idx,1);
     item.done = false;                      /* nicht geschafft heisst wieder offen */
     tag.items.unshift(item);
-    data.dailyNotes.days.sort((a,b)=>b.date.localeCompare(a.date));
+    dailySortieren();
     persist(); renderDailyNotes(c);
     showSaveToast('Verschoben auf '+fmtDay(ziel));
   };
@@ -6677,7 +6691,7 @@ function renderDailyNotes(c){
     if(!picked) return;
     if(!data.dailyNotes.days.find(d=>d.date===picked)){
       data.dailyNotes.days.push({date:picked, items:[]});
-      data.dailyNotes.days.sort((a,b)=>b.date.localeCompare(a.date));
+      dailySortieren();
       persist();
     }
     renderDailyNotes(c);
@@ -7046,7 +7060,7 @@ cloudAbgleich();
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 19;
+const APP_FASSUNG = 20;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
