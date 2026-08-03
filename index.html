@@ -841,7 +841,11 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .exp-cat.sonstiges{border-top-color:var(--uni);}
 .exp-cat.moebel{border-top-color:var(--privat);}
 .exp-cat-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
-.exp-cat-title{font-family:'Fraunces',serif;font-weight:600;font-size:1.02rem;}
+/* min-width:0 ist noetig, damit der Titel schrumpfen darf: ohne das behaelt
+   er seine Inhaltsbreite und schiebt den Betrag rechts aus der Karte -
+   "Wohnungseinrichtung" ist lang genug, dass genau das passierte. */
+.exp-cat-title{font-family:'Fraunces',serif;font-weight:600;font-size:1.02rem;
+  min-width:0;overflow-wrap:break-word;}
 .exp-tag{display:inline-block;margin-left:7px;padding:2px 8px;border-radius:20px;vertical-align:middle;
   font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:.04em;text-transform:uppercase;}
 .exp-tag.shared{background:var(--business-bg);color:var(--business);}
