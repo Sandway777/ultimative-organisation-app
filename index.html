@@ -368,6 +368,37 @@ ul.mini-list{list-style:none;margin:0;padding:0;}
 .month-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
 .month-col{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;}
 .month-col h3{font-family:'Fraunces',serif;font-size:1rem;margin:0 0 10px;display:flex;align-items:center;gap:6px;}
+/* Wochenstunden der Spalte - steht nur da, wenn ueberhaupt etwas gesetzt ist. */
+.month-col-zeit{margin-left:auto;font-family:'IBM Plex Mono',monospace;
+  font-size:0.62rem;color:var(--ink-soft);font-weight:400;flex-shrink:0;}
+
+/* Zeitangabe je Punkt: klein und zurueckhaltend, solange nichts gesetzt ist. */
+.mini-zeit{border:1px solid var(--line);background:none;border-radius:5px;
+  font-family:'IBM Plex Mono',monospace;font-size:0.62rem;padding:2px 6px;
+  color:var(--ink-soft);cursor:pointer;flex-shrink:0;white-space:nowrap;}
+.mini-zeit:hover{border-color:var(--ink-soft);color:var(--ink);}
+.mini-zeit.leer{border-style:dashed;opacity:.45;padding:2px 5px;}
+.mini-zeit.leer:hover{opacity:1;}
+.mini-item.done .mini-zeit{opacity:.3;}
+
+.zeit-box{background:rgba(255,255,255,.04);border:1px solid var(--line);
+  border-radius:8px;padding:9px 11px;margin:4px 0 8px;}
+.zeit-zeile{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+.zeit-zeile label{font-size:0.76rem;color:var(--ink-soft);
+  display:flex;align-items:center;gap:5px;}
+.zeit-zeile input{width:54px;background:var(--bg);border:1px solid var(--line);
+  border-radius:6px;color:var(--ink);font-family:'IBM Plex Mono',monospace;
+  font-size:0.78rem;padding:4px 6px;text-align:center;}
+.zeit-fuss{display:flex;justify-content:space-between;align-items:center;
+  gap:10px;margin-top:8px;flex-wrap:wrap;}
+.zeit-summe{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;color:var(--ink-soft);}
+.zeit-weg{border:none;background:none;color:var(--ink-soft);font-family:inherit;
+  font-size:0.7rem;cursor:pointer;text-decoration:underline;padding:2px 0;}
+.zeit-weg:hover{color:var(--danger);}
+@media(max-width:820px){
+  .zeit-zeile{gap:8px;}
+  .zeit-zeile label{flex:1 1 100%;justify-content:space-between;}
+}
 .month-col.privat h3{color:var(--privat);} .month-col.business h3{color:var(--business);}
 .month-col.uni h3{color:var(--uni);} .month-col.sport h3{color:var(--sport);}
 @media(max-width:900px){.month-cols{grid-template-columns:1fr 1fr;}}
@@ -3021,7 +3052,15 @@ function migrateData(){
 
   data.months.forEach(m=>{
     m.columns = m.columns || {};
-    ['privat','business','uni','sport'].forEach(c=>{ if(!m.columns[c]) m.columns[c]=[]; });
+    ['privat','business','uni','sport'].forEach(c=>{
+      if(!m.columns[c]) m.columns[c]=[];
+      /* Zeitangabe je Punkt ist freiwillig - null heisst "nicht gesetzt",
+         damit "3x pro Woche" und "gar nicht" unterscheidbar bleiben. */
+      m.columns[c].forEach(it=>{
+        if(typeof it.proWoche!=='number') it.proWoche = null;
+        if(typeof it.minuten !=='number') it.minuten  = null;
+      });
+    });
   });
 
   /* Zum Schluss, wenn die Struktur steht: einmalige Uebernahme der alten Notizen.
@@ -3516,9 +3555,25 @@ function renderEntryLayout(c, opts){
 }
 
 /* generic mini list renderer */
+/* Zeitaufwand eines Monatspunkts als kurzer Text: "3× · 45 min" bzw. was
+   davon gesetzt ist. Beides freiwillig - viele Punkte sind einmalige Sachen
+   ohne Rhythmus. */
+function zeitText(it){
+  const teile = [];
+  if(it.proWoche) teile.push(it.proWoche+'×');
+  if(it.minuten)  teile.push(it.minuten+' min');
+  return teile.join(' · ');
+}
+/* Stunden pro Woche, wenn beides gesetzt ist - sonst null. */
+function zeitStunden(it){
+  if(!it.proWoche || !it.minuten) return null;
+  return it.proWoche * it.minuten / 60;
+}
+
 function renderMiniList(ul, items, opts){
   const showDate = opts && opts.showDate;
   const showMove = opts && opts.showMove;   /* Pfeil zum Verschieben auf einen anderen Tag */
+  const showZeit = opts && opts.showZeit;   /* Aufwand pro Woche (Monatsuebersicht) */
   ul.innerHTML='';
   if(items.length===0){ ul.innerHTML = '<div class="empty-mini">Noch nichts hier.</div>'; return; }
   items.forEach(it=>{
@@ -3526,12 +3581,66 @@ function renderMiniList(ul, items, opts){
     li.className='mini-item'+(it.done?' done':'');
     const datePart = showDate ? `<span class="mini-date">${it.date?fmtDay(it.date):'—'}</span>` : '';
     const movePart = showMove ? `<button class="mini-move" data-id="${it.id}" title="Auf einen anderen Tag schieben">→</button>` : '';
+    const zt = showZeit ? zeitText(it) : '';
+    const zeitPart = showZeit
+      ? `<button class="mini-zeit${zt?'':' leer'}" data-zeit="${it.id}"
+                 title="Wie oft und wie lange pro Woche?">${zt || '⏱'}</button>`
+      : '';
     li.innerHTML=`<span class="mini-checkbox" data-id="${it.id}"><svg viewBox="0 0 18 18"><path d="M3 9l4 4 8-8"/></svg></span>
       ${datePart}<span class="mini-text">${escapeHtml(it.text)}</span>
-      ${movePart}<button class="mini-del" data-id="${it.id}">×</button>`;
+      ${zeitPart}${movePart}<button class="mini-del" data-id="${it.id}">×</button>`;
     ul.appendChild(li);
   });
 }
+/* Klappt unter dem Punkt zwei kleine Felder auf: wie oft pro Woche und wie
+   lange am Stueck. Beides darf leer bleiben. Aus den beiden Zahlen rechnet
+   die Spaltenkopfzeile die Stunden pro Woche zusammen. */
+function zeitBoxOeffnen(knopf, item, onChanged){
+  const li = knopf.closest('li');
+  const offen = li.parentElement.querySelector('.zeit-box');
+  if(offen){ const war = offen.dataset.fuer; offen.remove(); if(war===item.id) return; }
+
+  const box = document.createElement('div');
+  box.className = 'zeit-box';
+  box.dataset.fuer = item.id;
+  box.innerHTML = `
+    <div class="zeit-zeile">
+      <label>Wie oft <input type="number" class="zeit-wie-oft" min="0" max="21" step="1"
+        inputmode="numeric" value="${item.proWoche||''}" placeholder="–"> ×/Woche</label>
+      <label>je <input type="number" class="zeit-dauer" min="0" max="600" step="5"
+        inputmode="numeric" value="${item.minuten||''}" placeholder="–"> min</label>
+    </div>
+    <div class="zeit-fuss">
+      <span class="zeit-summe"></span>
+      <button class="zeit-weg">Zeit entfernen</button>
+    </div>`;
+  li.insertAdjacentElement('afterend', box);
+
+  const wieOft = box.querySelector('.zeit-wie-oft');
+  const dauer  = box.querySelector('.zeit-dauer');
+  const summe  = box.querySelector('.zeit-summe');
+  const zeigen = ()=>{
+    const h = zeitStunden(item);
+    summe.textContent = h!==null
+      ? `≈ ${h.toFixed(1).replace('.',',')} h pro Woche`
+      : 'beide Felder füllen für die Wochenstunden';
+  };
+  const uebernehmen = ()=>{
+    item.proWoche = Math.max(0, parseInt(wieOft.value,10) || 0) || null;
+    item.minuten  = Math.max(0, parseInt(dauer.value,10)  || 0) || null;
+    zeigen(); onChanged();
+  };
+  zeigen();
+  [wieOft, dauer].forEach(f=>{
+    f.addEventListener('change', uebernehmen);
+    f.addEventListener('keydown',(e)=>{ if(e.key==='Enter') f.blur(); });
+  });
+  box.querySelector('.zeit-weg').addEventListener('click',()=>{
+    item.proWoche = null; item.minuten = null;
+    box.remove(); onChanged();
+  });
+}
+
 function bindMiniList(ul, items, onChanged){
   ul.addEventListener('click',(e)=>{
     const cb=e.target.closest('.mini-checkbox'); const del=e.target.closest('.mini-del');
@@ -3919,9 +4028,28 @@ function renderMonthsWrap(c){
         const n = MONTH_COLS.reduce((s,mc)=>s+m.columns[mc.key].filter(i=>!i.done).length,0);
         card.querySelector('.trip-range-line').textContent = `${n} offen`;
       };
-      const refresh = ()=>{ renderMiniList(ul, m.columns[col]); refreshHead(); persist(); };
-      renderMiniList(ul, m.columns[col]);
+      /* Summe der Wochenstunden dieser Spalte - nur zeigen, wenn ueberhaupt
+         etwas hinterlegt ist, sonst steht bei jedem Bereich eine leere 0. */
+      const zeitKopf = ()=>{
+        const el = card.querySelector('#mc-zeit-'+col+'-'+m.id);
+        if(!el) return;
+        const h = m.columns[col].reduce((s,it)=>s + (zeitStunden(it)||0), 0);
+        el.textContent = h>0 ? `≈ ${h.toFixed(1).replace('.',',')} h/Woche` : '';
+      };
+      const refresh = ()=>{
+        renderMiniList(ul, m.columns[col], {showZeit:true});
+        refreshHead(); zeitKopf(); persist();
+      };
+      renderMiniList(ul, m.columns[col], {showZeit:true});
+      zeitKopf();
       bindMiniList(ul, m.columns[col], refresh);
+      /* Zeitangabe je Punkt setzen */
+      ul.addEventListener('click',(e)=>{
+        const z = e.target.closest('.mini-zeit');
+        if(!z) return;
+        const it = m.columns[col].find(x=>x.id===z.dataset.zeit);
+        if(it) zeitBoxOeffnen(z, it, refresh);
+      });
       function addItem(){
         const t=inp.value.trim(); if(!t)return;
         m.columns[col].unshift({id:uid(),text:t,done:false}); inp.value=''; refresh();
@@ -3948,7 +4076,7 @@ function renderMonthsWrap(c){
 
 function monthColHtml(col,label,mid){
   return `<div class="month-col ${col}">
-    <h3>${label}</h3>
+    <h3>${label}<span class="month-col-zeit" id="mc-zeit-${col}-${mid}"></span></h3>
     <div class="input-row"><input type="text" id="mc-input-${col}-${mid}" placeholder="Fokus hinzufügen …" maxlength="150"><button id="mc-add-${col}-${mid}">+</button></div>
     <ul class="mini-list" id="mc-list-${col}-${mid}"></ul>
   </div>`;
@@ -7292,7 +7420,7 @@ cloudAbgleich();
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 20;
+const APP_FASSUNG = 21;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
