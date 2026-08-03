@@ -4443,8 +4443,8 @@ function renderExpenses(c, def){
       </div>
       <div class="exp-sum-box">
         <div class="exp-sum-label">🛋️ Wohnungseinrichtung</div>
-        <div class="exp-sum-value sub">${eur(moebelRest)}</div>
-        <div class="exp-sum-note">noch übrig von ${eur(node.moebel.budget)}</div>
+        <div class="exp-sum-value sub">${eur(node.moebel.budget - moebelRest)} <span class="mod-ziel">/ ${eur(node.moebel.budget)}</span></div>
+        <div class="exp-sum-note">${eur(moebelRest)} noch übrig</div>
       </div>
     </div>
     <div class="entry-layout${showDetailMobile?' show-detail':''}" id="entry-layout">
