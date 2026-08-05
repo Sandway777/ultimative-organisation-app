@@ -2028,8 +2028,8 @@ const EXPENSE_CATS = [
   /* --- Privat, nur Leon --- */
   {key:'sonstiges', gruppe:'privat', title:'Fixkosten', icon:'📋', shared:false, mode:'fixed',
    hint:'Kredit, Handy, Abos, Versicherungen'},
-  {key:'privatvar', gruppe:'privat', title:'Snacks & Restaurant', icon:'🥤', shared:false, mode:'receipts',
-   hint:'Essen unterwegs, Kleinkram'},
+  {key:'privatvar', gruppe:'privat', title:'Sonstige Ausgaben', icon:'🥤', shared:false, mode:'receipts',
+   hint:'Essen unterwegs, Kleinkram, alles Übrige'},
   {key:'gadgets',   gruppe:'privat', title:'Gadgets & Ausrüstung', icon:'🎧', shared:false, mode:'receipts',
    hint:'Technik, Zubehör, Sportausrüstung'}
 ];
@@ -2904,34 +2904,34 @@ function ausgabenAbgleich(){
   return dazu;
 }
 
-/* Der Amazon-Kauf ueber 56,72 (Flasche, Maus, Mauspad) lag unter privaten
-   Gadgets. Laut Leons Aufstellung gehoert Amazon in die gemeinsame
-   Wohnungseinrichtung - also dorthin, geteilt. */
-const AMAZON_KEY = 'amazon-nach-moebel-2026-08-05';
-function amazonNachMoebel(){
+/* Zwei verschiedene Amazon-Kaeufe, die nicht zusammengehoeren:
+   50,83 ist die gemeinsame Bestellung fuer die Wohnung (geteilt),
+   56,72 sind Maus, Mauspad und Flasche - Leons eigene Sachen.
+   Ich hatte beide in den Moebeltopf geschoben; die 56,72 gehen zurueck
+   in die privaten Gadgets. */
+const AMAZON_KEY = 'amazon-zurueck-2026-08-05';
+function amazonZurueck(){
   if(data.uebernommen && data.uebernommen[AMAZON_KEY]) return 0;
   const n = data.nodes['privat:ausgaben'];
-  if(!n || !n.months) return 0;
-  let weg = 0;
-  Object.keys(n.months).forEach(ym=>{
-    const g = n.months[ym].cats.gadgets;
-    if(!Array.isArray(g)) return;
-    const raus = g.filter(e=>(e.label||'').toLowerCase().includes('amazon'));
-    n.months[ym].cats.gadgets = g.filter(e=>!(e.label||'').toLowerCase().includes('amazon'));
-    raus.forEach(e=>{
-      const da = (n.moebel.items||[]).some(x=>
-        Math.abs((Number(x.amount)||0) - (Number(e.amount)||0)) < 0.01 &&
-        (x.label||'').toLowerCase().includes('amazon'));
-      if(!da){
-        n.moebel.items.push({id:uid(), label:e.label, amount:e.amount,
-                             ym, wer:'geteilt'});
-      }
-      weg++;
-    });
+  if(!n || !n.moebel || !Array.isArray(n.moebel.items)) return 0;
+  /* Nur die persoenliche Bestellung zurueckholen - an der Bezeichnung
+     erkennbar, die gemeinsame heisst schlicht "Amazon". */
+  const raus = n.moebel.items.filter(e=>
+    (e.label||'').toLowerCase().includes('maus'));
+  n.moebel.items = n.moebel.items.filter(e=>
+    !(e.label||'').toLowerCase().includes('maus'));
+  raus.forEach(e=>{
+    const ym = e.ym || '2026-08';
+    if(!n.months[ym]) n.months[ym] = {cats: emptyExpenseCats(), closed:false};
+    if(!Array.isArray(n.months[ym].cats.gadgets)) n.months[ym].cats.gadgets = [];
+    const da = n.months[ym].cats.gadgets.some(x=>
+      Math.abs((Number(x.amount)||0) - (Number(e.amount)||0)) < 0.01);
+    if(!da) n.months[ym].cats.gadgets.push(
+      {id:uid(), label:e.label, amount:e.amount, date:''});
   });
   if(!data.uebernommen) data.uebernommen = {};
   data.uebernommen[AMAZON_KEY] = true;
-  return weg;
+  return raus.length;
 }
 
 /* Der Platzhalter "Online-Module (falls belegt)" fliegt raus - Leon traegt
@@ -3608,7 +3608,7 @@ function migrateData(){
   ausgabenAbgleich();
   bizUebernehmen();
   modulPlatzhalterWeg();
-  amazonNachMoebel();
+  amazonZurueck();
   wohnenUebernehmen();
   ideenUebernehmen();
   augustAntraegeUebernehmen();
@@ -8576,7 +8576,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 34;
+const APP_FASSUNG = 35;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
