@@ -908,6 +908,25 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .exp-cat-head .exp-cat-mine{margin-top:0;}
 .exp-cat-klapp{color:var(--ink-soft);font-size:0.76rem;flex-shrink:0;padding-top:2px;}
 .exp-cat.zu .exp-cat-body{display:none;}
+/* Monatszeile: eine Karte statt drei. Der eigene Anteil gross, die beiden
+   Herkuenfte klein daneben - vorher waren das drei gleich grosse Kacheln,
+   von denen zwei nur Zwischensummen der dritten waren. */
+.monat-zeile{background:var(--card);border:1px solid var(--line);border-radius:11px;
+  border-top:3px solid var(--privat);padding:14px 16px;margin-bottom:16px;cursor:pointer;}
+.monat-haupt{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;}
+.monat-label{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);}
+.monat-wert{font-family:'Fraunces',serif;font-size:1.7rem;font-weight:600;color:var(--privat);}
+.monat-diff{font-size:0.72rem;color:var(--ink-soft);}
+.monat-neben{display:flex;gap:18px;flex-wrap:wrap;margin-top:7px;
+  font-size:0.76rem;color:var(--ink-soft);}
+.monat-neben b{font-family:'IBM Plex Mono',monospace;color:var(--ink);font-weight:500;}
+.monat-neben i{font-style:normal;opacity:.55;font-size:0.68rem;}
+@media(max-width:820px){
+  .monat-wert{font-size:1.45rem;}
+  .monat-neben{gap:12px;}
+}
+
 /* Aufklappbare Rechnung in den Uebersichts-Kacheln: zeigt, aus welchen
    Zahlen der Betrag entsteht. Ohne das raet man, was mitgerechnet wurde. */
 .exp-sum-box.aufklapp{cursor:pointer;}
@@ -916,7 +935,9 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .exp-sum-box.offen .sum-pfeil{transform:rotate(180deg);opacity:.8;}
 .sum-rechnung{display:none;margin-top:10px;padding-top:9px;
   border-top:1px solid var(--line-soft);}
-.exp-sum-box.offen .sum-rechnung{display:block;}
+/* Gilt fuer jede aufklappbare Karte, nicht nur fuer .exp-sum-box - die
+   Monatszeile ist eine eigene Klasse. */
+.offen > .sum-rechnung{display:block;}
 .sum-zeile{display:flex;justify-content:space-between;align-items:baseline;
   gap:10px;padding:3px 0;font-size:0.74rem;color:var(--ink-soft);}
 .sum-zeile b{font-family:'IBM Plex Mono',monospace;font-size:0.74rem;
@@ -5415,57 +5436,35 @@ function renderExpenseMonth(host, c, def, node, ym){
         ${zu ? '↺ Wieder öffnen' : '✓ Monat abschließen'}</button>
       <button class="del-btn exp-del" aria-label="Monat löschen">🗑</button>
     </div>
-    <div class="exp-summary">
-      <!-- Diese drei zeigen nur die Monatsposten. Der Moebeltopf laeuft
-           getrennt und steht als eigene Karte darunter - deshalb hier
-           ausdruecklich "ohne Einrichtung", sonst widersprechen sie der
-           Kachel oben. -->
-      <div class="exp-sum-box main aufklapp" data-rechnung="anteil">
-        <div class="exp-sum-label">Dein Anteil <span class="sum-pfeil">▾</span></div>
-        <div class="exp-sum-value" id="exp-mine">${eur(s.meins)}</div>
-        <div class="exp-sum-note" id="exp-mine-diff">${
-          vs ? dNote(s.meins, vs.meins) : 'ohne Einrichtung'}</div>
-        <div class="sum-rechnung" id="rechnung-anteil">
-          ${EXPENSE_CATS.map(cat=>{
-            const roh = s.proKat[cat.key]||0;
-            if(!roh) return '';
-            const anteil = cat.shared ? roh/2 : roh;
-            return `<div class="sum-zeile"><span>${cat.icon} ${cat.title}${
-              cat.shared ? ` <i>½ von ${eur(roh)}</i>` : ''}</span><b>${eur(anteil)}</b></div>`;
-          }).join('')}
-          <div class="sum-zeile summe"><span>zusammen</span><b>${eur(s.meins)}</b></div>
-        </div>
+    <!-- Eine Zeile statt drei Kacheln. "Dein Anteil" stand vorher doppelt -
+         einmal hier, einmal oben als "Dieser Monat kostet dich"; "Alles
+         zusammen" war nur die Summe der beiden Zahlen daneben. Was bleibt:
+         dein Anteil gross, die beiden Herkuenfte klein daneben. -->
+    <div class="monat-zeile aufklapp" data-rechnung="anteil">
+      <div class="monat-haupt">
+        <span class="monat-label">dein Anteil <span class="sum-pfeil">▾</span></span>
+        <span class="monat-wert" id="exp-mine">${eur(s.meins)}</span>
+        <span class="monat-diff" id="exp-mine-diff">${vs ? dNote(s.meins, vs.meins) : ''}</span>
       </div>
-      <div class="exp-sum-box aufklapp" data-rechnung="geteilt">
-        <div class="exp-sum-label">Gemeinsam (ihr beide) <span class="sum-pfeil">▾</span></div>
-        <div class="exp-sum-value sub" id="exp-shared">${eur(s.gemeinsam)}</div>
-        <div class="exp-sum-note" id="exp-shared-diff">${
-          vs ? dNote(s.gemeinsam, vs.gemeinsam) : 'volle Summe, ihr teilt sie'}</div>
-        <div class="sum-rechnung" id="rechnung-geteilt">
-          ${EXPENSE_CATS.filter(c=>c.shared).map(cat=>{
-            const roh = s.proKat[cat.key]||0;
-            if(!roh) return '';
-            return `<div class="sum-zeile"><span>${cat.icon} ${cat.title}</span><b>${eur(roh)}</b></div>`;
-          }).join('')}
-          <div class="sum-zeile summe"><span>zusammen</span><b>${eur(s.gemeinsam)}</b></div>
-        </div>
+      <div class="monat-neben">
+        <span>👥 gemeinsam <b id="exp-shared">${eur(s.gemeinsam)}</b> <i>ihr beide</i></span>
+        <span>🙋 privat <b id="exp-all">${eur(s.eigene)}</b> <i>nur du</i></span>
       </div>
-      <div class="exp-sum-box aufklapp" data-rechnung="alles">
-        <div class="exp-sum-label">Alles zusammen <span class="sum-pfeil">▾</span></div>
-        <div class="exp-sum-value sub" id="exp-all">${eur(s.alles)}</div>
-        <div class="exp-sum-note" id="exp-all-diff">${
-          vs ? dNote(s.alles, vs.alles) : 'gemeinsam + deine privaten'}</div>
-        <div class="sum-rechnung" id="rechnung-alles">
-          <div class="sum-zeile"><span>👥 Gemeinsam <i>volle Summe</i></span><b>${eur(s.gemeinsam)}</b></div>
-          <div class="sum-zeile"><span>🙋 Privat <i>nur deine</i></span><b>${eur(s.eigene)}</b></div>
-          <div class="sum-zeile summe"><span>zusammen</span><b>${eur(s.alles)}</b></div>
-        </div>
+      <div class="sum-rechnung" id="rechnung-anteil">
+        ${EXPENSE_CATS.map(cat=>{
+          const roh = s.proKat[cat.key]||0;
+          if(!roh) return '';
+          const anteil = cat.shared ? roh/2 : roh;
+          return `<div class="sum-zeile"><span>${cat.icon} ${cat.title}${
+            cat.shared ? ` <i>½ von ${eur(roh)}</i>` : ''}</span><b>${eur(anteil)}</b></div>`;
+        }).join('')}
+        <div class="sum-zeile summe"><span>dein Anteil</span><b>${eur(s.meins)}</b></div>
       </div>
     </div>
     <div class="exp-cats${zu?' locked':''}" id="exp-cats"></div>
   `;
-  /* Auch die Monats-Kacheln zeigen ihre Rechnung auf Klick. */
-  host.querySelectorAll('.exp-sum-box.aufklapp').forEach(box=>{
+  /* Auch die Monatszeile zeigt ihre Rechnung auf Klick. */
+  host.querySelectorAll('.aufklapp').forEach(box=>{
     box.addEventListener('click',(e)=>{
       if(e.target.closest('input, button')) return;
       box.classList.toggle('offen');
@@ -5495,7 +5494,7 @@ function refreshExpenseSums(c, def, monat){
   const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.textContent = v; };
   set('exp-mine', eur(s.meins));
   set('exp-shared', eur(s.gemeinsam));
-  set('exp-all', eur(s.alles));
+  set('exp-all', eur(s.eigene));   /* zeigt die privaten Kosten, nicht die Gesamtsumme */
   EXPENSE_CATS.forEach(cat=>{
     set('exp-cat-sum-'+cat.key, eur(s.proKat[cat.key]));
     set('exp-cat-mine-'+cat.key, cat.shared
@@ -8301,7 +8300,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 29;
+const APP_FASSUNG = 30;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
