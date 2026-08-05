@@ -966,6 +966,11 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .exp-add input{border:1px solid var(--line);border-radius:7px;background:var(--field);color:var(--ink);
   font-family:inherit;font-size:0.85rem;padding:7px 9px;outline:none;min-width:0;}
 .exp-add input:focus{border-color:var(--privat);}
+/* Datum steht klein neben dem Namen - es ist die Nebeninformation. */
+.exp-row-datum{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;
+  color:var(--ink-soft);flex-shrink:0;cursor:pointer;}
+.exp-row-datum.editable:hover{color:var(--ink);}
+.exp-row-leer{font-style:normal;color:var(--ink-soft);opacity:.45;}
 .exp-in-label{flex:1;min-width:120px;}
 .exp-in-amount{width:96px;font-family:'IBM Plex Mono',monospace;}
 .exp-in-date{width:140px;}
@@ -2777,6 +2782,45 @@ function ausgabenAugustUebernehmen(){
   return dazu;
 }
 
+/* Juli aufloesen: Leon hat erst ab August erfasst, der Juli-Monat entstand
+   nur aus frueheren Uebernahmen. Alles wandert nach August, damit die Summen
+   nicht auf zwei Monate zerfallen. */
+const JULI_WEG_KEY = 'juli-nach-august-2026-08-05';
+function juliNachAugust(){
+  if(data.uebernommen && data.uebernommen[JULI_WEG_KEY]) return 0;
+  const n = data.nodes['privat:ausgaben'];
+  if(!n || !n.months) return 0;
+  const juli = n.months['2026-07'];
+  if(!juli){
+    if(!data.uebernommen) data.uebernommen = {};
+    data.uebernommen[JULI_WEG_KEY] = true;
+    return 0;
+  }
+  if(!n.months['2026-08']) n.months['2026-08'] = {cats: emptyExpenseCats(), closed:false};
+  const ziel = n.months['2026-08'].cats;
+  let dazu = 0;
+  EXPENSE_CATS.forEach(cat=>{
+    const quelle = juli.cats[cat.key] || [];
+    if(!Array.isArray(ziel[cat.key])) ziel[cat.key] = [];
+    const da = new Set(ziel[cat.key].map(e=>(e.label||'').toLowerCase().trim()));
+    quelle.forEach(e=>{
+      const key = (e.label||'').toLowerCase().trim();
+      if(key && da.has(key)) return;      /* gleicher Posten schon da */
+      ziel[cat.key].push({...e, id:uid(),
+        date: e.date ? '2026-08'+e.date.slice(7) : ''});
+      dazu++;
+    });
+  });
+  delete n.months['2026-07'];
+  /* Moebel-Posten aus dem Juli ebenfalls umhaengen */
+  if(n.moebel && Array.isArray(n.moebel.items)){
+    n.moebel.items.forEach(e=>{ if(e.ym==='2026-07') e.ym = '2026-08'; });
+  }
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[JULI_WEG_KEY] = true;
+  return dazu;
+}
+
 /* Erstes Semester: der Beitrag ist bezahlt, die Modulgebuehr steht als
    geplant daneben - ob Leon Online-Module nimmt, ist noch offen. */
 const UNIKOSTEN_KEY = 'unikosten-2026-08-05';
@@ -3030,6 +3074,13 @@ function migrateData(){
         if(!n.months) n.months = {};
         if(typeof n.startBudget!=='number') n.startBudget = 5000;
         if(!n.gruppeZu || typeof n.gruppeZu!=='object') n.gruppeZu = {};
+        /* Gruppen starten zugeklappt: erst der Ueberblick, dann bei Bedarf
+           die Einzelposten. Einmaliger Schnitt, danach zaehlt die eigene
+           Einstellung. */
+        if(!n.gruppeZu.__zuGesetzt){
+          EXPENSE_GRUPPEN.forEach(g=>{ n.gruppeZu[g.key] = true; });
+          n.gruppeZu.__zuGesetzt = true;
+        }
         /* Moebel-Posten ohne Angabe gelten als geteilt - so waren sie vor der
            Haelften-Rechnung auch gemeint. */
         if(n.moebel && Array.isArray(n.moebel.items)){
@@ -3313,6 +3364,7 @@ function migrateData(){
   ausgabenAugustUebernehmen();
   gadgetUmzug();
   uniKostenUebernehmen();
+  juliNachAugust();
   wohnenUebernehmen();
   ideenUebernehmen();
   augustAntraegeUebernehmen();
@@ -5336,9 +5388,12 @@ function renderExpenseCats(c, def, node, monat, gesperrt, ym, vs){
       <div class="exp-rows" id="exp-rows-${cat.key}"></div>
       ${gesperrt ? '' : `<div class="exp-add">
         ${cat.mode==='receipts'
-          ? `<input type="date" class="exp-in-date" aria-label="Datum">
+          /* Name zuerst, Datum optional: wichtig ist wofuer und wie viel.
+             Bleibt das Datum leer, nimmt die App den heutigen Tag. */
+          ? `<input type="text" class="exp-in-label" placeholder="Wofür, z. B. Döner" maxlength="60">
              <input type="text" class="exp-in-amount" inputmode="decimal" placeholder="Betrag" maxlength="12">
-             <button class="ib-btn primary exp-add-btn">Beleg hinzufügen</button>`
+             <input type="date" class="exp-in-date" aria-label="Datum (optional)">
+             <button class="ib-btn primary exp-add-btn">Hinzufügen</button>`
           : `<input type="text" class="exp-in-label" placeholder="Posten, z. B. Miete" maxlength="60">
              <input type="text" class="exp-in-amount" inputmode="decimal" placeholder="Betrag" maxlength="12">
              <button class="ib-btn primary exp-add-btn">Posten hinzufügen</button>`}
@@ -5356,6 +5411,9 @@ function renderExpenseCats(c, def, node, monat, gesperrt, ym, vs){
       if(amount===null){ amountInp.focus(); return; }
       const eintrag = {id:uid(), amount};
       if(cat.mode==='receipts'){
+        /* Name ist das Wichtigste - wofuer war das Geld. Leer ist erlaubt,
+           dann steht spaeter nur der Betrag da. */
+        if(labelInp) eintrag.label = (labelInp.value||'').trim();
         /* Standarddatum: erster Tag des angezeigten Monats, damit der Beleg sichtbar bleibt */
         eintrag.date = dateInp.value || (ym+'-01');
         if(eintrag.date.slice(0,7)!==ym){
@@ -5406,10 +5464,19 @@ function renderExpenseRows(box, c, def, monat, cat, gesperrt, node, ym){
     host.innerHTML = `<div class="empty-mini">${cat.mode==='receipts'?'Keine Belege in diesem Monat.':'Noch kein Posten.'}</div>`;
     return;
   }
+  /* Bei Belegen steht der Name vorn und das Datum klein daneben - vorher war
+     nur das Datum zu sehen, damit wusste man bei "01. Aug. 12,00 EUR" nicht
+     mehr, wofuer das Geld weg war. */
   host.innerHTML = list.map(e=>`
     <div class="exp-row" data-id="${e.id}">
-      <span class="exp-row-label${gesperrt?'':' editable'}" data-edit="label">${cat.mode==='receipts'
-        ? (e.date?fmtDay(e.date):'—') : escapeHtml(e.label||'')}</span>
+      <span class="exp-row-label${gesperrt?'':' editable'}" data-edit="label">${
+        cat.mode==='receipts'
+          ? (e.label ? escapeHtml(e.label) : '<i class="exp-row-leer">ohne Namen</i>')
+          : escapeHtml(e.label||'')}</span>
+      ${cat.mode==='receipts'
+        ? `<span class="exp-row-datum${gesperrt?'':' editable'}" data-edit="date">${
+            e.date?fmtDay(e.date):'—'}</span>`
+        : ''}
       <span class="exp-row-amount${gesperrt?'':' editable'}" data-edit="amount">${eur(e.amount)}</span>
       ${gesperrt ? '' : `<button class="mini-del" data-del="${e.id}" aria-label="Löschen">×</button>`}
     </div>`).join('');
@@ -5430,7 +5497,8 @@ function renderExpenseRows(box, c, def, monat, cat, gesperrt, node, ym){
       const eintrag = monat.cats[cat.key].find(x=>x.id===row.dataset.id);
       if(!eintrag) return;
       const feld = span.dataset.edit;
-      const istDatum = feld==='label' && cat.mode==='receipts';
+      /* Eigenes Datumsfeld, seit die Belege auch einen Namen tragen. */
+      const istDatum = feld==='date';
       const inp = document.createElement('input');
       inp.className = 'exp-edit-input';
       if(istDatum){ inp.type='date'; inp.value = eintrag.date||''; }
@@ -5462,8 +5530,10 @@ function renderExpenseRows(box, c, def, monat, cat, gesperrt, node, ym){
             } else eintrag.date = inp.value;
           }
         } else {
+          /* Bei Belegen darf der Name auch leer bleiben - dann steht "ohne
+             Namen" da. Bei festen Posten waere ein leerer Name sinnlos. */
           const t = inp.value.trim();
-          if(t) eintrag.label = t;
+          if(t || cat.mode==='receipts') eintrag.label = t;
         }
         persist();
         renderExpenseRows(box, c, def, monat, cat, false, node, ym);
@@ -8007,7 +8077,7 @@ cloudAbgleich();
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 24;
+const APP_FASSUNG = 25;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
