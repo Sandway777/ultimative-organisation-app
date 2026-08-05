@@ -2935,29 +2935,37 @@ function nikaElternUebernehmen(){
    56,72 sind Maus, Mauspad und Flasche - Leons eigene Sachen.
    Ich hatte beide in den Moebeltopf geschoben; die 56,72 gehen zurueck
    in die privaten Gadgets. */
-const AMAZON_KEY = 'amazon-zurueck-2026-08-05';
+const AMAZON_KEY = 'amazon-gadget-2026-08-05b';
 function amazonZurueck(){
   if(data.uebernommen && data.uebernommen[AMAZON_KEY]) return 0;
   const n = data.nodes['privat:ausgaben'];
-  if(!n || !n.moebel || !Array.isArray(n.moebel.items)) return 0;
-  /* Nur die persoenliche Bestellung zurueckholen - an der Bezeichnung
-     erkennbar, die gemeinsame heisst schlicht "Amazon". */
-  const raus = n.moebel.items.filter(e=>
-    (e.label||'').toLowerCase().includes('maus'));
+  if(!n) return 0;
+  if(!n.moebel || typeof n.moebel!=='object') n.moebel = {budget:10000, items:[]};
+  if(!Array.isArray(n.moebel.items)) n.moebel.items = [];
+  if(!n.months) n.months = {};
+  const ymZiel = '2026-08';
+  if(!n.months[ymZiel]) n.months[ymZiel] = {cats: emptyExpenseCats(), closed:false};
+  if(!Array.isArray(n.months[ymZiel].cats.gadgets)) n.months[ymZiel].cats.gadgets = [];
+
+  /* Aus dem Moebeltopf raus, falls er dort gelandet ist - erkennbar an
+     "maus", die gemeinsame Bestellung heisst schlicht "Amazon". */
   n.moebel.items = n.moebel.items.filter(e=>
     !(e.label||'').toLowerCase().includes('maus'));
-  raus.forEach(e=>{
-    const ym = e.ym || '2026-08';
-    if(!n.months[ym]) n.months[ym] = {cats: emptyExpenseCats(), closed:false};
-    if(!Array.isArray(n.months[ym].cats.gadgets)) n.months[ym].cats.gadgets = [];
-    const da = n.months[ym].cats.gadgets.some(x=>
-      Math.abs((Number(x.amount)||0) - (Number(e.amount)||0)) < 0.01);
-    if(!da) n.months[ym].cats.gadgets.push(
-      {id:uid(), label:e.label, amount:e.amount, date:''});
-  });
+
+  /* Und sicherstellen, dass er unter Gadgets steht. Nicht nur verschieben:
+     je nachdem, welche Fassung vorher lief, kann er auch ganz fehlen. */
+  const schonDa = Object.keys(n.months).some(ym=>
+    (n.months[ym].cats.gadgets||[]).some(e=>
+      (e.label||'').toLowerCase().includes('maus')));
+  if(!schonDa){
+    n.months[ymZiel].cats.gadgets.push({
+      id:uid(), label:'Amazon: Flasche, Maus, Mauspad', amount:56.72, date:''
+    });
+  }
+
   if(!data.uebernommen) data.uebernommen = {};
   data.uebernommen[AMAZON_KEY] = true;
-  return raus.length;
+  return 1;
 }
 
 /* Der Platzhalter "Online-Module (falls belegt)" fliegt raus - Leon traegt
@@ -8617,7 +8625,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 36;
+const APP_FASSUNG = 37;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
