@@ -883,6 +883,29 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .exp-tag.own{background:var(--uni-bg);color:var(--uni);}
 .exp-tag.fix{background:var(--sport-bg);color:var(--sport);}
 .exp-tag.var{background:var(--privat-bg);color:var(--privat);}
+/* Moebeltopf: zwei Haelften nebeneinander, damit man beide Staende sieht. */
+.mo-haelften{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:11px 0 8px;}
+.mo-haelfte-kopf{display:flex;justify-content:space-between;align-items:baseline;
+  gap:8px;margin-bottom:5px;}
+.mo-haelfte-kopf span:first-child{font-family:'IBM Plex Mono',monospace;
+  font-size:0.64rem;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);}
+.mo-haelfte-rest{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;
+  color:var(--ink);white-space:nowrap;}
+.mo-haelfte-rest.minus{color:var(--danger);}   /* Haelfte ueberzogen */
+.mo-haelfte-fuss{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;
+  color:var(--ink-soft);margin-top:4px;}
+/* Wer zahlt: geteilt ist der Normalfall und bleibt unauffaellig. */
+.mo-wer{border:1px solid var(--line);background:none;border-radius:5px;
+  font-family:'IBM Plex Mono',monospace;font-size:0.6rem;padding:2px 7px;
+  color:var(--ink-soft);cursor:pointer;flex-shrink:0;white-space:nowrap;}
+.mo-wer.ich{border-color:rgba(224,128,96,.5);color:var(--privat);}
+.mo-wer.sie{border-color:rgba(79,168,162,.5);color:var(--business);}
+.mo-in-wer{background:var(--bg);border:1px solid var(--line);border-radius:7px;
+  color:var(--ink);font-family:inherit;font-size:0.82rem;padding:7px 8px;flex-shrink:0;}
+@media(max-width:820px){
+  .mo-haelften{grid-template-columns:1fr;gap:10px;}
+}
+
 .exp-cat-nums{text-align:right;flex-shrink:0;}
 .exp-cat-sum{font-family:'IBM Plex Mono',monospace;font-size:1.02rem;font-weight:600;white-space:nowrap;}
 .exp-cat-mine{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;color:var(--ink-soft);
@@ -1841,13 +1864,25 @@ const STRUKTUR = {
 /* Uebergreifende Punkte - gehoeren keiner Saeule, weil sie alle vier abdecken. */
 /* Ausgaben-Kategorien. shared=true bedeutet: wird zu zweit getragen, dein Anteil ist die Haelfte.
    mode 'fixed' = feste Monatsposten, 'receipts' = einzelne Belege mit Datum. */
+/* Fuenf Toepfe, zwei Unterscheidungen:
+   shared - wird durch zwei geteilt oder traegt Leon allein
+   mode   - fixed: monatlich gleich, receipts: einzelne Belege mit Datum
+   Warum getrennte Toepfe fuer Wohnen und "Gemeinsam privat": beides teilen
+   sie sich, aber Miete laeuft monatlich durch, waehrend Kur und Urlaub
+   unregelmaessig kommen. In einem Topf waere nicht erkennbar, was davon
+   Fixkosten sind. Dasselbe bei privat fix (Kredit, Handy) gegen privat
+   variabel (Snacks, Restaurant). */
 const EXPENSE_CATS = [
   {key:'wohnen',    title:'Wohnen',    icon:'🏠', shared:true,  mode:'fixed',
    hint:'Miete, Nebenkosten, Strom, Internet'},
+  {key:'gemeinsam', title:'Gemeinsam privat', icon:'💞', shared:true, mode:'receipts',
+   hint:'Kur, Urlaub, gemeinsame Anschaffungen – geteilt'},
   {key:'essen',     title:'Essen',     icon:'🍽️', shared:true,  mode:'receipts',
    hint:'Belege: Datum und Betrag'},
-  {key:'sonstiges', title:'Sonstiges', icon:'📋', shared:false, mode:'fixed',
-   hint:'Abos, Kredite, Versicherungen – nur deine'}
+  {key:'sonstiges', title:'Privat fix', icon:'📋', shared:false, mode:'fixed',
+   hint:'Kredit, Handy, Abos, Versicherungen – nur deine'},
+  {key:'privatvar', title:'Privat variabel', icon:'🥤', shared:false, mode:'receipts',
+   hint:'Snacks, Restaurant, Kleinkram – nur deine'}
 ];
 
 /* ---- Marge: Plattformen ----
@@ -2606,6 +2641,68 @@ function moebelUebernehmen(){
   return dazu;
 }
 
+/* Ausgaben-Stand vom 05.08.2026: die neuen Kategorien fuellen und den
+   Moebeltopf auf die Haelften-Rechnung umstellen. */
+const AUSGABEN_AUG_KEY = 'ausgaben-august-2026-08-05';
+function ausgabenAugustUebernehmen(){
+  if(data.uebernommen && data.uebernommen[AUSGABEN_AUG_KEY]) return 0;
+  const n = data.nodes['privat:ausgaben'];
+  if(!n) return 0;
+  if(!n.months) n.months = {};
+  const ym = '2026-08';
+  if(!n.months[ym]) n.months[ym] = {cats: emptyExpenseCats(), closed:false};
+  const cats = n.months[ym].cats;
+  EXPENSE_CATS.forEach(c=>{ if(!Array.isArray(cats[c.key])) cats[c.key] = []; });
+
+  let dazu = 0;
+  const rein = (katKey, posten)=>{
+    const da = new Set(cats[katKey].map(e=>(e.label||'').toLowerCase().trim()));
+    posten.forEach(p=>{
+      if(da.has(p.label.toLowerCase().trim())) return;
+      cats[katKey].push({id:uid(), ...p});
+      dazu++;
+    });
+  };
+
+  /* Fixkosten, die nur Leon traegt */
+  rein('sonstiges', [
+    {label:'Kredit (Gericht)', amount:50},
+    {label:'Internet Handy Mike', amount:16.49},
+    {label:'Sparkasse (entfällt ab nächstem Monat)', amount:9.45}
+  ]);
+
+  /* Kleinkram, nur Leon */
+  rein('privatvar', [
+    {label:'Döner', amount:12, date:'2026-08-01'},
+    {label:'Smoothie', amount:7.95, date:'2026-08-01'},
+    {label:'Wasser Lidl', amount:1.35, date:'2026-08-01'},
+    {label:'Gelato', amount:24.90, date:'2026-08-01'},
+    {label:'Deutschlandticket (einmalig bis Semesterticket)', amount:63, date:'2026-08-01'}
+  ]);
+
+  /* Geteilt, aber keine Wohnungssache */
+  rein('gemeinsam', [
+    {label:'Zeolith-Pulver (Kur)', amount:43.80, date:'2026-08-01'}
+  ]);
+
+  /* Moebeltopf: DM geteilt, Amazon nur Leon */
+  if(!n.moebel || typeof n.moebel!=='object') n.moebel = {budget:10000, items:[]};
+  if(!Array.isArray(n.moebel.items)) n.moebel.items = [];
+  const moDa = new Set(n.moebel.items.map(e=>(e.label||'').toLowerCase().trim()));
+  [
+    {label:'DM (Ausrüstung)', amount:73.30, ym, wer:'geteilt'},
+    {label:'Amazon: Flasche, Maus, Mauspad', amount:56.72, ym, wer:'ich'}
+  ].forEach(e=>{
+    if(moDa.has(e.label.toLowerCase().trim())) return;
+    n.moebel.items.push({id:uid(), ...e});
+    dazu++;
+  });
+
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[AUSGABEN_AUG_KEY] = true;
+  return dazu;
+}
+
 /* Vierte Uebernahme: Miete + erste Internet-Monatsrate unter Wohnen. */
 const WOHNEN_KEY = 'ausgaben-wohnen-2026-07-31';
 function wohnenUebernehmen(){
@@ -2807,6 +2904,13 @@ function migrateData(){
         });
       } else if(def.type==='expenses'){
         if(!n.months) n.months = {};
+        /* Moebel-Posten ohne Angabe gelten als geteilt - so waren sie vor der
+           Haelften-Rechnung auch gemeint. */
+        if(n.moebel && Array.isArray(n.moebel.items)){
+          n.moebel.items.forEach(e=>{
+            if(!['geteilt','ich','sie'].includes(e.wer)) e.wer = 'geteilt';
+          });
+        }
         /* Alte Fassung (ein einziger cats-Block) wird zum aktuellen Monat */
         if(n.cats){
           const ym = new Date().toISOString().slice(0,7);
@@ -3069,6 +3173,7 @@ function migrateData(){
   alteNotizenUebernehmen();
   umzugUebernehmen();
   moebelUebernehmen();
+  ausgabenAugustUebernehmen();
   wohnenUebernehmen();
   ideenUebernehmen();
   augustAntraegeUebernehmen();
@@ -3229,6 +3334,29 @@ function expenseSums(monat){
    damit er nicht in die monatlichen Auswertungen einrechnet. */
 function moebelSumme(moebel){
   return (moebel.items||[]).reduce((s,e)=>s + (Number(e.amount)||0), 0);
+}
+/* Der Moebeltopf sind zwei Haelften: jeder bringt die Haelfte des Budgets ein.
+   Ein geteilter Kauf belastet beide zur Haelfte, ein privater nur den, der
+   ihn getaetigt hat. Ohne diese Trennung sieht man nicht, wenn einer mehr aus
+   dem gemeinsamen Topf gezahlt hat als der andere. */
+function moebelHaelften(moebel){
+  const budget = Number(moebel.budget) || 0;
+  const proKopf = budget / 2;
+  let meins = 0, ihrs = 0;
+  (moebel.items||[]).forEach(e=>{
+    const b = Number(e.amount) || 0;
+    if(e.wer === 'ich')      meins += b;
+    else if(e.wer === 'sie') ihrs  += b;
+    else { meins += b/2; ihrs += b/2; }   /* ohne Angabe: geteilt */
+  });
+  return {
+    budget, proKopf,
+    meins, ihrs,
+    restMeins: proKopf - meins,
+    restIhrs:  proKopf - ihrs,
+    gesamt: meins + ihrs,
+    rest: budget - (meins + ihrs)
+  };
 }
 function fmtYm(ym){
   const [y,m] = ym.split('-');
@@ -4555,6 +4683,7 @@ function renderExpenses(c, def){
   });
   const varDurchschnitt = varWerte.length ? varWerte.reduce((a,b)=>a+b,0)/varWerte.length : 0;
   const moebelRest = node.moebel.budget - moebelSumme(node.moebel);
+  const moebelH = moebelHaelften(node.moebel);
 
   c.innerHTML = renderNodeHead(def, `${alleYm.length} Monat(e) · ${jahre.length} Jahr(e)`) + `
     <div class="exp-summary" style="margin-bottom:22px;">
@@ -4565,14 +4694,16 @@ function renderExpenses(c, def){
           EXPENSE_CATS.filter(cat=>cat.mode==='fixed').map(cat=>cat.title).join(' + ')}</div>
       </div>
       <div class="exp-sum-box">
-        <div class="exp-sum-label">Ø ${varCats.map(cat=>cat.title).join(' + ')||'Variabel'} / Monat</div>
+        <!-- Nicht alle Kategorienamen aufzaehlen: bei fuenf Toepfen wird die
+             Zeile sonst laenger als die Kachel. -->
+        <div class="exp-sum-label">Ø variable Kosten / Monat</div>
         <div class="exp-sum-value sub">${eur(varDurchschnitt)}</div>
         <div class="exp-sum-note">über ${alleYm.length} erfasste Monat(e)</div>
       </div>
       <div class="exp-sum-box">
         <div class="exp-sum-label">🛋️ Wohnungseinrichtung</div>
-        <div class="exp-sum-value sub">${eur(node.moebel.budget - moebelRest)} <span class="mod-ziel">/ ${eur(node.moebel.budget)}</span></div>
-        <div class="exp-sum-note">${eur(moebelRest)} noch übrig</div>
+        <div class="exp-sum-value sub">${eur(moebelH.meins)} <span class="mod-ziel">/ ${eur(moebelH.proKopf)}</span></div>
+        <div class="exp-sum-note">deine Hälfte · ${eur(moebelH.restMeins)} übrig</div>
       </div>
     </div>
     <div class="entry-layout${showDetailMobile?' show-detail':''}" id="entry-layout">
@@ -4945,9 +5076,9 @@ function renderExpenseRows(box, c, def, monat, cat, gesperrt, node, ym){
    Auswahl des jeweils angezeigten Monats gelistet. */
 function renderMoebelTile(wrap, c, def, node, ym, gesperrt){
   const m = node.moebel;
-  const gesamt = moebelSumme(m);
-  const rest = m.budget - gesamt;
-  const proz = m.budget>0 ? Math.max(0, Math.min(100, gesamt/m.budget*100)) : 0;
+  const h = moebelHaelften(m);
+  const prozM = h.proKopf>0 ? Math.max(0, Math.min(100, h.meins/h.proKopf*100)) : 0;
+  const prozI = h.proKopf>0 ? Math.max(0, Math.min(100, h.ihrs /h.proKopf*100)) : 0;
   const box = document.createElement('div');
   box.className = 'exp-cat moebel';
   box.innerHTML = `
@@ -4956,20 +5087,40 @@ function renderMoebelTile(wrap, c, def, node, ym, gesperrt){
         <span class="exp-tag shared">eigener Topf</span>
       </div>
       <div class="exp-cat-nums">
-        <div class="exp-cat-sum">${eur(gesamt)}</div>
-        <div class="exp-cat-mine">davon deins ${eur(gesamt/2)}</div>
+        <div class="exp-cat-sum">${eur(h.gesamt)} <span class="mod-ziel">/ ${eur(h.budget)}</span></div>
+        <div class="exp-cat-mine">${eur(h.rest)} noch übrig</div>
       </div>
     </div>
-    <div class="mod-bar" style="margin:9px 0 4px;"><div class="mod-bar-fill"
-      style="width:${proz}%;background:var(--privat);"></div></div>
+    <!-- Zwei Balken statt einem: jeder sieht seine eigene Haelfte. -->
+    <div class="mo-haelften">
+      <div class="mo-haelfte">
+        <div class="mo-haelfte-kopf"><span>Deine Hälfte</span>
+          <span class="mo-haelfte-rest${h.restMeins<0?' minus':''}">${eur(h.restMeins)} übrig</span></div>
+        <div class="mod-bar"><div class="mod-bar-fill"
+          style="width:${prozM}%;background:var(--privat);"></div></div>
+        <div class="mo-haelfte-fuss">${eur(h.meins)} von ${eur(h.proKopf)}</div>
+      </div>
+      <div class="mo-haelfte">
+        <div class="mo-haelfte-kopf"><span>Ihre Hälfte</span>
+          <span class="mo-haelfte-rest${h.restIhrs<0?' minus':''}">${eur(h.restIhrs)} übrig</span></div>
+        <div class="mod-bar"><div class="mod-bar-fill"
+          style="width:${prozI}%;background:var(--business);"></div></div>
+        <div class="mo-haelfte-fuss">${eur(h.ihrs)} von ${eur(h.proKopf)}</div>
+      </div>
+    </div>
     <div class="exp-cat-hint">eigenes Budget, zählt nicht in die Summen oben mit rein${
       gesperrt ? '' : ` · Budget <input type="text" id="mo-budget-input" class="mo-budget-input"
         inputmode="decimal" value="${String(m.budget).replace('.',',')}"> €`
-    } · noch übrig <span id="mo-rest">${eur(rest)}</span></div>
+    }</div>
     <div class="exp-rows" id="mo-rows"></div>
     ${gesperrt ? '' : `<div class="exp-add">
       <input type="text" class="mo-in-label" placeholder="Was, z. B. Sofa" maxlength="80">
       <input type="text" class="mo-in-amount" inputmode="decimal" placeholder="Betrag" maxlength="12">
+      <select class="mo-in-wer">
+        <option value="geteilt">geteilt</option>
+        <option value="ich">nur ich</option>
+        <option value="sie">nur sie</option>
+      </select>
       <button class="ib-btn primary mo-add-btn">Hinzufügen</button>
     </div>`}
   `;
@@ -4989,12 +5140,13 @@ function renderMoebelTile(wrap, c, def, node, ym, gesperrt){
 
   const labelInp = box.querySelector('.mo-in-label');
   const amountInp = box.querySelector('.mo-in-amount');
+  const werSel = box.querySelector('.mo-in-wer');
   function add(){
     const l = (labelInp.value||'').trim();
     if(!l){ labelInp.focus(); return; }
     const amount = parseAmount(amountInp.value);
     if(amount===null){ amountInp.focus(); return; }
-    m.items.push({id:uid(), label:l, amount, ym});
+    m.items.push({id:uid(), label:l, amount, ym, wer: werSel.value});
     labelInp.value=''; amountInp.value='';
     persist();
     renderMoebelRows(box, node, ym);
@@ -5014,12 +5166,28 @@ function renderMoebelRows(box, node, ym){
     wrap.innerHTML = '<div class="empty-mini">Noch nichts in diesem Monat.</div>';
     return;
   }
+  /* Wer gezahlt hat, steht als kleine Marke daneben und laesst sich per Klick
+     durchschalten - geteilt bleibt ohne Marke, das ist der Normalfall. */
+  const werText = {ich:'nur ich', sie:'nur sie'};
   wrap.innerHTML = items.map(e=>`
     <div class="exp-row" data-id="${e.id}">
       <span class="exp-row-label">${escapeHtml(e.label)}</span>
+      <button class="mo-wer ${e.wer||'geteilt'}" data-wer="${e.id}"
+              title="Wer zahlt? Tippen zum Wechseln">${werText[e.wer]||'geteilt'}</button>
       <span class="exp-row-amount">${eur(e.amount)}</span>
       <button class="mini-del" data-del="${e.id}" aria-label="Löschen">×</button>
     </div>`).join('');
+  wrap.querySelectorAll('[data-wer]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const e = m.items.find(x=>x.id===btn.dataset.wer); if(!e) return;
+      const folge = ['geteilt','ich','sie'];
+      e.wer = folge[(folge.indexOf(e.wer||'geteilt')+1) % folge.length];
+      persist();
+      renderMoebelRows(box, node, ym);
+      refreshMoebelTile(box, node);
+      renderSidebar();
+    });
+  });
   wrap.querySelectorAll('[data-del]').forEach(btn=>{
     btn.addEventListener('click',()=>{
       m.items = m.items.filter(x=>x.id!==btn.dataset.del);
@@ -5032,16 +5200,25 @@ function renderMoebelRows(box, node, ym){
 }
 
 function refreshMoebelTile(box, node){
-  const m = node.moebel;
-  const gesamt = moebelSumme(m);
-  const rest = m.budget - gesamt;
-  const proz = m.budget>0 ? Math.max(0, Math.min(100, gesamt/m.budget*100)) : 0;
-  const set = (sel,v)=>{ const el=box.querySelector(sel); if(el) el.textContent=v; };
-  set('.exp-cat-sum', eur(gesamt));
-  set('.exp-cat-mine', `davon deins ${eur(gesamt/2)}`);
-  set('#mo-rest', eur(rest));
-  const fill = box.querySelector('.mod-bar-fill');
-  if(fill) fill.style.width = proz+'%';
+  const h = moebelHaelften(node.moebel);
+  const set = (sel,v)=>{ const el=box.querySelector(sel); if(el) el.innerHTML=v; };
+  set('.exp-cat-sum', `${eur(h.gesamt)} <span class="mod-ziel">/ ${eur(h.budget)}</span>`);
+  set('.exp-cat-mine', `${eur(h.rest)} noch übrig`);
+
+  const haelften = box.querySelectorAll('.mo-haelfte');
+  const werte = [
+    {rest:h.restMeins, aus:h.meins, proz: h.proKopf>0 ? h.meins/h.proKopf*100 : 0},
+    {rest:h.restIhrs,  aus:h.ihrs,  proz: h.proKopf>0 ? h.ihrs /h.proKopf*100 : 0}
+  ];
+  haelften.forEach((el,i)=>{
+    const w = werte[i]; if(!w) return;
+    const r = el.querySelector('.mo-haelfte-rest');
+    if(r){ r.textContent = eur(w.rest)+' übrig'; r.classList.toggle('minus', w.rest<0); }
+    const fill = el.querySelector('.mod-bar-fill');
+    if(fill) fill.style.width = Math.max(0, Math.min(100, w.proz))+'%';
+    const f = el.querySelector('.mo-haelfte-fuss');
+    if(f) f.textContent = `${eur(w.aus)} von ${eur(h.proKopf)}`;
+  });
 }
 
 /* ---- Jahresauswertung ----
@@ -7420,7 +7597,7 @@ cloudAbgleich();
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 21;
+const APP_FASSUNG = 22;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
