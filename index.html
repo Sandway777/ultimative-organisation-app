@@ -988,6 +988,25 @@ tr.row-off .tt-num{text-decoration:line-through;}
 @media(max-width:720px){ .month-card .month-cols{grid-template-columns:1fr;}}
 .trip-new input[type=month]{border:1px solid var(--line);border-radius:7px;background:var(--field);font-family:inherit;
   font-size:0.85rem;color:var(--ink);padding:7px 9px;outline:none;}
+/* ---- Semesterkosten ---- */
+.uk-zeile{display:flex;align-items:center;gap:10px;padding:8px 0;
+  border-top:1px solid var(--line-soft);}
+.uk-zeile.geplant{opacity:.6;}
+.uk-status{border:1px solid var(--line);background:none;border-radius:50%;
+  width:22px;height:22px;font-size:0.7rem;line-height:1;cursor:pointer;
+  color:var(--ink-soft);flex-shrink:0;padding:0;}
+.uk-zeile:not(.geplant) .uk-status{border-color:var(--uni);color:var(--uni);}
+.uk-text{flex:1;font-size:0.88rem;color:var(--ink);min-width:0;}
+.uk-betrag{font-family:'IBM Plex Mono',monospace;font-size:0.84rem;
+  color:var(--ink);flex-shrink:0;}
+/* "vorab": schon vor dem Stichtag gezahlt - kommt zum Startgeld dazu und
+   geht wieder ab. Unauffaellig, solange nicht gesetzt. */
+.uk-vorab{border:1px dashed var(--line);background:none;border-radius:5px;
+  font-family:'IBM Plex Mono',monospace;font-size:0.58rem;padding:2px 6px;
+  color:var(--ink-soft);cursor:pointer;flex-shrink:0;opacity:.5;}
+.uk-vorab:hover{opacity:1;}
+.uk-vorab.an{border-style:solid;border-color:var(--uni);color:var(--uni);opacity:1;}
+
 /* ---- Kunden Design ---- */
 .kd-neu{display:flex;gap:8px;align-items:center;margin-bottom:18px;flex-wrap:wrap;}
 .kd-neu input{width:110px;background:var(--card);border:1px solid var(--line);
@@ -1887,7 +1906,8 @@ const STRUKTUR = {
     {key:'stundenplan',title:'Stundenplan',     icon:'📅', type:'timetable'},
     {key:'pruefungen', title:'Prüfungstermine', icon:'📝', type:'exams'},
     {key:'lernplan',   title:'Lernplan',        icon:'📚', type:'study'},
-    {key:'module',     title:'Module & Noten',  icon:'🎓', type:'modules'}
+    {key:'module',     title:'Module & Noten',  icon:'🎓', type:'modules'},
+    {key:'kosten',     title:'Semesterkosten',  icon:'🧾', type:'unikosten'}
   ],
   sport: [
     {key:'training',  title:'Trainingsübersicht',      icon:'🏃', type:'training'},
@@ -2065,6 +2085,10 @@ function emptyNodeContent(type){
   if(type==='study')      return {};   /* arbeitet auf uni:module */
   /* Kunden je Jahr: jahre: {"2026": {kunden:[{id,nr,geraet,name}], zu:bool}} */
   if(type==='clients')    return {jahre: {}};
+  /* Semesterkosten: ein Block je Semester mit seinen Posten. Laeuft ueber
+     Jahre und wird nie zurueckgesetzt - man will sehen, was das Studium
+     insgesamt gekostet hat. */
+  if(type==='unikosten')  return {semester: []};
   if(type==='margin'){
     /* rows: eine Zeile je Produkt+Groesse. plats: Gebuehren je Plattform. */
     const plats = {};
@@ -2753,6 +2777,33 @@ function ausgabenAugustUebernehmen(){
   return dazu;
 }
 
+/* Erstes Semester: der Beitrag ist bezahlt, die Modulgebuehr steht als
+   geplant daneben - ob Leon Online-Module nimmt, ist noch offen. */
+const UNIKOSTEN_KEY = 'unikosten-2026-08-05';
+function uniKostenUebernehmen(){
+  if(data.uebernommen && data.uebernommen[UNIKOSTEN_KEY]) return 0;
+  const n = data.nodes['uni:kosten'];
+  if(!n) return 0;
+  if(!Array.isArray(n.semester)) n.semester = [];
+  if(n.semester.length) {
+    if(!data.uebernommen) data.uebernommen = {};
+    data.uebernommen[UNIKOSTEN_KEY] = true;
+    return 0;
+  }
+  n.semester.push({
+    id:uid(), name:'1. Semester · WS 2026/27', zu:false,
+    posten:[
+      /* vorab: schon gezahlt, bevor der Startbetrag gezaehlt wurde - kommt
+         in der Rechnung erst dazu und geht dann wieder ab. */
+      {id:uid(), text:'Semesterbeitrag', betrag:372.80, bezahlt:true, vorab:true},
+      {id:uid(), text:'Online-Module (falls belegt)', betrag:70, bezahlt:false}
+    ]
+  });
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[UNIKOSTEN_KEY] = true;
+  return 2;
+}
+
 /* Der Amazon-Kauf lag zuerst im Moebeltopf. Er gehoert zu den privaten
    Gadgets - der Einrichtungstopf ist fuer das, was beide zusammen anschaffen.
    Eigener Schluessel, weil die Uebernahme oben zu dem Zeitpunkt schon lief. */
@@ -3150,6 +3201,17 @@ function migrateData(){
            unten wuerde ihm sonst ein leeres items zurueckgeben, das nie
            jemand liest. Der eigentliche Umbau steckt weiter oben. */
         if(!Array.isArray(n.gruppen)) n.gruppen = [];
+      } else if(def.type==='unikosten'){
+        if(!Array.isArray(n.semester)) n.semester = [];
+        n.semester.forEach(sem=>{
+          if(!Array.isArray(sem.posten)) sem.posten = [];
+          if(typeof sem.zu!=='boolean') sem.zu = false;
+          sem.posten.forEach(p=>{
+            if(typeof p.betrag!=='number') p.betrag = Number(p.betrag)||0;
+            if(typeof p.bezahlt!=='boolean') p.bezahlt = true;
+            if(typeof p.vorab!=='boolean')   p.vorab = false;
+          });
+        });
       } else if(def.type==='clients'){
         /* Kunden liegen nach Jahren, nicht als items-Liste. */
         if(!n.jahre || typeof n.jahre!=='object') n.jahre = {};
@@ -3250,6 +3312,7 @@ function migrateData(){
   moebelUebernehmen();
   ausgabenAugustUebernehmen();
   gadgetUmzug();
+  uniKostenUebernehmen();
   wohnenUebernehmen();
   ideenUebernehmen();
   augustAntraegeUebernehmen();
@@ -3342,6 +3405,11 @@ function nodeOpenCount(nodeId, def){
   if(def.type==='expenses') return 0;   /* Ausgaben zeigen Betrag statt Anzahl */
   if(def.type==='margin')    return 0;   /* Marge ebenso */
   if(def.type==='clients')   return 0;   /* Kunden zeigen die Zahl im Bereich */
+  if(def.type==='unikosten'){
+    /* Offene Posten - das ist, was noch aussteht */
+    return (n.semester||[]).reduce((s,sem)=>
+      s + (sem.posten||[]).filter(p=>!p.bezahlt).length, 0);
+  }
   if(def.type==='timetable') return 0;   /* Stundenplan zeigt Anzahl Termine separat */
   if(def.type==='modules')   return 0;   /* Module zeigen Credits */
   if(def.type==='exams')     return (n.items||[]).filter(i=>i.status==='offen').length;
@@ -3421,11 +3489,30 @@ function verfuegbar(node, ym){
   const monat = node.months && node.months[ym];
   const s = expenseSums(monat);
   const mo = moebelHaelften(node.moebel);
+  /* Semesterkosten stehen unter Uni, gehen aber von demselben Geld ab.
+     Posten mit vorab:true wurden schon vor dem Stichtag des Startbetrags
+     gezahlt - sie kommen erst oben drauf und gehen dann wieder ab. Netto
+     bleibt es gleich, aber die Rechnung zeigt ehrlich, was insgesamt da war.
+     Geplantes (nicht bezahlt) zaehlt gar nicht mit. */
+  const uni = data.nodes['uni:kosten'];
+  let semester = 0, semesterVorab = 0;
+  if(uni && Array.isArray(uni.semester)){
+    uni.semester.forEach(sem=>{
+      (sem.posten||[]).forEach(p=>{
+        if(!p.bezahlt) return;
+        const b = Number(p.betrag)||0;
+        semester += b;
+        if(p.vorab) semesterVorab += b;
+      });
+    });
+  }
   return {
     start,
+    startGesamt: start + semesterVorab,
     monatsKosten: s.meins,
     moebelMeins: mo.meins,
-    rest: start - s.meins - mo.meins
+    semester, semesterVorab,
+    rest: start + semesterVorab - s.meins - mo.meins - semester
   };
 }
 /* Eigener Topf "Wohnungseinrichtung" - bewusst nicht Teil von expenseSums(),
@@ -3645,6 +3732,7 @@ function renderMain(){
   else if(def.type==='study')     renderStudy(c, def);
   else if(def.type==='margin')    renderMargin(c, def);
   else if(def.type==='clients')   renderClients(c, def);
+  else if(def.type==='unikosten') renderUniKosten(c, def);
   else if(def.type==='training')  renderTraining(c, def);
   else if(def.type==='cures')     renderCures(c, def);
 }
@@ -3660,6 +3748,12 @@ function renderBereichOverview(c, key){
       const g = (n.gruppen||[]).length;
       sub = n.datum ? `Umzug ${fmtDay(n.datum)} · ${open} offen`
                     : (g ? `${g} Gruppe(n) · ${open} offen` : 'noch kein Termin');
+    }
+    else if(def.type==='unikosten'){
+      const sems = n.semester||[];
+      const bez = sems.reduce((s,sem)=>s + (sem.posten||[])
+        .filter(p=>p.bezahlt).reduce((x,p)=>x+(Number(p.betrag)||0),0), 0);
+      sub = sems.length ? `${eur(bez)} über ${sems.length} Semester` : 'noch kein Semester';
     }
     else if(def.type==='clients'){
       const jahre = Object.keys(n.jahre||{});
@@ -3873,6 +3967,154 @@ function bindMiniList(ul, items, onChanged){
     if(cb){ const it=items.find(i=>i.id===cb.dataset.id); if(it){it.done=!it.done; onChanged();} }
     else if(del){ const idx=items.findIndex(i=>i.id===del.dataset.id); if(idx>-1){items.splice(idx,1); onChanged();} }
   });
+}
+
+/* ---------------- SEMESTERKOSTEN ----------------
+   Ein Block je Semester, die Posten darin. Laeuft ueber die ganze Studienzeit
+   und wird nie zurueckgesetzt - die Frage ist "was hat das Studium bisher
+   gekostet", nicht "was war diesen Monat".
+
+   Bezahlte Posten zaehlen in die Summe, geplante stehen daneben: so sieht man
+   die 70 EUR fuer Online-Module schon, bevor klar ist, ob sie kommen. */
+function renderUniKosten(c, def){
+  const z = data.nodes[def.nodeId];
+  const alle = z.semester;
+  const bezahlt = alle.reduce((s,sem)=>
+    s + sem.posten.filter(p=>p.bezahlt).reduce((x,p)=>x+(Number(p.betrag)||0),0), 0);
+  const geplant = alle.reduce((s,sem)=>
+    s + sem.posten.filter(p=>!p.bezahlt).reduce((x,p)=>x+(Number(p.betrag)||0),0), 0);
+
+  c.innerHTML = renderNodeHead(def,
+    alle.length ? `${alle.length} Semester · ${eur(bezahlt)} bezahlt` : 'Noch kein Semester angelegt') + `
+    <div class="exp-summary" style="margin-bottom:20px;">
+      <div class="exp-sum-box main">
+        <div class="exp-sum-label">Bisher gezahlt</div>
+        <div class="exp-sum-value">${eur(bezahlt)}</div>
+        <div class="exp-sum-note">über ${alle.length} Semester</div>
+      </div>
+      <div class="exp-sum-box">
+        <div class="exp-sum-label">Noch offen / geplant</div>
+        <div class="exp-sum-value sub">${eur(geplant)}</div>
+        <div class="exp-sum-note">noch nicht bezahlt</div>
+      </div>
+    </div>
+    <div class="kd-neu">
+      <input type="text" id="uk-name" placeholder="Semester, z. B. WS 2026/27" maxlength="40">
+      <button class="ib-btn primary" id="uk-add">+ Semester anlegen</button>
+    </div>
+    <div id="uk-liste"></div>
+  `;
+
+  const neu = ()=>{
+    const feld = document.getElementById('uk-name');
+    const t = (feld.value||'').trim();
+    if(!t){ feld.focus(); return; }
+    z.semester.unshift({id:uid(), name:t, posten:[], zu:false});
+    feld.value=''; persist(); renderUniKosten(c, def);
+  };
+  document.getElementById('uk-add').addEventListener('click', neu);
+  document.getElementById('uk-name').addEventListener('keydown',(e)=>{ if(e.key==='Enter') neu(); });
+
+  const wrap = document.getElementById('uk-liste');
+  if(alle.length===0){
+    wrap.innerHTML = `<div class="empty-mini">Noch kein Semester. Oben eintragen.</div>`;
+    return;
+  }
+  alle.forEach(sem=>{ wrap.appendChild(ukSemesterKarte(sem, z, c, def)); });
+}
+
+function ukSemesterKarte(sem, z, c, def){
+  const summe  = sem.posten.filter(p=>p.bezahlt).reduce((s,p)=>s+(Number(p.betrag)||0),0);
+  const offen  = sem.posten.filter(p=>!p.bezahlt).reduce((s,p)=>s+(Number(p.betrag)||0),0);
+  const zu = !!sem.zu;
+
+  const karte = document.createElement('section');
+  karte.className = 'kd-jahr'+(zu?' zu':'');
+  karte.innerHTML = `
+    <button class="kd-jahr-kopf" data-sem="${sem.id}">
+      <span class="kd-klapp">${zu?'▸':'▾'}</span>
+      <span class="kd-jahr-titel">${escapeHtml(sem.name)}</span>
+      <span class="kd-jahr-zahl">${eur(summe)}</span>
+      <span class="kd-jahr-meta">${offen>0?`<span class="kd-chip laptop">offen ${eur(offen)}</span>`:''}</span>
+      <span class="del-btn kd-jahr-del" role="button" aria-label="Semester löschen">🗑</span>
+    </button>
+    <div class="kd-body">
+      <div class="uk-posten"></div>
+      <div class="kd-add">
+        <input type="text" class="uk-p-text" placeholder="Wofür, z. B. Semesterbeitrag" maxlength="60">
+        <input type="text" class="uk-p-betrag" inputmode="decimal" placeholder="Betrag" maxlength="12">
+        <button class="ib-btn primary uk-p-add">+ Posten</button>
+      </div>
+    </div>
+  `;
+
+  const liste = karte.querySelector('.uk-posten');
+  if(sem.posten.length===0){
+    liste.innerHTML = '<div class="empty-mini">Noch kein Posten.</div>';
+  } else {
+    liste.innerHTML = sem.posten.map(p=>`
+      <div class="uk-zeile${p.bezahlt?'':' geplant'}" data-pid="${p.id}">
+        <button class="uk-status" data-status="${p.id}"
+                title="${p.bezahlt?'bezahlt':'noch offen'} – tippen zum Wechseln">${
+          p.bezahlt ? '✓' : '○'}</button>
+        <span class="uk-text">${escapeHtml(p.text)}</span>
+        ${p.bezahlt ? `<button class="uk-vorab${p.vorab?' an':''}" data-vorab="${p.id}"
+          title="Vor dem Stichtag gezahlt? Dann kommt der Betrag zum Startgeld dazu und geht wieder ab">${
+          p.vorab ? 'vorab' : '＋'}</button>` : ''}
+        <span class="uk-betrag">${eur(p.betrag)}</span>
+        <button class="mini-del" data-pdel="${p.id}" aria-label="Löschen">×</button>
+      </div>`).join('');
+  }
+
+  const refresh = ()=>{ persist(); renderUniKosten(c, def); };
+
+  karte.querySelector('.kd-jahr-kopf').addEventListener('click',(e)=>{
+    if(e.target.closest('.kd-jahr-del')) return;
+    sem.zu = !sem.zu; refresh();
+  });
+  const del = karte.querySelector('.kd-jahr-del');
+  del.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    if(del.dataset.confirm==='1'){
+      const i = z.semester.findIndex(x=>x.id===sem.id);
+      if(i>-1) z.semester.splice(i,1);
+      refresh();
+    } else {
+      del.dataset.confirm='1'; del.textContent='wirklich?'; del.classList.add('confirm');
+      setTimeout(()=>{ if(del.dataset.confirm==='1'){
+        del.dataset.confirm=''; del.textContent='🗑'; del.classList.remove('confirm'); } }, 2500);
+    }
+  });
+  liste.querySelectorAll('[data-status]').forEach(b=>b.addEventListener('click',()=>{
+    const p = sem.posten.find(x=>x.id===b.dataset.status); if(!p) return;
+    p.bezahlt = !p.bezahlt;
+    if(!p.bezahlt) p.vorab = false;   /* nicht bezahlt kann nicht vorab sein */
+    refresh();
+  }));
+  liste.querySelectorAll('[data-vorab]').forEach(b=>b.addEventListener('click',()=>{
+    const p = sem.posten.find(x=>x.id===b.dataset.vorab); if(!p) return;
+    p.vorab = !p.vorab; refresh();
+  }));
+  liste.querySelectorAll('[data-pdel]').forEach(b=>b.addEventListener('click',()=>{
+    const i = sem.posten.findIndex(x=>x.id===b.dataset.pdel);
+    if(i>-1) sem.posten.splice(i,1);
+    refresh();
+  }));
+
+  const textInp = karte.querySelector('.uk-p-text');
+  const betragInp = karte.querySelector('.uk-p-betrag');
+  const neu = ()=>{
+    const t = (textInp.value||'').trim();
+    if(!t){ textInp.focus(); return; }
+    const b = parseAmount(betragInp.value);
+    if(b===null){ betragInp.focus(); return; }
+    sem.posten.push({id:uid(), text:t, betrag:b, bezahlt:true});
+    textInp.value=''; betragInp.value=''; refresh();
+  };
+  karte.querySelector('.uk-p-add').addEventListener('click', neu);
+  [textInp, betragInp].forEach(i=>i.addEventListener('keydown',(e)=>{ if(e.key==='Enter') neu(); }));
+
+  return karte;
 }
 
 /* ---------------- KUNDEN DESIGN ----------------
@@ -4810,7 +5052,9 @@ function renderExpenses(c, def){
         <div class="exp-sum-note">von ${
           gesperrt ? eur(verf.start) : `<input type="text" id="exp-start-input" class="mo-budget-input"
             inputmode="decimal" value="${String(verf.start).replace('.',',')}"> €`
-        } · nach allen Ausgaben</div>
+        }${verf.semesterVorab ? ` <b>+ ${eur(verf.semesterVorab)}</b> vorab` : ''
+        } · Monat ${eur(verf.monatsKosten)} · Möbel ${eur(verf.moebelMeins)}${
+          verf.semester ? ` · Uni ${eur(verf.semester)}` : ''}</div>
       </div>
       <!-- 3. Gemeinsamer Einrichtungstopf, beide Haelften. -->
       <div class="exp-sum-box">
@@ -7763,7 +8007,7 @@ cloudAbgleich();
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 23;
+const APP_FASSUNG = 24;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
