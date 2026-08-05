@@ -1975,7 +1975,8 @@ const STRUKTUR = {
     {key:'schritte',    title:'Nächste Schritte', icon:'🎯', type:'checklist'},
     {key:'prozesse',    title:'Optimierungen',    icon:'⚙️', type:'ideas'},
     {key:'marge',       title:'Marge',            icon:'💰', type:'margin'},
-    {key:'kunden',      title:'Kunden Design',    icon:'🎨', type:'clients'}
+    {key:'kunden',      title:'Kunden Design',    icon:'🎨', type:'clients'},
+    {key:'konto',       title:'Geschäftskonto',   icon:'🏦', type:'bizkonto'}
   ],
   uni: [
     {key:'termine',    title:'Vor dem Start',   icon:'📋', type:'checklist'},
@@ -2165,6 +2166,9 @@ function emptyNodeContent(type){
      Jahre und wird nie zurueckgesetzt - man will sehen, was das Studium
      insgesamt gekostet hat. */
   if(type==='unikosten')  return {semester: []};
+  /* Geschaeftskonto: eigener Betrag, davon gehen die laufenden Kosten ab.
+     Getrennt vom privaten Geld - das ist Geschaeftliches. */
+  if(type==='bizkonto')   return {konto: 628.36, posten: []};
   if(type==='margin'){
     /* rows: eine Zeile je Produkt+Groesse. plats: Gebuehren je Plattform. */
     const plats = {};
@@ -2854,6 +2858,70 @@ function ausgabenAugustUebernehmen(){
   return dazu;
 }
 
+/* Abgleich mit Leons Aufstellung vom 05.08.: Beispiel-Posten raus, echte
+   Betraege rein, Moebel-Posten von Juli nach August. */
+const ABGLEICH_KEY = 'ausgaben-abgleich-2026-08-05';
+function ausgabenAbgleich(){
+  if(data.uebernommen && data.uebernommen[ABGLEICH_KEY]) return 0;
+  const n = data.nodes['privat:ausgaben'];
+  if(!n || !n.months) return 0;
+  const m = n.months['2026-08'];
+  if(!m){
+    if(!data.uebernommen) data.uebernommen = {};
+    data.uebernommen[ABGLEICH_KEY] = true;
+    return 0;
+  }
+  let dazu = 0;
+
+  /* Beispiel-Posten fliegen raus - sie stammen aus der Erstbefuellung. */
+  EXPENSE_CATS.forEach(cat=>{
+    const vorher = (m.cats[cat.key]||[]).length;
+    m.cats[cat.key] = (m.cats[cat.key]||[])
+      .filter(e=>!(e.label||'').toLowerCase().startsWith('beispiel'));
+    dazu += vorher - m.cats[cat.key].length;
+  });
+
+  /* Wohnen: Miete 850 und Internet 30,98 als eigene Posten. */
+  const wohnen = m.cats.wohnen;
+  const wDa = new Set(wohnen.map(e=>(e.label||'').toLowerCase().trim()));
+  [{label:'Miete', amount:850}, {label:'Internet', amount:30.98}].forEach(e=>{
+    if(wDa.has(e.label.toLowerCase())) return;
+    wohnen.push({id:uid(), ...e}); dazu++;
+  });
+
+  /* Moebel-Posten gehoeren in den August - Leon hat erst ab da erfasst. */
+  if(n.moebel && Array.isArray(n.moebel.items)){
+    n.moebel.items.forEach(e=>{ if(e.ym==='2026-07') e.ym = '2026-08'; });
+  }
+
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[ABGLEICH_KEY] = true;
+  return dazu;
+}
+
+/* Geschaeftskosten: laufen ueber das Geschaeftskonto, nicht ueber Leons
+   privates Geld. */
+const BIZ_KEY = 'biz-konto-2026-08-05';
+function bizUebernehmen(){
+  if(data.uebernommen && data.uebernommen[BIZ_KEY]) return 0;
+  const n = data.nodes['business:konto'];
+  if(!n) return 0;
+  if(!Array.isArray(n.posten)) n.posten = [];
+  if(n.posten.length){
+    if(!data.uebernommen) data.uebernommen = {};
+    data.uebernommen[BIZ_KEY] = true;
+    return 0;
+  }
+  n.konto = 628.36;
+  n.posten = [
+    {id:uid(), text:'Shopify (1 $, bis 22.08. ändern)', betrag:0.92, monatlich:true},
+    {id:uid(), text:'Claude AI', betrag:21.42, monatlich:true}
+  ];
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[BIZ_KEY] = true;
+  return 2;
+}
+
 /* Erster Einkauf im August. Eigener Schluessel, weil die Uebernahme oben
    zu dem Zeitpunkt schon gelaufen war. */
 const REWE_KEY = 'essen-rewe-2026-08-05';
@@ -3358,6 +3426,13 @@ function migrateData(){
            unten wuerde ihm sonst ein leeres items zurueckgeben, das nie
            jemand liest. Der eigentliche Umbau steckt weiter oben. */
         if(!Array.isArray(n.gruppen)) n.gruppen = [];
+      } else if(def.type==='bizkonto'){
+        if(typeof n.konto!=='number') n.konto = 628.36;
+        if(!Array.isArray(n.posten)) n.posten = [];
+        n.posten.forEach(pp=>{
+          if(typeof pp.betrag!=='number') pp.betrag = Number(pp.betrag)||0;
+          if(typeof pp.monatlich!=='boolean') pp.monatlich = true;
+        });
       } else if(def.type==='unikosten'){
         if(!Array.isArray(n.semester)) n.semester = [];
         n.semester.forEach(sem=>{
@@ -3472,6 +3547,8 @@ function migrateData(){
   uniKostenUebernehmen();
   juliNachAugust();
   reweUebernehmen();
+  ausgabenAbgleich();
+  bizUebernehmen();
   wohnenUebernehmen();
   ideenUebernehmen();
   augustAntraegeUebernehmen();
@@ -3564,6 +3641,7 @@ function nodeOpenCount(nodeId, def){
   if(def.type==='expenses') return 0;   /* Ausgaben zeigen Betrag statt Anzahl */
   if(def.type==='margin')    return 0;   /* Marge ebenso */
   if(def.type==='clients')   return 0;   /* Kunden zeigen die Zahl im Bereich */
+  if(def.type==='bizkonto') return 0;   /* zeigt Betraege statt Anzahl */
   if(def.type==='unikosten'){
     /* Offene Posten - das ist, was noch aussteht */
     return (n.semester||[]).reduce((s,sem)=>
@@ -3913,6 +3991,7 @@ function renderMain(){
   else if(def.type==='margin')    renderMargin(c, def);
   else if(def.type==='clients')   renderClients(c, def);
   else if(def.type==='unikosten') renderUniKosten(c, def);
+  else if(def.type==='bizkonto')  renderBizKonto(c, def);
   else if(def.type==='training')  renderTraining(c, def);
   else if(def.type==='cures')     renderCures(c, def);
 }
@@ -3928,6 +4007,12 @@ function renderBereichOverview(c, key){
       const g = (n.gruppen||[]).length;
       sub = n.datum ? `Umzug ${fmtDay(n.datum)} · ${open} offen`
                     : (g ? `${g} Gruppe(n) · ${open} offen` : 'noch kein Termin');
+    }
+    else if(def.type==='bizkonto'){
+      const mon = (n.posten||[]).filter(pp=>pp.monatlich)
+        .reduce((x,pp)=>x+(Number(pp.betrag)||0),0);
+      const alle = (n.posten||[]).reduce((x,pp)=>x+(Number(pp.betrag)||0),0);
+      sub = `${eur((n.konto||0)-alle)} übrig · ${eur(mon)}/Monat`;
     }
     else if(def.type==='unikosten'){
       const sems = n.semester||[];
@@ -4147,6 +4232,97 @@ function bindMiniList(ul, items, onChanged){
     if(cb){ const it=items.find(i=>i.id===cb.dataset.id); if(it){it.done=!it.done; onChanged();} }
     else if(del){ const idx=items.findIndex(i=>i.id===del.dataset.id); if(idx>-1){items.splice(idx,1); onChanged();} }
   });
+}
+
+/* ---------------- GESCHAEFTSKONTO ----------------
+   Eigener Topf mit eigenem Kontostand - laeuft getrennt vom privaten Geld,
+   weil die Kosten vom Geschaeftskonto abgebucht werden. Monatliche Posten
+   zaehlen jeden Monat, einmalige nur einmal. */
+function renderBizKonto(c, def){
+  const z = data.nodes[def.nodeId];
+  const monatlich = z.posten.filter(p=>p.monatlich)
+    .reduce((s,p)=>s+(Number(p.betrag)||0), 0);
+  const einmalig = z.posten.filter(p=>!p.monatlich)
+    .reduce((s,p)=>s+(Number(p.betrag)||0), 0);
+  const rest = z.konto - monatlich - einmalig;
+  const reicht = monatlich>0 ? Math.floor(rest/monatlich) : null;
+
+  c.innerHTML = renderNodeHead(def,
+    `${eur(monatlich)} laufend pro Monat`) + `
+    <div class="exp-summary" style="margin-bottom:20px;">
+      <div class="exp-sum-box main">
+        <div class="exp-sum-label">Auf dem Konto</div>
+        <div class="exp-sum-value">${eur(rest)}</div>
+        <div class="exp-sum-note">von <input type="text" id="biz-konto" class="mo-budget-input"
+          inputmode="decimal" value="${String(z.konto).replace('.',',')}"> € nach Abzug</div>
+      </div>
+      <div class="exp-sum-box">
+        <div class="exp-sum-label">Laufend pro Monat</div>
+        <div class="exp-sum-value sub">${eur(monatlich)}</div>
+        <div class="exp-sum-note">${reicht!==null
+          ? `reicht noch ${reicht} Monat(e)` : 'noch nichts Laufendes'}</div>
+      </div>
+    </div>
+    <div class="kd-neu">
+      <input type="text" id="biz-text" placeholder="Wofür, z. B. Shopify" maxlength="60">
+      <input type="text" id="biz-betrag" inputmode="decimal" placeholder="Betrag" maxlength="12">
+      <select id="biz-art">
+        <option value="monatlich">monatlich</option>
+        <option value="einmalig">einmalig</option>
+      </select>
+      <button class="ib-btn primary" id="biz-add">+ Posten</button>
+    </div>
+    <div id="biz-liste"></div>
+  `;
+
+  const kontoInp = document.getElementById('biz-konto');
+  kontoInp.addEventListener('change',()=>{
+    const v = parseAmount(kontoInp.value);
+    if(v===null){ kontoInp.value = String(z.konto).replace('.',','); return; }
+    z.konto = v; persist(); renderBizKonto(c, def);
+  });
+
+  const neu = ()=>{
+    const t = (document.getElementById('biz-text').value||'').trim();
+    if(!t){ document.getElementById('biz-text').focus(); return; }
+    const b = parseAmount(document.getElementById('biz-betrag').value);
+    if(b===null){ document.getElementById('biz-betrag').focus(); return; }
+    z.posten.push({id:uid(), text:t, betrag:b,
+                   monatlich: document.getElementById('biz-art').value==='monatlich'});
+    persist(); renderBizKonto(c, def);
+  };
+  document.getElementById('biz-add').addEventListener('click', neu);
+  ['biz-text','biz-betrag'].forEach(id=>
+    document.getElementById(id).addEventListener('keydown',(e)=>{ if(e.key==='Enter') neu(); }));
+
+  const wrap = document.getElementById('biz-liste');
+  if(z.posten.length===0){
+    wrap.innerHTML = '<div class="empty-mini">Noch kein Posten.</div>';
+    return;
+  }
+  /* Laufendes zuerst - das bestimmt, wie lange das Konto reicht. */
+  const sortiert = [...z.posten].sort((a,b)=>(b.monatlich?1:0)-(a.monatlich?1:0));
+  wrap.innerHTML = `<div class="exp-cat" style="max-width:640px;">
+    <div class="exp-rows">${sortiert.map(p=>`
+      <div class="uk-zeile" data-pid="${p.id}">
+        <button class="mo-wer ${p.monatlich?'ich':''}" data-art="${p.id}"
+                title="monatlich oder einmalig – tippen zum Wechseln">${
+          p.monatlich ? 'monatlich' : 'einmalig'}</button>
+        <span class="uk-text">${escapeHtml(p.text)}</span>
+        <span class="uk-betrag">${eur(p.betrag)}</span>
+        <button class="mini-del" data-pdel="${p.id}" aria-label="Löschen">×</button>
+      </div>`).join('')}</div>
+  </div>`;
+
+  wrap.querySelectorAll('[data-art]').forEach(b=>b.addEventListener('click',()=>{
+    const p = z.posten.find(x=>x.id===b.dataset.art); if(!p) return;
+    p.monatlich = !p.monatlich; persist(); renderBizKonto(c, def);
+  }));
+  wrap.querySelectorAll('[data-pdel]').forEach(b=>b.addEventListener('click',()=>{
+    const i = z.posten.findIndex(x=>x.id===b.dataset.pdel);
+    if(i>-1) z.posten.splice(i,1);
+    persist(); renderBizKonto(c, def);
+  }));
 }
 
 /* ---------------- SEMESTERKOSTEN ----------------
@@ -8309,7 +8485,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 31;
+const APP_FASSUNG = 32;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
