@@ -1074,6 +1074,11 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .uk-text{flex:1;font-size:0.88rem;color:var(--ink);min-width:0;}
 .uk-betrag{font-family:'IBM Plex Mono',monospace;font-size:0.84rem;
   color:var(--ink);flex-shrink:0;}
+/* Freiwillige Online-Module abgesetzt vom Pflichtbeitrag. */
+.uk-module{margin-top:14px;padding-top:11px;border-top:1px dashed var(--line);}
+.uk-module-kopf{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;
+  letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px;}
+.uk-module-kopf i{font-style:normal;text-transform:none;letter-spacing:0;opacity:.65;}
 /* "vorab": schon vor dem Stichtag gezahlt - kommt zum Startgeld dazu und
    geht wieder ab. Unauffaellig, solange nicht gesetzt. */
 .uk-vorab{border:1px dashed var(--line);background:none;border-radius:5px;
@@ -2899,6 +2904,27 @@ function ausgabenAbgleich(){
   return dazu;
 }
 
+/* Der Platzhalter "Online-Module (falls belegt)" fliegt raus - Leon traegt
+   jedes belegte Modul einzeln mit Namen ein. Eine Zahl, die vielleicht nie
+   anfaellt, hat in der Uebersicht nichts verloren. */
+const MODUL_KEY = 'unimodule-platzhalter-2026-08-05';
+function modulPlatzhalterWeg(){
+  if(data.uebernommen && data.uebernommen[MODUL_KEY]) return 0;
+  const n = data.nodes['uni:kosten'];
+  let weg = 0;
+  if(n && Array.isArray(n.semester)){
+    n.semester.forEach(sem=>{
+      const vorher = sem.posten.length;
+      sem.posten = sem.posten.filter(p=>
+        !(p.text||'').toLowerCase().includes('falls belegt'));
+      weg += vorher - sem.posten.length;
+    });
+  }
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[MODUL_KEY] = true;
+  return weg;
+}
+
 /* Geschaeftskosten: laufen ueber das Geschaeftskonto, nicht ueber Leons
    privates Geld. */
 const BIZ_KEY = 'biz-konto-2026-08-05';
@@ -3013,7 +3039,8 @@ function uniKostenUebernehmen(){
       /* vorab: schon gezahlt, bevor der Startbetrag gezaehlt wurde - kommt
          in der Rechnung erst dazu und geht dann wieder ab. */
       {id:uid(), text:'Semesterbeitrag', betrag:372.80, bezahlt:true, vorab:true},
-      {id:uid(), text:'Online-Module (falls belegt)', betrag:70, bezahlt:false}
+      /* Kein Platzhalter fuer Module - Leon traegt jedes belegte Modul mit
+         Namen ein, sonst steht eine Zahl da, die vielleicht nie anfaellt. */
     ]
   });
   if(!data.uebernommen) data.uebernommen = {};
@@ -3442,6 +3469,7 @@ function migrateData(){
             if(typeof p.betrag!=='number') p.betrag = Number(p.betrag)||0;
             if(typeof p.bezahlt!=='boolean') p.bezahlt = true;
             if(typeof p.vorab!=='boolean')   p.vorab = false;
+            if(typeof p.freiwillig!=='boolean') p.freiwillig = false;
           });
         });
       } else if(def.type==='clients'){
@@ -3549,6 +3577,7 @@ function migrateData(){
   reweUebernehmen();
   ausgabenAbgleich();
   bizUebernehmen();
+  modulPlatzhalterWeg();
   wohnenUebernehmen();
   ideenUebernehmen();
   augustAntraegeUebernehmen();
@@ -4404,11 +4433,11 @@ function ukSemesterKarte(sem, z, c, def){
     </div>
   `;
 
+  /* Pflicht und Freiwilliges getrennt: der Semesterbeitrag faellt immer an,
+     Online-Module nur wenn Leon eines belegt - und dann mit Namen, damit
+     spaeter nachvollziehbar ist, wofuer gezahlt wurde. */
   const liste = karte.querySelector('.uk-posten');
-  if(sem.posten.length===0){
-    liste.innerHTML = '<div class="empty-mini">Noch kein Posten.</div>';
-  } else {
-    liste.innerHTML = sem.posten.map(p=>`
+  const zeile = (p)=>`
       <div class="uk-zeile${p.bezahlt?'':' geplant'}" data-pid="${p.id}">
         <button class="uk-status" data-status="${p.id}"
                 title="${p.bezahlt?'bezahlt':'noch offen'} – tippen zum Wechseln">${
@@ -4419,8 +4448,23 @@ function ukSemesterKarte(sem, z, c, def){
           p.vorab ? 'vorab' : '＋'}</button>` : ''}
         <span class="uk-betrag">${eur(p.betrag)}</span>
         <button class="mini-del" data-pdel="${p.id}" aria-label="Löschen">×</button>
-      </div>`).join('');
-  }
+      </div>`;
+
+  const pflicht = sem.posten.filter(p=>!p.freiwillig);
+  const module  = sem.posten.filter(p=>p.freiwillig);
+  liste.innerHTML =
+    (pflicht.length ? pflicht.map(zeile).join('')
+                    : '<div class="empty-mini">Noch kein Posten.</div>') +
+    `<div class="uk-module">
+       <div class="uk-module-kopf">Online-Module <i>freiwillig, je 70 €</i></div>
+       ${module.length ? module.map(zeile).join('')
+         : '<div class="empty-mini">Keins belegt in diesem Semester.</div>'}
+       <div class="kd-add">
+         <input type="text" class="uk-m-name" placeholder="Welches Modul?" maxlength="60">
+         <input type="text" class="uk-m-betrag" inputmode="decimal" value="70" maxlength="8">
+         <button class="ib-btn primary uk-m-add">+ Modul belegt</button>
+       </div>
+     </div>`;
 
   const refresh = ()=>{ persist(); renderUniKosten(c, def); };
 
@@ -4456,6 +4500,22 @@ function ukSemesterKarte(sem, z, c, def){
     if(i>-1) sem.posten.splice(i,1);
     refresh();
   }));
+
+  /* Online-Modul belegen: Name ist Pflicht, damit spaeter klar ist, wofuer
+     die 70 EUR waren. Gilt sofort als bezahlt - man belegt es ja, weil man
+     zahlt. */
+  const mName = karte.querySelector('.uk-m-name');
+  const mBetrag = karte.querySelector('.uk-m-betrag');
+  const modulNeu = ()=>{
+    const t = (mName.value||'').trim();
+    if(!t){ mName.focus(); return; }
+    const b = parseAmount(mBetrag.value);
+    if(b===null){ mBetrag.focus(); return; }
+    sem.posten.push({id:uid(), text:t, betrag:b, bezahlt:true, freiwillig:true, vorab:false});
+    mName.value=''; mBetrag.value='70'; refresh();
+  };
+  karte.querySelector('.uk-m-add').addEventListener('click', modulNeu);
+  [mName, mBetrag].forEach(i=>i.addEventListener('keydown',(e)=>{ if(e.key==='Enter') modulNeu(); }));
 
   const textInp = karte.querySelector('.uk-p-text');
   const betragInp = karte.querySelector('.uk-p-betrag');
@@ -8485,7 +8545,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 32;
+const APP_FASSUNG = 33;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
