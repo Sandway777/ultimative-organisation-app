@@ -864,7 +864,40 @@ tr.row-off .tt-num{text-decoration:line-through;}
   color:var(--ink);font-family:inherit;font-size:1.05rem;padding:3px 8px;outline:none;}
 .mo-budget-input:focus{border-color:var(--privat);}
 
-.exp-cats{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;max-width:1400px;}
+/* Gruppen-Rahmen: gemeinsam und privat sichtbar getrennt, nicht nur
+   ueber Marken an den einzelnen Karten. */
+.exp-cats{display:block;max-width:1400px;}
+.exp-gruppe{border:1px solid var(--line);border-radius:12px;margin-bottom:16px;
+  overflow:hidden;background:rgba(255,255,255,.012);}
+.exp-gruppe.gemeinsam{border-color:rgba(79,168,162,.3);}
+.exp-gruppe.privat{border-color:rgba(224,128,96,.3);}
+.exp-gruppe-kopf{display:flex;align-items:baseline;gap:11px;width:100%;border:none;
+  background:none;cursor:pointer;padding:13px 16px;text-align:left;font-family:inherit;
+  flex-wrap:wrap;}
+.exp-gruppe-kopf:hover{background:rgba(255,255,255,.025);}
+.exp-gruppe-klapp{color:var(--ink-soft);font-size:0.8rem;flex-shrink:0;}
+.exp-gruppe-titel{font-family:'Fraunces',serif;font-size:1.08rem;color:var(--ink);flex-shrink:0;}
+.exp-gruppe.gemeinsam .exp-gruppe-titel{color:var(--business);}
+.exp-gruppe.privat .exp-gruppe-titel{color:var(--privat);}
+.exp-gruppe-hint{font-size:0.72rem;color:var(--ink-soft);flex:1;min-width:0;}
+.exp-gruppe-summe{font-family:'IBM Plex Mono',monospace;font-size:0.94rem;
+  color:var(--ink);text-align:right;flex-shrink:0;}
+.exp-gruppe-summe i{display:block;font-style:normal;font-size:0.62rem;
+  color:var(--ink-soft);margin-top:2px;}
+.exp-gruppe-body{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));
+  gap:14px;padding:0 16px 16px;}
+.exp-gruppe.zu .exp-gruppe-body{display:none;}
+/* Budget-Balken innerhalb einer Kategorie (Essen) */
+.exp-budget{margin:9px 0 2px;}
+.exp-budget-fuss{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;
+  color:var(--ink-soft);margin-top:4px;}
+.exp-budget-fuss b{color:var(--danger);font-weight:600;}
+@media(max-width:820px){
+  .exp-gruppe-kopf{gap:8px;padding:12px 13px;}
+  .exp-gruppe-hint{flex:1 1 100%;order:3;}
+  .exp-gruppe-summe{margin-left:auto;}
+  .exp-gruppe-body{grid-template-columns:1fr;padding:0 13px 13px;}
+}
 .exp-cat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;
   border-top:3px solid var(--ink-soft);}
 .exp-cat.wohnen{border-top-color:var(--business);}
@@ -1872,18 +1905,33 @@ const STRUKTUR = {
    unregelmaessig kommen. In einem Topf waere nicht erkennbar, was davon
    Fixkosten sind. Dasselbe bei privat fix (Kredit, Handy) gegen privat
    variabel (Snacks, Restaurant). */
-const EXPENSE_CATS = [
-  {key:'wohnen',    title:'Wohnen',    icon:'🏠', shared:true,  mode:'fixed',
-   hint:'Miete, Nebenkosten, Strom, Internet'},
-  {key:'gemeinsam', title:'Gemeinsam privat', icon:'💞', shared:true, mode:'receipts',
-   hint:'Kur, Urlaub, gemeinsame Anschaffungen – geteilt'},
-  {key:'essen',     title:'Essen',     icon:'🍽️', shared:true,  mode:'receipts',
-   hint:'Belege: Datum und Betrag'},
-  {key:'sonstiges', title:'Privat fix', icon:'📋', shared:false, mode:'fixed',
-   hint:'Kredit, Handy, Abos, Versicherungen – nur deine'},
-  {key:'privatvar', title:'Privat variabel', icon:'🥤', shared:false, mode:'receipts',
-   hint:'Snacks, Restaurant, Kleinkram – nur deine'}
+/* Zwei Oberbereiche, die Toepfe darin eingebettet. Fuenf gleichrangige
+   Kategorien nebeneinander waren unuebersichtlich - man sah nicht auf einen
+   Blick, was geteilt wird und was Leon allein traegt. */
+const EXPENSE_GRUPPEN = [
+  {key:'gemeinsam', title:'Gemeinsam', icon:'👥', shared:true,
+   hint:'wird durch zwei geteilt'},
+  {key:'privat',    title:'Privat',    icon:'🙋', shared:false,
+   hint:'trägst du allein'}
 ];
+
+const EXPENSE_CATS = [
+  /* --- Gemeinsam --- */
+  {key:'wohnen',    gruppe:'gemeinsam', title:'Wohnen', icon:'🏠', shared:true, mode:'fixed',
+   hint:'Miete, Nebenkosten, Strom, Internet'},
+  {key:'essen',     gruppe:'gemeinsam', title:'Essen',  icon:'🍽️', shared:true, mode:'receipts',
+   budget:350, hint:'Monatsbudget, 175 € pro Person'},
+  {key:'gemeinsam', gruppe:'gemeinsam', title:'Sonstiges gemeinsam', icon:'💞', shared:true, mode:'receipts',
+   hint:'Kur, Urlaub, gemeinsame Anschaffungen'},
+  /* --- Privat, nur Leon --- */
+  {key:'sonstiges', gruppe:'privat', title:'Fixkosten', icon:'📋', shared:false, mode:'fixed',
+   hint:'Kredit, Handy, Abos, Versicherungen'},
+  {key:'privatvar', gruppe:'privat', title:'Snacks & Restaurant', icon:'🥤', shared:false, mode:'receipts',
+   hint:'Essen unterwegs, Kleinkram'},
+  {key:'gadgets',   gruppe:'privat', title:'Gadgets & Ausrüstung', icon:'🎧', shared:false, mode:'receipts',
+   hint:'Technik, Zubehör, Sportausrüstung'}
+];
+function catsDerGruppe(g){ return EXPENSE_CATS.filter(c=>c.gruppe===g); }
 
 /* ---- Marge: Plattformen ----
    Gebuehren unterscheiden sich zwischen Etsy und Shopify. Prozentgebuehren
@@ -2685,14 +2733,16 @@ function ausgabenAugustUebernehmen(){
     {label:'Zeolith-Pulver (Kur)', amount:43.80, date:'2026-08-01'}
   ]);
 
-  /* Moebeltopf: DM geteilt, Amazon nur Leon */
+  /* Gadgets: privat, nicht aus dem gemeinsamen Einrichtungstopf */
+  rein('gadgets', [
+    {label:'Amazon: Flasche, Maus, Mauspad', amount:56.72, date:'2026-08-01'}
+  ]);
+
+  /* Moebeltopf: nur die geteilte Wohnungssache */
   if(!n.moebel || typeof n.moebel!=='object') n.moebel = {budget:10000, items:[]};
   if(!Array.isArray(n.moebel.items)) n.moebel.items = [];
   const moDa = new Set(n.moebel.items.map(e=>(e.label||'').toLowerCase().trim()));
-  [
-    {label:'DM (Ausrüstung)', amount:73.30, ym, wer:'geteilt'},
-    {label:'Amazon: Flasche, Maus, Mauspad', amount:56.72, ym, wer:'ich'}
-  ].forEach(e=>{
+  [{label:'DM (Ausrüstung)', amount:73.30, ym, wer:'geteilt'}].forEach(e=>{
     if(moDa.has(e.label.toLowerCase().trim())) return;
     n.moebel.items.push({id:uid(), ...e});
     dazu++;
@@ -2701,6 +2751,29 @@ function ausgabenAugustUebernehmen(){
   if(!data.uebernommen) data.uebernommen = {};
   data.uebernommen[AUSGABEN_AUG_KEY] = true;
   return dazu;
+}
+
+/* Der Amazon-Kauf lag zuerst im Moebeltopf. Er gehoert zu den privaten
+   Gadgets - der Einrichtungstopf ist fuer das, was beide zusammen anschaffen.
+   Eigener Schluessel, weil die Uebernahme oben zu dem Zeitpunkt schon lief. */
+const GADGET_UMZUG_KEY = 'gadgets-umzug-2026-08-05';
+function gadgetUmzug(){
+  if(data.uebernommen && data.uebernommen[GADGET_UMZUG_KEY]) return 0;
+  const n = data.nodes['privat:ausgaben'];
+  if(!n || !n.moebel || !Array.isArray(n.moebel.items)) return 0;
+  const raus = n.moebel.items.filter(e=>(e.label||'').toLowerCase().includes('amazon'));
+  n.moebel.items = n.moebel.items.filter(e=>!(e.label||'').toLowerCase().includes('amazon'));
+  raus.forEach(e=>{
+    const ym = e.ym || '2026-08';
+    if(!n.months[ym]) n.months[ym] = {cats: emptyExpenseCats(), closed:false};
+    if(!Array.isArray(n.months[ym].cats.gadgets)) n.months[ym].cats.gadgets = [];
+    const da = n.months[ym].cats.gadgets.some(x=>
+      (x.label||'').toLowerCase().trim() === (e.label||'').toLowerCase().trim());
+    if(!da) n.months[ym].cats.gadgets.push({id:uid(), label:e.label, amount:e.amount, date:''});
+  });
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[GADGET_UMZUG_KEY] = true;
+  return raus.length;
 }
 
 /* Vierte Uebernahme: Miete + erste Internet-Monatsrate unter Wohnen. */
@@ -2904,6 +2977,8 @@ function migrateData(){
         });
       } else if(def.type==='expenses'){
         if(!n.months) n.months = {};
+        if(typeof n.startBudget!=='number') n.startBudget = 5000;
+        if(!n.gruppeZu || typeof n.gruppeZu!=='object') n.gruppeZu = {};
         /* Moebel-Posten ohne Angabe gelten als geteilt - so waren sie vor der
            Haelften-Rechnung auch gemeint. */
         if(n.moebel && Array.isArray(n.moebel.items)){
@@ -3174,6 +3249,7 @@ function migrateData(){
   umzugUebernehmen();
   moebelUebernehmen();
   ausgabenAugustUebernehmen();
+  gadgetUmzug();
   wohnenUebernehmen();
   ideenUebernehmen();
   augustAntraegeUebernehmen();
@@ -3328,7 +3404,29 @@ function expenseSums(monat){
     proKat[cat.key] = sum;
     if(cat.shared) gemeinsam += sum; else eigene += sum;
   });
-  return {proKat, gemeinsam, eigene, meins: gemeinsam/2 + eigene, alles: gemeinsam + eigene};
+  const proGruppe = {};
+  EXPENSE_GRUPPEN.forEach(g=>{
+    proGruppe[g.key] = catsDerGruppe(g.key).reduce((s,c)=>s+(proKat[c.key]||0), 0);
+  });
+  return {proKat, proGruppe, gemeinsam, eigene,
+          meins: gemeinsam/2 + eigene, alles: gemeinsam + eigene};
+}
+
+/* Was von Leons Haelfte wirklich noch da ist: sein Anteil am Budget minus
+   ALLES, was er in diesem Monat traegt - Fixkosten, private Ausgaben und
+   seine Haelfte am Gemeinsamen. Der Moebeltopf zaehlt getrennt, weil er ueber
+   Monate laeuft und nicht monatlich zurueckgesetzt wird. */
+function verfuegbar(node, ym){
+  const start = Number(node.startBudget) || 5000;
+  const monat = node.months && node.months[ym];
+  const s = expenseSums(monat);
+  const mo = moebelHaelften(node.moebel);
+  return {
+    start,
+    monatsKosten: s.meins,
+    moebelMeins: mo.meins,
+    rest: start - s.meins - mo.meins
+  };
 }
 /* Eigener Topf "Wohnungseinrichtung" - bewusst nicht Teil von expenseSums(),
    damit er nicht in die monatlichen Auswertungen einrechnet. */
@@ -4672,8 +4770,10 @@ function renderExpenses(c, def){
      aktuelle Fixkosten, Durchschnitt der variablen Kosten, Moebel-Rest. */
   const neuesterYm = node.months[heute] ? heute : alleYm[0];
   const neuester = neuesterYm ? node.months[neuesterYm] : null;
+  /* Nur die geteilten Fixkosten - die privaten kommen separat dazu, weil sie
+     ganz auf Leon entfallen statt zur Haelfte. */
   const fixSumme = neuester
-    ? EXPENSE_CATS.filter(cat=>cat.mode==='fixed')
+    ? EXPENSE_CATS.filter(cat=>cat.mode==='fixed' && cat.shared)
         .reduce((s,cat)=>s + expenseSums(neuester).proKat[cat.key], 0)
     : 0;
   const varCats = EXPENSE_CATS.filter(cat=>cat.mode==='receipts');
@@ -4684,26 +4784,39 @@ function renderExpenses(c, def){
   const varDurchschnitt = varWerte.length ? varWerte.reduce((a,b)=>a+b,0)/varWerte.length : 0;
   const moebelRest = node.moebel.budget - moebelSumme(node.moebel);
   const moebelH = moebelHaelften(node.moebel);
+  /* Was der laufende Monat Leon kostet, und was davon fest ist. Fixkosten
+     getrennt nach geteilt und privat, weil nur die Haelfte des Geteilten
+     auf ihn entfaellt. */
+  const neuesterSums = neuester ? expenseSums(neuester) : {meins:0, proKat:{}};
+  const monatMeins = neuesterSums.meins;
+  const fixPrivat = EXPENSE_CATS.filter(c=>c.mode==='fixed' && !c.shared)
+    .reduce((s,c)=>s + (neuesterSums.proKat[c.key]||0), 0);
+  const verf = verfuegbar(node, neuesterYm || heute);
+  const gesperrt = !!(neuester && neuester.closed);
 
   c.innerHTML = renderNodeHead(def, `${alleYm.length} Monat(e) · ${jahre.length} Jahr(e)`) + `
     <div class="exp-summary" style="margin-bottom:22px;">
-      <div class="exp-sum-box">
-        <div class="exp-sum-label">Fixkosten aktuell</div>
-        <div class="exp-sum-value sub">${eur(fixSumme)}</div>
-        <div class="exp-sum-note">${neuesterYm ? fmtYm(neuesterYm) : 'noch kein Monat'} · ${
-          EXPENSE_CATS.filter(cat=>cat.mode==='fixed').map(cat=>cat.title).join(' + ')}</div>
+      <!-- 1. Was dieser Monat dich kostet - die Zahl, die man taeglich sucht. -->
+      <div class="exp-sum-box main">
+        <div class="exp-sum-label">Dieser Monat kostet dich</div>
+        <div class="exp-sum-value">${eur(monatMeins)}</div>
+        <div class="exp-sum-note">${neuesterYm ? fmtYm(neuesterYm) : 'noch kein Monat'} ·
+          davon ${eur(fixSumme/2 + fixPrivat)} fest</div>
       </div>
+      <!-- 2. Kontostand: von Leon selbst gepflegt, bis die Abrechnung da ist. -->
       <div class="exp-sum-box">
-        <!-- Nicht alle Kategorienamen aufzaehlen: bei fuenf Toepfen wird die
-             Zeile sonst laenger als die Kachel. -->
-        <div class="exp-sum-label">Ø variable Kosten / Monat</div>
-        <div class="exp-sum-value sub">${eur(varDurchschnitt)}</div>
-        <div class="exp-sum-note">über ${alleYm.length} erfasste Monat(e)</div>
+        <div class="exp-sum-label">Mein Geld</div>
+        <div class="exp-sum-value sub">${eur(verf.rest)}</div>
+        <div class="exp-sum-note">von ${
+          gesperrt ? eur(verf.start) : `<input type="text" id="exp-start-input" class="mo-budget-input"
+            inputmode="decimal" value="${String(verf.start).replace('.',',')}"> €`
+        } · nach allen Ausgaben</div>
       </div>
+      <!-- 3. Gemeinsamer Einrichtungstopf, beide Haelften. -->
       <div class="exp-sum-box">
         <div class="exp-sum-label">🛋️ Wohnungseinrichtung</div>
-        <div class="exp-sum-value sub">${eur(moebelH.meins)} <span class="mod-ziel">/ ${eur(moebelH.proKopf)}</span></div>
-        <div class="exp-sum-note">deine Hälfte · ${eur(moebelH.restMeins)} übrig</div>
+        <div class="exp-sum-value sub">${eur(moebelH.rest)} <span class="mod-ziel">/ ${eur(moebelH.budget)}</span></div>
+        <div class="exp-sum-note">du ${eur(moebelH.restMeins)} · sie ${eur(moebelH.restIhrs)}</div>
       </div>
     </div>
     <div class="entry-layout${showDetailMobile?' show-detail':''}" id="entry-layout">
@@ -4717,6 +4830,17 @@ function renderExpenses(c, def){
       <div class="entry-detail" id="entry-detail"></div>
     </div>
   `;
+  /* Startgeld von Hand pflegen, bis die Abrechnung da ist. */
+  const startInp = document.getElementById('exp-start-input');
+  if(startInp){
+    startInp.addEventListener('change',()=>{
+      const v = parseAmount(startInp.value);
+      if(v===null){ startInp.value = String(verf.start).replace('.',','); return; }
+      node.startBudget = v;
+      persist(); renderExpenses(c, def);
+    });
+  }
+
   /* Baum: Jahr als eigener Eintrag, darunter eingerueckt seine Monate */
   const listBody = document.getElementById('entry-list-body');
   if(alleYm.length===0){
@@ -4905,6 +5029,34 @@ function renderExpenseCats(c, def, node, monat, gesperrt, ym, vs){
   const wrap = document.getElementById('exp-cats');
   wrap.innerHTML = '';
   const s = expenseSums(monat);
+
+  /* Je Gruppe ein Rahmen mit Kopfzeile - man sieht sofort, was geteilt wird
+     und was Leon allein traegt, ohne die Marken an jeder Karte zu lesen. */
+  if(!node.gruppeZu) node.gruppeZu = {};
+  const gruppenWrap = {};
+  EXPENSE_GRUPPEN.forEach(g=>{
+    const summe = s.proGruppe[g.key] || 0;
+    const meins = g.shared ? summe/2 : summe;
+    const zu = !!node.gruppeZu[g.key];
+    const sec = document.createElement('section');
+    sec.className = 'exp-gruppe '+g.key+(zu?' zu':'');
+    sec.innerHTML = `
+      <button class="exp-gruppe-kopf" data-gruppe="${g.key}">
+        <span class="exp-gruppe-klapp">${zu?'▸':'▾'}</span>
+        <span class="exp-gruppe-titel">${g.icon} ${g.title}</span>
+        <span class="exp-gruppe-hint">${g.hint}</span>
+        <span class="exp-gruppe-summe">${eur(summe)}${
+          g.shared ? `<i>davon deins ${eur(meins)}</i>` : '<i>komplett deins</i>'}</span>
+      </button>
+      <div class="exp-gruppe-body"></div>`;
+    sec.querySelector('.exp-gruppe-kopf').addEventListener('click',()=>{
+      node.gruppeZu[g.key] = !node.gruppeZu[g.key];
+      persist(); renderExpenseCats(c, def, node, monat, gesperrt, ym, vs);
+    });
+    wrap.appendChild(sec);
+    gruppenWrap[g.key] = sec.querySelector('.exp-gruppe-body');
+  });
+
   EXPENSE_CATS.forEach(cat=>{
     const box = document.createElement('div');
     box.className = 'exp-cat '+cat.key;
@@ -4920,6 +5072,19 @@ function renderExpenseCats(c, def, node, monat, gesperrt, ym, vs){
             cat.shared ? `davon deins ${eur(s.proKat[cat.key]/2)}` : 'komplett deins'}</div>
         </div>
       </div>
+      ${cat.budget ? (()=>{
+        /* Budget-Balken: zeigt, wie viel vom Monatsbudget schon weg ist.
+           Ueber 100 % wird der Balken rot statt einfach stehenzubleiben. */
+        const aus = s.proKat[cat.key];
+        const proz = Math.max(0, Math.min(100, aus/cat.budget*100));
+        const drueber = aus > cat.budget;
+        return `<div class="exp-budget">
+          <div class="mod-bar"><div class="mod-bar-fill"
+            style="width:${proz}%;background:${drueber?'var(--danger)':'var(--business)'};"></div></div>
+          <div class="exp-budget-fuss">${eur(cat.budget-aus)} von ${eur(cat.budget)} übrig${
+            drueber ? ' · <b>überzogen</b>' : ''}</div>
+        </div>`;
+      })() : ''}
       <div class="exp-cat-hint">${
         vs ? (()=>{ const d=diffInfo(s.proKat[cat.key], vs.proKat[cat.key]);
                     return `<span class="exp-diff ${d.cls}">${d.text}</span> ggü. Vormonat`; })()
@@ -4935,7 +5100,7 @@ function renderExpenseCats(c, def, node, monat, gesperrt, ym, vs){
              <button class="ib-btn primary exp-add-btn">Posten hinzufügen</button>`}
       </div>`}
     `;
-    wrap.appendChild(box);
+    (gruppenWrap[cat.gruppe] || wrap).appendChild(box);
     renderExpenseRows(box, c, def, monat, cat, gesperrt, node, ym);
     if(gesperrt) return;
 
@@ -4977,7 +5142,8 @@ function renderExpenseCats(c, def, node, monat, gesperrt, ym, vs){
       if(inp) inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') add(); });
     });
   });
-  renderMoebelTile(wrap, c, def, node, ym, gesperrt);
+  /* Der Moebeltopf gehoert zum Gemeinsamen - er wird geteilt bezahlt. */
+  renderMoebelTile(gruppenWrap['gemeinsam'] || wrap, c, def, node, ym, gesperrt);
 }
 
 /* Akzeptiert "12,50" und "12.50" */
@@ -7597,7 +7763,7 @@ cloudAbgleich();
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 22;
+const APP_FASSUNG = 23;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
