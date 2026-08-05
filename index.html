@@ -2904,6 +2904,32 @@ function ausgabenAbgleich(){
   return dazu;
 }
 
+/* Die drei Kaeufe von Nikas Eltern-Geld - zusammen die 152,80, die in Leons
+   Aufstellung unter Haushaltsausgaben standen. Geteilt wie der Rest. */
+const NIKA_KEY = 'nika-eltern-2026-08-05';
+function nikaElternUebernehmen(){
+  if(data.uebernommen && data.uebernommen[NIKA_KEY]) return 0;
+  const n = data.nodes['privat:ausgaben'];
+  if(!n) return 0;
+  if(!n.moebel || typeof n.moebel!=='object') n.moebel = {budget:10000, items:[]};
+  if(!Array.isArray(n.moebel.items)) n.moebel.items = [];
+  let dazu = 0;
+  [
+    {label:'JYSK', amount:81.89},
+    {label:'Aktion', amount:9.47},
+    {label:'TK MAX', amount:61.44}
+  ].forEach(e=>{
+    const da = n.moebel.items.some(x=>
+      (x.label||'').toLowerCase().trim() === e.label.toLowerCase());
+    if(da) return;
+    n.moebel.items.push({id:uid(), ...e, ym:'2026-08', wer:'geteilt'});
+    dazu++;
+  });
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[NIKA_KEY] = true;
+  return dazu;
+}
+
 /* Zwei verschiedene Amazon-Kaeufe, die nicht zusammengehoeren:
    50,83 ist die gemeinsame Bestellung fuer die Wohnung (geteilt),
    56,72 sind Maus, Mauspad und Flasche - Leons eigene Sachen.
@@ -3609,6 +3635,7 @@ function migrateData(){
   bizUebernehmen();
   modulPlatzhalterWeg();
   amazonZurueck();
+  nikaElternUebernehmen();
   wohnenUebernehmen();
   ideenUebernehmen();
   augustAntraegeUebernehmen();
@@ -3761,19 +3788,25 @@ function getExpenseMonth(node, ym, autoCreate){
    meins     = gemeinsam/2 + eigene Kategorien
    alles     = wirklich alles zusammen */
 function expenseSums(monat){
-  const proKat = {};
+  const proKat = {};      /* was tatsaechlich ausgegeben wurde */
+  const proKatPlan = {};  /* was eingeplant ist - bei Budget-Toepfen das Budget */
   let gemeinsam = 0, eigene = 0;
   EXPENSE_CATS.forEach(cat=>{
     const sum = (monat && monat.cats[cat.key] ? monat.cats[cat.key] : [])
       .reduce((s,e)=>s + (Number(e.amount)||0), 0);
     proKat[cat.key] = sum;
-    if(cat.shared) gemeinsam += sum; else eigene += sum;
+    /* Bei einem Budget-Topf (Essen) zaehlt das volle Budget als eingeplant,
+       auch wenn noch weniger ausgegeben wurde - so sieht man, was der Monat
+       maximal kostet, und der Balken zeigt, wie weit man drunter liegt. */
+    const plan = cat.budget ? Math.max(cat.budget, sum) : sum;
+    proKatPlan[cat.key] = plan;
+    if(cat.shared) gemeinsam += plan; else eigene += plan;
   });
   const proGruppe = {};
   EXPENSE_GRUPPEN.forEach(g=>{
-    proGruppe[g.key] = catsDerGruppe(g.key).reduce((s,c)=>s+(proKat[c.key]||0), 0);
+    proGruppe[g.key] = catsDerGruppe(g.key).reduce((s,c)=>s+(proKatPlan[c.key]||0), 0);
   });
-  return {proKat, proGruppe, gemeinsam, eigene,
+  return {proKat, proKatPlan, proGruppe, gemeinsam, eigene,
           meins: gemeinsam/2 + eigene, alles: gemeinsam + eigene};
 }
 
@@ -5507,11 +5540,16 @@ function renderExpenses(c, def){
           davon ${eur(fixSumme/2 + fixPrivat)} fest</div>
         <div class="sum-rechnung" id="rechnung-monat">
           ${EXPENSE_CATS.map(cat=>{
-            const roh = neuesterSums.proKat[cat.key]||0;
+            /* Budget-Toepfe mit dem eingeplanten Betrag, daneben was davon
+               schon weg ist - so sieht man, ob man drueber oder drunter liegt. */
+            const roh = neuesterSums.proKatPlan[cat.key]||0;
+            const aus = neuesterSums.proKat[cat.key]||0;
             if(!roh) return '';
             const anteil = cat.shared ? roh/2 : roh;
-            return `<div class="sum-zeile"><span>${cat.icon} ${cat.title}${
-              cat.shared ? ` <i>½ von ${eur(roh)}</i>` : ''}</span><b>${eur(anteil)}</b></div>`;
+            const hinweis = cat.budget
+              ? ` <i>Budget · ${eur(aus)} ausgegeben</i>`
+              : (cat.shared ? ` <i>½ von ${eur(roh)}</i>` : '');
+            return `<div class="sum-zeile"><span>${cat.icon} ${cat.title}${hinweis}</span><b>${eur(anteil)}</b></div>`;
           }).join('')}
           ${moebelMonat ? `<div class="sum-zeile"><span>🛋️ Wohnungseinrichtung <i>dieser Monat</i></span><b>${eur(moebelMonat)}</b></div>` : ''}
           <div class="sum-zeile summe"><span>zusammen</span><b>${eur(monatMeins)}</b></div>
@@ -5722,11 +5760,14 @@ function renderExpenseMonth(host, c, def, node, ym){
       </div>
       <div class="sum-rechnung" id="rechnung-anteil">
         ${EXPENSE_CATS.map(cat=>{
-          const roh = s.proKat[cat.key]||0;
+          const roh = s.proKatPlan[cat.key]||0;
+          const aus = s.proKat[cat.key]||0;
           if(!roh) return '';
           const anteil = cat.shared ? roh/2 : roh;
-          return `<div class="sum-zeile"><span>${cat.icon} ${cat.title}${
-            cat.shared ? ` <i>½ von ${eur(roh)}</i>` : ''}</span><b>${eur(anteil)}</b></div>`;
+          const hinweis = cat.budget
+            ? ` <i>Budget · ${eur(aus)} ausgegeben</i>`
+            : (cat.shared ? ` <i>½ von ${eur(roh)}</i>` : '');
+          return `<div class="sum-zeile"><span>${cat.icon} ${cat.title}${hinweis}</span><b>${eur(anteil)}</b></div>`;
         }).join('')}
         ${moMonat ? `<div class="sum-zeile"><span>🛋️ Wohnungseinrichtung <i>dieser Monat</i></span><b>${eur(moMonat)}</b></div>` : ''}
         <div class="sum-zeile summe"><span>kostet dich</span><b>${eur(meinsGesamt)}</b></div>
@@ -8576,7 +8617,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 35;
+const APP_FASSUNG = 36;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
