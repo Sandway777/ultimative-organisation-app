@@ -5418,6 +5418,10 @@ function renderExpenseMonth(host, c, def, node, ym){
   if(!monat) return;
   const s = expenseSums(monat);
   const zu = !!monat.closed;
+  /* Die Einrichtungskaeufe dieses Monats gehoeren dazu - sonst stuenden hier
+     und in der Kachel oben zwei verschiedene Zahlen fuer dieselbe Frage. */
+  const moMonat = moebelMonatMeins(node, ym);
+  const meinsGesamt = s.meins + moMonat;
   /* Vergleich zum vorherigen erfassten Monat */
   const vmYm = vormonatVon(node, ym);
   const vs = vmYm ? expenseSums(node.months[vmYm]) : null;
@@ -5436,19 +5440,18 @@ function renderExpenseMonth(host, c, def, node, ym){
         ${zu ? '↺ Wieder öffnen' : '✓ Monat abschließen'}</button>
       <button class="del-btn exp-del" aria-label="Monat löschen">🗑</button>
     </div>
-    <!-- Eine Zeile statt drei Kacheln. "Dein Anteil" stand vorher doppelt -
-         einmal hier, einmal oben als "Dieser Monat kostet dich"; "Alles
-         zusammen" war nur die Summe der beiden Zahlen daneben. Was bleibt:
-         dein Anteil gross, die beiden Herkuenfte klein daneben. -->
+    <!-- Eine Zeile statt drei Kacheln, und dieselbe Zahl wie in der Kachel
+         oben: was dieser Monat Leon kostet, Einrichtungskaeufe eingerechnet. -->
     <div class="monat-zeile aufklapp" data-rechnung="anteil">
       <div class="monat-haupt">
-        <span class="monat-label">dein Anteil <span class="sum-pfeil">▾</span></span>
-        <span class="monat-wert" id="exp-mine">${eur(s.meins)}</span>
+        <span class="monat-label">kostet dich <span class="sum-pfeil">▾</span></span>
+        <span class="monat-wert" id="exp-mine">${eur(meinsGesamt)}</span>
         <span class="monat-diff" id="exp-mine-diff">${vs ? dNote(s.meins, vs.meins) : ''}</span>
       </div>
       <div class="monat-neben">
         <span>👥 gemeinsam <b id="exp-shared">${eur(s.gemeinsam)}</b> <i>ihr beide</i></span>
         <span>🙋 privat <b id="exp-all">${eur(s.eigene)}</b> <i>nur du</i></span>
+        ${moMonat ? `<span>🛋️ Einrichtung <b>${eur(moMonat)}</b> <i>dein Anteil</i></span>` : ''}
       </div>
       <div class="sum-rechnung" id="rechnung-anteil">
         ${EXPENSE_CATS.map(cat=>{
@@ -5458,7 +5461,8 @@ function renderExpenseMonth(host, c, def, node, ym){
           return `<div class="sum-zeile"><span>${cat.icon} ${cat.title}${
             cat.shared ? ` <i>½ von ${eur(roh)}</i>` : ''}</span><b>${eur(anteil)}</b></div>`;
         }).join('')}
-        <div class="sum-zeile summe"><span>dein Anteil</span><b>${eur(s.meins)}</b></div>
+        ${moMonat ? `<div class="sum-zeile"><span>🛋️ Wohnungseinrichtung <i>dieser Monat</i></span><b>${eur(moMonat)}</b></div>` : ''}
+        <div class="sum-zeile summe"><span>kostet dich</span><b>${eur(meinsGesamt)}</b></div>
       </div>
     </div>
     <div class="exp-cats${zu?' locked':''}" id="exp-cats"></div>
@@ -5492,7 +5496,12 @@ function renderExpenseMonth(host, c, def, node, ym){
 function refreshExpenseSums(c, def, monat){
   const s = expenseSums(monat);
   const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.textContent = v; };
-  set('exp-mine', eur(s.meins));
+  /* Einrichtung des Monats mitrechnen - sonst springt die Zahl beim
+     Bearbeiten auf einen anderen Wert als beim Aufbau der Seite. */
+  const node = data.nodes[def.nodeId];
+  const ym = selectedEntry[def.nodeId];
+  const moMonat = (node && ym && !ym.startsWith('jahr:')) ? moebelMonatMeins(node, ym) : 0;
+  set('exp-mine', eur(s.meins + moMonat));
   set('exp-shared', eur(s.gemeinsam));
   set('exp-all', eur(s.eigene));   /* zeigt die privaten Kosten, nicht die Gesamtsumme */
   EXPENSE_CATS.forEach(cat=>{
@@ -8300,7 +8309,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 30;
+const APP_FASSUNG = 31;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
