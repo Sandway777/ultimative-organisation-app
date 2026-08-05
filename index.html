@@ -908,6 +908,26 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .exp-cat-head .exp-cat-mine{margin-top:0;}
 .exp-cat-klapp{color:var(--ink-soft);font-size:0.76rem;flex-shrink:0;padding-top:2px;}
 .exp-cat.zu .exp-cat-body{display:none;}
+/* Aufklappbare Rechnung in den Uebersichts-Kacheln: zeigt, aus welchen
+   Zahlen der Betrag entsteht. Ohne das raet man, was mitgerechnet wurde. */
+.exp-sum-box.aufklapp{cursor:pointer;}
+.sum-pfeil{font-size:0.62rem;opacity:.45;margin-left:3px;display:inline-block;
+  transition:transform .15s;}
+.exp-sum-box.offen .sum-pfeil{transform:rotate(180deg);opacity:.8;}
+.sum-rechnung{display:none;margin-top:10px;padding-top:9px;
+  border-top:1px solid var(--line-soft);}
+.exp-sum-box.offen .sum-rechnung{display:block;}
+.sum-zeile{display:flex;justify-content:space-between;align-items:baseline;
+  gap:10px;padding:3px 0;font-size:0.74rem;color:var(--ink-soft);}
+.sum-zeile b{font-family:'IBM Plex Mono',monospace;font-size:0.74rem;
+  color:var(--ink);font-weight:500;white-space:nowrap;}
+.sum-zeile i{font-style:normal;opacity:.6;font-size:0.66rem;}
+.sum-zeile.minus b{color:var(--danger);}
+.sum-zeile.plus b{color:var(--business);}
+.sum-zeile.summe{border-top:1px solid var(--line-soft);margin-top:5px;
+  padding-top:7px;color:var(--ink);}
+.sum-zeile.summe b{font-size:0.84rem;font-weight:600;}
+
 .exp-budget{margin:10px 0 2px;}
 .exp-budget-kopf{display:flex;justify-content:space-between;align-items:baseline;
   gap:8px;margin-bottom:5px;}
@@ -3602,6 +3622,18 @@ function expenseSums(monat){
    ALLES, was er in diesem Monat traegt - Fixkosten, private Ausgaben und
    seine Haelfte am Gemeinsamen. Der Moebeltopf zaehlt getrennt, weil er ueber
    Monate laeuft und nicht monatlich zurueckgesetzt wird. */
+/* Was in einem bestimmten Monat aus dem Moebeltopf ging - Leons Anteil.
+   Geteilte Kaeufe zur Haelfte, eigene ganz, ihre gar nicht. */
+function moebelMonatMeins(node, ym){
+  return (node.moebel.items||[])
+    .filter(e=>e.ym===ym)
+    .reduce((s,e)=>{
+      const b = Number(e.amount)||0;
+      if(e.wer==='sie') return s;
+      return s + (e.wer==='ich' ? b : b/2);
+    }, 0);
+}
+
 function verfuegbar(node, ym){
   const start = Number(node.startBudget) || 5000;
   const monat = node.months && node.months[ym];
@@ -3624,13 +3656,22 @@ function verfuegbar(node, ym){
       });
     });
   }
+  /* Alle Monate zusammen, nicht nur der angezeigte - vom Startgeld geht ab,
+     was insgesamt ausgegeben wurde. Vorher stand hier nur der eine Monat,
+     dazu die komplette Moebel-Haelfte; der laufende Monat war damit doppelt
+     drin, weil seine Moebelkaeufe in beiden Zahlen steckten. */
+  let alleMonate = 0;
+  Object.keys(node.months||{}).forEach(k=>{
+    alleMonate += expenseSums(node.months[k]).meins;
+  });
   return {
     start,
     startGesamt: start + semesterVorab,
-    monatsKosten: s.meins,
+    monatsKosten: s.meins,      /* nur der angezeigte Monat, fuer die Anzeige */
+    alleMonate,                 /* alle Monate zusammen */
     moebelMeins: mo.meins,
     semester, semesterVorab,
-    rest: start + semesterVorab - s.meins - mo.meins - semester
+    rest: start + semesterVorab - alleMonate - mo.meins - semester
   };
 }
 /* Eigener Topf "Wohnungseinrichtung" - bewusst nicht Teil von expenseSums(),
@@ -5167,29 +5208,55 @@ function renderExpenses(c, def){
 
   c.innerHTML = renderNodeHead(def, `${alleYm.length} Monat(e) · ${jahre.length} Jahr(e)`) + `
     <div class="exp-summary" style="margin-bottom:22px;">
-      <!-- 1. Was dieser Monat dich kostet - die Zahl, die man taeglich sucht. -->
-      <div class="exp-sum-box main">
-        <div class="exp-sum-label">Dieser Monat kostet dich</div>
+      <!-- Jede Kachel laesst sich aufklappen und zeigt dann, aus welchen
+           Zahlen sie entsteht. Ohne das muss man raten, was mitgerechnet
+           wurde - und bei drei Kacheln mit aehnlichen Betraegen widersprechen
+           sie sich scheinbar. -->
+      <div class="exp-sum-box main aufklapp" data-rechnung="monat">
+        <div class="exp-sum-label">Dieser Monat kostet dich <span class="sum-pfeil">▾</span></div>
         <div class="exp-sum-value">${eur(monatMeins)}</div>
         <div class="exp-sum-note">${neuesterYm ? fmtYm(neuesterYm) : 'noch kein Monat'} ·
           davon ${eur(fixSumme/2 + fixPrivat)} fest</div>
+        <div class="sum-rechnung" id="rechnung-monat">
+          ${EXPENSE_CATS.map(cat=>{
+            const roh = neuesterSums.proKat[cat.key]||0;
+            if(!roh) return '';
+            const anteil = cat.shared ? roh/2 : roh;
+            return `<div class="sum-zeile"><span>${cat.icon} ${cat.title}${
+              cat.shared ? ` <i>½ von ${eur(roh)}</i>` : ''}</span><b>${eur(anteil)}</b></div>`;
+          }).join('')}
+          ${moebelMonat ? `<div class="sum-zeile"><span>🛋️ Wohnungseinrichtung <i>dieser Monat</i></span><b>${eur(moebelMonat)}</b></div>` : ''}
+          <div class="sum-zeile summe"><span>zusammen</span><b>${eur(monatMeins)}</b></div>
+        </div>
       </div>
-      <!-- 2. Kontostand: von Leon selbst gepflegt, bis die Abrechnung da ist. -->
-      <div class="exp-sum-box">
-        <div class="exp-sum-label">Mein Geld</div>
+
+      <div class="exp-sum-box aufklapp" data-rechnung="geld">
+        <div class="exp-sum-label">Mein Geld <span class="sum-pfeil">▾</span></div>
         <div class="exp-sum-value sub">${eur(verf.rest)}</div>
         <div class="exp-sum-note">von ${
           gesperrt ? eur(verf.start) : `<input type="text" id="exp-start-input" class="mo-budget-input"
             inputmode="decimal" value="${String(verf.start).replace('.',',')}"> €`
-        }${verf.semesterVorab ? ` <b>+ ${eur(verf.semesterVorab)}</b> vorab` : ''
-        } · Monat ${eur(verf.monatsKosten)} · Möbel ${eur(verf.moebelMeins)}${
-          verf.semester ? ` · Uni ${eur(verf.semester)}` : ''}</div>
+        } Startgeld</div>
+        <div class="sum-rechnung" id="rechnung-geld">
+          <div class="sum-zeile"><span>Startgeld</span><b>${eur(verf.start)}</b></div>
+          ${verf.semesterVorab ? `<div class="sum-zeile plus"><span>+ vorab gezahlt <i>Uni</i></span><b>+ ${eur(verf.semesterVorab)}</b></div>` : ''}
+          <div class="sum-zeile minus"><span>− alle Monate <i>dein Anteil</i></span><b>− ${eur(verf.alleMonate)}</b></div>
+          <div class="sum-zeile minus"><span>− Wohnungseinrichtung <i>deine Hälfte</i></span><b>− ${eur(verf.moebelMeins)}</b></div>
+          ${verf.semester ? `<div class="sum-zeile minus"><span>− Semesterkosten</span><b>− ${eur(verf.semester)}</b></div>` : ''}
+          <div class="sum-zeile summe"><span>bleibt</span><b>${eur(verf.rest)}</b></div>
+        </div>
       </div>
-      <!-- 3. Gemeinsamer Einrichtungstopf, beide Haelften. -->
-      <div class="exp-sum-box">
-        <div class="exp-sum-label">🛋️ Wohnungseinrichtung</div>
+
+      <div class="exp-sum-box aufklapp" data-rechnung="moebel">
+        <div class="exp-sum-label">🛋️ Wohnungseinrichtung <span class="sum-pfeil">▾</span></div>
         <div class="exp-sum-value sub">${eur(moebelH.rest)} <span class="mod-ziel">/ ${eur(moebelH.budget)}</span></div>
         <div class="exp-sum-note">du ${eur(moebelH.restMeins)} · sie ${eur(moebelH.restIhrs)}</div>
+        <div class="sum-rechnung" id="rechnung-moebel">
+          <div class="sum-zeile"><span>Budget</span><b>${eur(moebelH.budget)}</b></div>
+          <div class="sum-zeile minus"><span>− du ausgegeben</span><b>− ${eur(moebelH.meins)}</b></div>
+          <div class="sum-zeile minus"><span>− sie ausgegeben</span><b>− ${eur(moebelH.ihrs)}</b></div>
+          <div class="sum-zeile summe"><span>noch übrig</span><b>${eur(moebelH.rest)}</b></div>
+        </div>
       </div>
     </div>
     <div class="entry-layout${showDetailMobile?' show-detail':''}" id="entry-layout">
@@ -5203,6 +5270,14 @@ function renderExpenses(c, def){
       <div class="entry-detail" id="entry-detail"></div>
     </div>
   `;
+  /* Kachel antippen zeigt, aus welchen Zahlen ihr Betrag entsteht. */
+  c.querySelectorAll('.exp-sum-box.aufklapp').forEach(box=>{
+    box.addEventListener('click',(e)=>{
+      if(e.target.closest('input')) return;   /* Startgeld-Feld nicht stoeren */
+      box.classList.toggle('offen');
+    });
+  });
+
   /* Startgeld von Hand pflegen, bis die Abrechnung da ist. */
   const startInp = document.getElementById('exp-start-input');
   if(startInp){
@@ -5341,27 +5416,61 @@ function renderExpenseMonth(host, c, def, node, ym){
       <button class="del-btn exp-del" aria-label="Monat löschen">🗑</button>
     </div>
     <div class="exp-summary">
-      <div class="exp-sum-box main">
-        <div class="exp-sum-label">Dein Anteil</div>
+      <!-- Diese drei zeigen nur die Monatsposten. Der Moebeltopf laeuft
+           getrennt und steht als eigene Karte darunter - deshalb hier
+           ausdruecklich "ohne Einrichtung", sonst widersprechen sie der
+           Kachel oben. -->
+      <div class="exp-sum-box main aufklapp" data-rechnung="anteil">
+        <div class="exp-sum-label">Dein Anteil <span class="sum-pfeil">▾</span></div>
         <div class="exp-sum-value" id="exp-mine">${eur(s.meins)}</div>
         <div class="exp-sum-note" id="exp-mine-diff">${
-          vs ? dNote(s.meins, vs.meins) : 'halbes Gemeinsames + Sonstiges'}</div>
+          vs ? dNote(s.meins, vs.meins) : 'ohne Einrichtung'}</div>
+        <div class="sum-rechnung" id="rechnung-anteil">
+          ${EXPENSE_CATS.map(cat=>{
+            const roh = s.proKat[cat.key]||0;
+            if(!roh) return '';
+            const anteil = cat.shared ? roh/2 : roh;
+            return `<div class="sum-zeile"><span>${cat.icon} ${cat.title}${
+              cat.shared ? ` <i>½ von ${eur(roh)}</i>` : ''}</span><b>${eur(anteil)}</b></div>`;
+          }).join('')}
+          <div class="sum-zeile summe"><span>zusammen</span><b>${eur(s.meins)}</b></div>
+        </div>
       </div>
-      <div class="exp-sum-box">
-        <div class="exp-sum-label">Gemeinsam (ihr beide)</div>
+      <div class="exp-sum-box aufklapp" data-rechnung="geteilt">
+        <div class="exp-sum-label">Gemeinsam (ihr beide) <span class="sum-pfeil">▾</span></div>
         <div class="exp-sum-value sub" id="exp-shared">${eur(s.gemeinsam)}</div>
         <div class="exp-sum-note" id="exp-shared-diff">${
-          vs ? dNote(s.gemeinsam, vs.gemeinsam) : 'nur Wohnen + Essen'}</div>
+          vs ? dNote(s.gemeinsam, vs.gemeinsam) : 'volle Summe, ihr teilt sie'}</div>
+        <div class="sum-rechnung" id="rechnung-geteilt">
+          ${EXPENSE_CATS.filter(c=>c.shared).map(cat=>{
+            const roh = s.proKat[cat.key]||0;
+            if(!roh) return '';
+            return `<div class="sum-zeile"><span>${cat.icon} ${cat.title}</span><b>${eur(roh)}</b></div>`;
+          }).join('')}
+          <div class="sum-zeile summe"><span>zusammen</span><b>${eur(s.gemeinsam)}</b></div>
+        </div>
       </div>
-      <div class="exp-sum-box">
-        <div class="exp-sum-label">Alles zusammen</div>
+      <div class="exp-sum-box aufklapp" data-rechnung="alles">
+        <div class="exp-sum-label">Alles zusammen <span class="sum-pfeil">▾</span></div>
         <div class="exp-sum-value sub" id="exp-all">${eur(s.alles)}</div>
         <div class="exp-sum-note" id="exp-all-diff">${
-          vs ? dNote(s.alles, vs.alles) : 'inkl. deiner sonstigen Ausgaben'}</div>
+          vs ? dNote(s.alles, vs.alles) : 'gemeinsam + deine privaten'}</div>
+        <div class="sum-rechnung" id="rechnung-alles">
+          <div class="sum-zeile"><span>👥 Gemeinsam <i>volle Summe</i></span><b>${eur(s.gemeinsam)}</b></div>
+          <div class="sum-zeile"><span>🙋 Privat <i>nur deine</i></span><b>${eur(s.eigene)}</b></div>
+          <div class="sum-zeile summe"><span>zusammen</span><b>${eur(s.alles)}</b></div>
+        </div>
       </div>
     </div>
     <div class="exp-cats${zu?' locked':''}" id="exp-cats"></div>
   `;
+  /* Auch die Monats-Kacheln zeigen ihre Rechnung auf Klick. */
+  host.querySelectorAll('.exp-sum-box.aufklapp').forEach(box=>{
+    box.addEventListener('click',(e)=>{
+      if(e.target.closest('input, button')) return;
+      box.classList.toggle('offen');
+    });
+  });
   document.getElementById('exp-close').addEventListener('click',()=>{
     monat.closed = !monat.closed;
     persist(); renderMain(); renderSidebar();
@@ -8192,7 +8301,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 28;
+const APP_FASSUNG = 29;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
