@@ -888,7 +888,18 @@ tr.row-off .tt-num{text-decoration:line-through;}
   gap:14px;padding:0 16px 16px;}
 .exp-gruppe.zu .exp-gruppe-body{display:none;}
 /* Budget-Balken innerhalb einer Kategorie (Essen) */
-.exp-budget{margin:9px 0 2px;}
+/* Kategorie zuklappen: Summe, Marken und Budget-Balken bleiben stehen,
+   die Einzelposten verschwinden. */
+.exp-cat-head{display:flex;align-items:flex-start;gap:10px;width:100%;border:none;
+  background:none;cursor:pointer;padding:0;text-align:left;font-family:inherit;}
+.exp-cat-klapp{color:var(--ink-soft);font-size:0.76rem;flex-shrink:0;padding-top:2px;}
+.exp-cat.zu .exp-cat-body{display:none;}
+.exp-budget{margin:10px 0 2px;}
+.exp-budget-kopf{display:flex;justify-content:space-between;align-items:baseline;
+  gap:8px;margin-bottom:5px;}
+.exp-budget-aus{font-family:'IBM Plex Mono',monospace;font-size:0.86rem;color:var(--ink);}
+.exp-budget-von{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;color:var(--ink-soft);}
+.exp-budget-fuss b.ok{color:var(--business);font-weight:600;}
 .exp-budget-fuss{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;
   color:var(--ink-soft);margin-top:4px;}
 .exp-budget-fuss b{color:var(--danger);font-weight:600;}
@@ -2762,6 +2773,7 @@ function ausgabenAugustUebernehmen(){
     {label:'Zeolith-Pulver (Kur)', amount:43.80, date:'2026-08-01'}
   ]);
 
+
   /* Gadgets: privat, nicht aus dem gemeinsamen Einrichtungstopf */
   rein('gadgets', [
     {label:'Amazon: Flasche, Maus, Mauspad', amount:56.72, date:'2026-08-01'}
@@ -2779,6 +2791,39 @@ function ausgabenAugustUebernehmen(){
 
   if(!data.uebernommen) data.uebernommen = {};
   data.uebernommen[AUSGABEN_AUG_KEY] = true;
+  return dazu;
+}
+
+/* Erster Einkauf im August. Eigener Schluessel, weil die Uebernahme oben
+   zu dem Zeitpunkt schon gelaufen war. */
+const REWE_KEY = 'essen-rewe-2026-08-05';
+function reweUebernehmen(){
+  if(data.uebernommen && data.uebernommen[REWE_KEY]) return 0;
+  const n = data.nodes['privat:ausgaben'];
+  if(!n) return 0;
+  if(!n.months) n.months = {};
+  if(!n.months['2026-08']) n.months['2026-08'] = {cats: emptyExpenseCats(), closed:false};
+  const essen = n.months['2026-08'].cats;
+  if(!Array.isArray(essen.essen)) essen.essen = [];
+  const da = essen.essen.some(e=>(e.label||'').toLowerCase().trim()==='rewe');
+  let dazu = 0;
+  if(!da){
+    essen.essen.push({id:uid(), label:'REWE', amount:94.58, date:'2026-08-01'});
+    dazu = 1;
+  }
+  /* Amazon-Bestellung fuer die Wohnung - geteilt, also in den Moebeltopf. */
+  if(!n.moebel || typeof n.moebel!=='object') n.moebel = {budget:10000, items:[]};
+  if(!Array.isArray(n.moebel.items)) n.moebel.items = [];
+  const moDa = n.moebel.items.some(e=>
+    (e.label||'').toLowerCase().includes('amazon') && Math.abs(e.amount-50.83)<0.01);
+  if(!moDa){
+    n.moebel.items.push({id:uid(), label:'Amazon', amount:50.83,
+                         ym:'2026-08', wer:'geteilt'});
+    dazu++;
+  }
+
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[REWE_KEY] = true;
   return dazu;
 }
 
@@ -3074,6 +3119,7 @@ function migrateData(){
         if(!n.months) n.months = {};
         if(typeof n.startBudget!=='number') n.startBudget = 5000;
         if(!n.gruppeZu || typeof n.gruppeZu!=='object') n.gruppeZu = {};
+        if(!n.katZu || typeof n.katZu!=='object') n.katZu = {};
         /* Gruppen starten zugeklappt: erst der Ueberblick, dann bei Bedarf
            die Einzelposten. Einmaliger Schnitt, danach zaehlt die eigene
            Einstellung. */
@@ -3365,6 +3411,7 @@ function migrateData(){
   gadgetUmzug();
   uniKostenUebernehmen();
   juliNachAugust();
+  reweUebernehmen();
   wohnenUebernehmen();
   ideenUebernehmen();
   augustAntraegeUebernehmen();
@@ -5353,11 +5400,16 @@ function renderExpenseCats(c, def, node, monat, gesperrt, ym, vs){
     gruppenWrap[g.key] = sec.querySelector('.exp-gruppe-body');
   });
 
+  if(!node.katZu) node.katZu = {};
   EXPENSE_CATS.forEach(cat=>{
+    const katZu = !!node.katZu[cat.key];
     const box = document.createElement('div');
-    box.className = 'exp-cat '+cat.key;
+    box.className = 'exp-cat '+cat.key+(katZu?' zu':'');
     box.innerHTML = `
-      <div class="exp-cat-head">
+      <!-- Kopfzeile klappt die Karte zu: Summe und Marken bleiben stehen,
+           die Einzelposten verschwinden. -->
+      <button class="exp-cat-head" data-katzu="${cat.key}">
+        <span class="exp-cat-klapp">${katZu?'▸':'▾'}</span>
         <div class="exp-cat-title">${cat.icon} ${cat.title}
           <span class="exp-tag ${cat.shared?'shared':'own'}">${cat.shared?'geteilt':'nur ich'}</span>
           <span class="exp-tag ${cat.mode==='fixed'?'fix':'var'}">${cat.mode==='fixed'?'fix':'variabel'}</span>
@@ -5367,38 +5419,56 @@ function renderExpenseCats(c, def, node, monat, gesperrt, ym, vs){
           <div class="exp-cat-mine" id="exp-cat-mine-${cat.key}">${
             cat.shared ? `davon deins ${eur(s.proKat[cat.key]/2)}` : 'komplett deins'}</div>
         </div>
-      </div>
+      </button>
       ${cat.budget ? (()=>{
-        /* Budget-Balken: zeigt, wie viel vom Monatsbudget schon weg ist.
-           Ueber 100 % wird der Balken rot statt einfach stehenzubleiben. */
+        /* Budget-Balken. Bei geteilten Toepfen steht zusaetzlich der eigene
+           Anteil da - Leon zahlt ja nur die Haelfte, das ist die Zahl, die
+           ihn betrifft. Ueber 100 % wird der Balken rot statt stehenzubleiben. */
         const aus = s.proKat[cat.key];
+        const rest = cat.budget - aus;
         const proz = Math.max(0, Math.min(100, aus/cat.budget*100));
         const drueber = aus > cat.budget;
+        const teiler = cat.shared ? 2 : 1;
         return `<div class="exp-budget">
+          <div class="exp-budget-kopf">
+            <span class="exp-budget-aus">${eur(aus)}</span>
+            <span class="exp-budget-von">von ${eur(cat.budget)}</span>
+          </div>
           <div class="mod-bar"><div class="mod-bar-fill"
             style="width:${proz}%;background:${drueber?'var(--danger)':'var(--business)'};"></div></div>
-          <div class="exp-budget-fuss">${eur(cat.budget-aus)} von ${eur(cat.budget)} übrig${
-            drueber ? ' · <b>überzogen</b>' : ''}</div>
+          <div class="exp-budget-fuss">${
+            drueber
+              ? `<b>${eur(-rest)} überzogen</b>`
+              : `<b class="ok">${eur(rest)}</b> übrig`
+          }${cat.shared ? ` · dein Anteil ${eur(aus/teiler)} von ${eur(cat.budget/teiler)}` : ''}</div>
         </div>`;
       })() : ''}
-      <div class="exp-cat-hint">${
-        vs ? (()=>{ const d=diffInfo(s.proKat[cat.key], vs.proKat[cat.key]);
-                    return `<span class="exp-diff ${d.cls}">${d.text}</span> ggü. Vormonat`; })()
-           : cat.hint}</div>
-      <div class="exp-rows" id="exp-rows-${cat.key}"></div>
-      ${gesperrt ? '' : `<div class="exp-add">
-        ${cat.mode==='receipts'
-          /* Name zuerst, Datum optional: wichtig ist wofuer und wie viel.
-             Bleibt das Datum leer, nimmt die App den heutigen Tag. */
-          ? `<input type="text" class="exp-in-label" placeholder="Wofür, z. B. Döner" maxlength="60">
-             <input type="text" class="exp-in-amount" inputmode="decimal" placeholder="Betrag" maxlength="12">
-             <input type="date" class="exp-in-date" aria-label="Datum (optional)">
-             <button class="ib-btn primary exp-add-btn">Hinzufügen</button>`
-          : `<input type="text" class="exp-in-label" placeholder="Posten, z. B. Miete" maxlength="60">
-             <input type="text" class="exp-in-amount" inputmode="decimal" placeholder="Betrag" maxlength="12">
-             <button class="ib-btn primary exp-add-btn">Posten hinzufügen</button>`}
-      </div>`}
+      <!-- Der Budget-Balken bleibt auch zugeklappt stehen - er ist die
+           Uebersicht, nicht das Detail. -->
+      <div class="exp-cat-body">
+        <div class="exp-cat-hint">${
+          vs ? (()=>{ const d=diffInfo(s.proKat[cat.key], vs.proKat[cat.key]);
+                      return `<span class="exp-diff ${d.cls}">${d.text}</span> ggü. Vormonat`; })()
+             : cat.hint}</div>
+        <div class="exp-rows" id="exp-rows-${cat.key}"></div>
+        ${gesperrt ? '' : `<div class="exp-add">
+          ${cat.mode==='receipts'
+            /* Name zuerst, Datum optional: wichtig ist wofuer und wie viel.
+               Bleibt das Datum leer, nimmt die App den heutigen Tag. */
+            ? `<input type="text" class="exp-in-label" placeholder="Wofür, z. B. Döner" maxlength="60">
+               <input type="text" class="exp-in-amount" inputmode="decimal" placeholder="Betrag" maxlength="12">
+               <input type="date" class="exp-in-date" aria-label="Datum (optional)">
+               <button class="ib-btn primary exp-add-btn">Hinzufügen</button>`
+            : `<input type="text" class="exp-in-label" placeholder="Posten, z. B. Miete" maxlength="60">
+               <input type="text" class="exp-in-amount" inputmode="decimal" placeholder="Betrag" maxlength="12">
+               <button class="ib-btn primary exp-add-btn">Posten hinzufügen</button>`}
+        </div>`}
+      </div>
     `;
+    box.querySelector('[data-katzu]').addEventListener('click',()=>{
+      node.katZu[cat.key] = !node.katZu[cat.key];
+      persist(); renderExpenseCats(c, def, node, monat, gesperrt, ym, vs);
+    });
     (gruppenWrap[cat.gruppe] || wrap).appendChild(box);
     renderExpenseRows(box, c, def, monat, cat, gesperrt, node, ym);
     if(gesperrt) return;
@@ -8077,7 +8147,7 @@ cloudAbgleich();
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 25;
+const APP_FASSUNG = 26;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
