@@ -860,9 +860,12 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .exp-sum-note{font-size:0.7rem;color:var(--ink-soft);margin-top:5px;line-height:1.35;}
 .exp-sum-box input[type=month]{margin-top:6px;width:100%;border:1px solid var(--line);border-radius:7px;
   background:var(--field);color:var(--ink);font-family:inherit;font-size:0.85rem;padding:7px 9px;outline:none;}
-.mo-budget-input{width:100px;border:1px solid var(--line);border-radius:6px;background:var(--field);
-  color:var(--ink);font-family:inherit;font-size:1.05rem;padding:3px 8px;outline:none;}
-.mo-budget-input:focus{border-color:var(--privat);}
+/* Steht in einer Fusszeile - darum klein und hell statt schwarzem Kasten in
+   Textgroesse. Vorher stach das Feld staerker hervor als die Zahlen darueber. */
+.mo-budget-input{width:78px;border:1px solid var(--line);border-radius:5px;
+  background:rgba(255,255,255,.06);color:var(--ink);
+  font-family:'IBM Plex Mono',monospace;font-size:0.72rem;padding:2px 6px;outline:none;}
+.mo-budget-input:focus{border-color:var(--privat);background:rgba(255,255,255,.1);}
 
 /* Gruppen-Rahmen: gemeinsam und privat sichtbar getrennt, nicht nur
    ueber Marken an den einzelnen Karten. */
@@ -919,25 +922,28 @@ tr.row-off .tt-num{text-decoration:line-through;}
 /* min-width:0 ist noetig, damit der Titel schrumpfen darf: ohne das behaelt
    er seine Inhaltsbreite und schiebt den Betrag rechts aus der Karte -
    "Wohnungseinrichtung" ist lang genug, dass genau das passierte. */
-.exp-cat-title{font-family:'Fraunces',serif;font-weight:600;font-size:1.02rem;
-  min-width:0;overflow-wrap:break-word;}
-.exp-tag{display:inline-block;margin-left:7px;padding:2px 8px;border-radius:20px;vertical-align:middle;
-  font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:.04em;text-transform:uppercase;}
+/* flex:1 laesst den Titel den Rest nehmen und schrumpfen; ohne das schob er
+   die Betraege aus der Karte. Die Marken duerfen umbrechen statt zu draengen. */
+.exp-cat-title{font-family:'Fraunces',serif;font-weight:600;font-size:0.98rem;
+  flex:1;min-width:0;overflow-wrap:break-word;line-height:1.3;}
+.exp-tag{display:inline-block;margin:2px 0 0 6px;padding:1px 7px;border-radius:20px;
+  vertical-align:middle;white-space:nowrap;
+  font-family:'IBM Plex Mono',monospace;font-size:0.56rem;letter-spacing:.04em;text-transform:uppercase;}
 .exp-tag.shared{background:var(--business-bg);color:var(--business);}
 .exp-tag.own{background:var(--uni-bg);color:var(--uni);}
 .exp-tag.fix{background:var(--sport-bg);color:var(--sport);}
 .exp-tag.var{background:var(--privat-bg);color:var(--privat);}
-/* Moebeltopf: zwei Haelften nebeneinander, damit man beide Staende sieht. */
-.mo-haelften{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:11px 0 8px;}
-.mo-haelfte-kopf{display:flex;justify-content:space-between;align-items:baseline;
-  gap:8px;margin-bottom:5px;}
+/* Moebeltopf: zwei Haelften nebeneinander. Untereinander statt in einer Zeile
+   gedraengt - "DEINE HAELFTE" und der Betrag stiessen sonst aneinander. */
+.mo-haelften{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:12px 0 10px;}
+.mo-haelfte-kopf{display:flex;flex-direction:column;gap:1px;margin-bottom:6px;}
 .mo-haelfte-kopf span:first-child{font-family:'IBM Plex Mono',monospace;
-  font-size:0.64rem;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);}
-.mo-haelfte-rest{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;
+  font-size:0.58rem;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);}
+.mo-haelfte-rest{font-family:'IBM Plex Mono',monospace;font-size:0.82rem;
   color:var(--ink);white-space:nowrap;}
 .mo-haelfte-rest.minus{color:var(--danger);}   /* Haelfte ueberzogen */
-.mo-haelfte-fuss{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;
-  color:var(--ink-soft);margin-top:4px;}
+.mo-haelfte-fuss{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;
+  color:var(--ink-soft);margin-top:5px;}
 /* Wer zahlt: geteilt ist der Normalfall und bleibt unauffaellig. */
 .mo-wer{border:1px solid var(--line);background:none;border-radius:5px;
   font-family:'IBM Plex Mono',monospace;font-size:0.6rem;padding:2px 7px;
@@ -5630,9 +5636,12 @@ function renderMoebelTile(wrap, c, def, node, ym, gesperrt){
   const prozM = h.proKopf>0 ? Math.max(0, Math.min(100, h.meins/h.proKopf*100)) : 0;
   const prozI = h.proKopf>0 ? Math.max(0, Math.min(100, h.ihrs /h.proKopf*100)) : 0;
   const box = document.createElement('div');
-  box.className = 'exp-cat moebel';
+  if(!node.katZu) node.katZu = {};
+  const moZu = !!node.katZu.moebel;
+  box.className = 'exp-cat moebel'+(moZu?' zu':'');
   box.innerHTML = `
-    <div class="exp-cat-head">
+    <button class="exp-cat-head" data-katzu="moebel">
+      <span class="exp-cat-klapp">${moZu?'▸':'▾'}</span>
       <div class="exp-cat-title">🛋️ Wohnungseinrichtung
         <span class="exp-tag shared">eigener Topf</span>
       </div>
@@ -5640,25 +5649,27 @@ function renderMoebelTile(wrap, c, def, node, ym, gesperrt){
         <div class="exp-cat-sum">${eur(h.gesamt)} <span class="mod-ziel">/ ${eur(h.budget)}</span></div>
         <div class="exp-cat-mine">${eur(h.rest)} noch übrig</div>
       </div>
-    </div>
-    <!-- Zwei Balken statt einem: jeder sieht seine eigene Haelfte. -->
+    </button>
+    <!-- Zwei Balken statt einem: jeder sieht seine eigene Haelfte. Bleiben
+         auch zugeklappt stehen, das ist die Uebersicht. -->
     <div class="mo-haelften">
       <div class="mo-haelfte">
         <div class="mo-haelfte-kopf"><span>Deine Hälfte</span>
-          <span class="mo-haelfte-rest${h.restMeins<0?' minus':''}">${eur(h.restMeins)} übrig</span></div>
+          <span class="mo-haelfte-rest${h.restMeins<0?' minus':''}">${eur(h.restMeins)}</span></div>
         <div class="mod-bar"><div class="mod-bar-fill"
           style="width:${prozM}%;background:var(--privat);"></div></div>
         <div class="mo-haelfte-fuss">${eur(h.meins)} von ${eur(h.proKopf)}</div>
       </div>
       <div class="mo-haelfte">
         <div class="mo-haelfte-kopf"><span>Ihre Hälfte</span>
-          <span class="mo-haelfte-rest${h.restIhrs<0?' minus':''}">${eur(h.restIhrs)} übrig</span></div>
+          <span class="mo-haelfte-rest${h.restIhrs<0?' minus':''}">${eur(h.restIhrs)}</span></div>
         <div class="mod-bar"><div class="mod-bar-fill"
           style="width:${prozI}%;background:var(--business);"></div></div>
         <div class="mo-haelfte-fuss">${eur(h.ihrs)} von ${eur(h.proKopf)}</div>
       </div>
     </div>
-    <div class="exp-cat-hint">eigenes Budget, zählt nicht in die Summen oben mit rein${
+    <div class="exp-cat-body">
+    <div class="exp-cat-hint">zählt nicht in die Summen oben mit rein${
       gesperrt ? '' : ` · Budget <input type="text" id="mo-budget-input" class="mo-budget-input"
         inputmode="decimal" value="${String(m.budget).replace('.',',')}"> €`
     }</div>
@@ -5673,8 +5684,13 @@ function renderMoebelTile(wrap, c, def, node, ym, gesperrt){
       </select>
       <button class="ib-btn primary mo-add-btn">Hinzufügen</button>
     </div>`}
+    </div>
   `;
   wrap.appendChild(box);
+  box.querySelector('[data-katzu]').addEventListener('click',()=>{
+    node.katZu.moebel = !node.katZu.moebel;
+    persist(); renderMain();
+  });
   renderMoebelRows(box, node, ym);
   if(gesperrt) return;
 
@@ -8119,7 +8135,12 @@ document.getElementById('cloud-trennen').addEventListener('click',()=>{
   m.className = 'cloud-meldung';
 });
 
-load();
+/* Erst laden, dann abgleichen - nicht gleichzeitig. Vorher liefen load() und
+   cloudAbgleich() nebeneinander los: der eine schrieb data, waehrend der
+   andere es gerade ersetzte. Je nachdem, wer zuerst fertig war, kam der
+   Cloud-Stand gar nicht an - genau das Verhalten, das ein Neuverbinden
+   noetig machte. */
+load().then(()=>cloudAbgleich());
 cloudStatusZeigen();
 
 /* Zurueck an den Bildschirm oder wieder online: nachsehen, ob das andere
@@ -8140,14 +8161,14 @@ document.addEventListener('visibilitychange',()=>{
 });
 window.addEventListener('online', cloudAbgleich);
 
-/* Beim Start einmal abgleichen - das andere Geraet koennte neuer sein. */
-cloudAbgleich();
+/* Der Start-Abgleich haengt jetzt an load() weiter oben - hier waere er ein
+   zweiter, gleichzeitig laufender Aufruf. */
 
 /* Fassung dieser Datei. Beim Start wird die Datei frisch vom Server geholt
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 26;
+const APP_FASSUNG = 27;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
