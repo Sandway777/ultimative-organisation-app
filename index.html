@@ -684,7 +684,8 @@ tr.is-done .mini-checkbox svg{stroke-dashoffset:0;}
 .modsem.laeuft{border-color:var(--uni);}
 .modsem.fertig{border-color:rgba(127,177,105,.5);}
 .modsem-kopf{display:flex;align-items:center;gap:10px;width:100%;border:none;
-  background:none;cursor:pointer;padding:12px 14px;text-align:left;font-family:inherit;}
+  background:none;cursor:pointer;padding:12px 14px;text-align:left;font-family:inherit;
+  color:inherit;}
 .modsem-kopf:hover{background:rgba(255,255,255,.02);}
 .modsem-klapp{color:var(--ink-soft);font-size:0.8rem;flex-shrink:0;}
 .modsem-titel{font-family:'Fraunces',serif;font-size:1rem;color:var(--ink);flex-shrink:0;}
@@ -876,7 +877,7 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .exp-gruppe.privat{border-color:rgba(224,128,96,.3);}
 .exp-gruppe-kopf{display:flex;align-items:baseline;gap:11px;width:100%;border:none;
   background:none;cursor:pointer;padding:13px 16px;text-align:left;font-family:inherit;
-  flex-wrap:wrap;}
+  flex-wrap:wrap;color:inherit;}
 .exp-gruppe-kopf:hover{background:rgba(255,255,255,.025);}
 .exp-gruppe-klapp{color:var(--ink-soft);font-size:0.8rem;flex-shrink:0;}
 .exp-gruppe-titel{font-family:'Fraunces',serif;font-size:1.08rem;color:var(--ink);flex-shrink:0;}
@@ -893,8 +894,18 @@ tr.row-off .tt-num{text-decoration:line-through;}
 /* Budget-Balken innerhalb einer Kategorie (Essen) */
 /* Kategorie zuklappen: Summe, Marken und Budget-Balken bleiben stehen,
    die Einzelposten verschwinden. */
-.exp-cat-head{display:flex;align-items:flex-start;gap:10px;width:100%;border:none;
-  background:none;cursor:pointer;padding:0;text-align:left;font-family:inherit;}
+/* color:inherit ist noetig: ein <button> erbt die Textfarbe nicht, er nimmt
+   sonst das Browser-Schwarz - auf dunklem Grund unlesbar.
+   Titel und Betrag stehen untereinander statt nebeneinander: bei 355 px
+   Kartenbreite blieben "Wohnungseinrichtung" nur 124 px, das Wort brach
+   senkrecht um. */
+.exp-cat-head{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;width:100%;
+  border:none;background:none;cursor:pointer;padding:0;text-align:left;
+  font-family:inherit;color:inherit;align-items:start;}
+.exp-cat-head .exp-cat-title{grid-column:2;}
+.exp-cat-head .exp-cat-nums{grid-column:2;text-align:left;
+  display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;}
+.exp-cat-head .exp-cat-mine{margin-top:0;}
 .exp-cat-klapp{color:var(--ink-soft);font-size:0.76rem;flex-shrink:0;padding-top:2px;}
 .exp-cat.zu .exp-cat-body{display:none;}
 .exp-budget{margin:10px 0 2px;}
@@ -912,16 +923,17 @@ tr.row-off .tt-num{text-decoration:line-through;}
   .exp-gruppe-summe{margin-left:auto;}
   .exp-gruppe-body{grid-template-columns:1fr;padding:0 13px 13px;}
 }
+/* align-self:start - sonst zieht das Grid jede Karte auf die Hoehe der
+   groessten in ihrer Reihe, und kurze Karten haben unten viel Leerraum. */
 .exp-cat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;
-  border-top:3px solid var(--ink-soft);}
+  border-top:3px solid var(--ink-soft);align-self:start;}
 .exp-cat.wohnen{border-top-color:var(--business);}
 .exp-cat.essen{border-top-color:var(--sport);}
 .exp-cat.sonstiges{border-top-color:var(--uni);}
 .exp-cat.moebel{border-top-color:var(--privat);}
-.exp-cat-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
-/* min-width:0 ist noetig, damit der Titel schrumpfen darf: ohne das behaelt
-   er seine Inhaltsbreite und schiebt den Betrag rechts aus der Karte -
-   "Wohnungseinrichtung" ist lang genug, dass genau das passierte. */
+/* Die Kopfzeile ist weiter oben als Grid definiert - hier stand vorher eine
+   zweite Flex-Regel, die das ueberschrieb und den Titel auf null druecken
+   liess. */
 /* flex:1 laesst den Titel den Rest nehmen und schrumpfen; ohne das schob er
    die Betraege aus der Karte. Die Marken duerfen umbrechen statt zu draengen. */
 .exp-cat-title{font-family:'Fraunces',serif;font-weight:600;font-size:0.98rem;
@@ -1036,7 +1048,8 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .kd-jahr{background:var(--card);border:1px solid var(--line);border-radius:11px;
   margin-bottom:10px;overflow:hidden;}
 .kd-jahr-kopf{display:flex;align-items:center;gap:10px;width:100%;border:none;
-  background:none;cursor:pointer;padding:12px 14px;text-align:left;font-family:inherit;}
+  background:none;cursor:pointer;padding:12px 14px;text-align:left;font-family:inherit;
+  color:inherit;}
 .kd-jahr-kopf:hover{background:rgba(255,255,255,.02);}
 .kd-klapp{color:var(--ink-soft);font-size:0.8rem;flex-shrink:0;}
 .kd-jahr-titel{font-family:'Fraunces',serif;font-size:1.05rem;color:var(--ink);flex-shrink:0;}
@@ -5135,7 +5148,18 @@ function renderExpenses(c, def){
      getrennt nach geteilt und privat, weil nur die Haelfte des Geteilten
      auf ihn entfaellt. */
   const neuesterSums = neuester ? expenseSums(neuester) : {meins:0, proKat:{}};
-  const monatMeins = neuesterSums.meins;
+  /* Was in diesem Monat aus dem Moebeltopf ging, zaehlt mit - es ist Geld,
+     das in dem Monat abgeflossen ist. Geteilte Kaeufe zur Haelfte, eigene
+     ganz. Der Topf laeuft zwar ueber Monate, aber die Frage "was kostet mich
+     dieser Monat" schliesst ihn ein. */
+  const moebelMonat = (node.moebel.items||[])
+    .filter(e=>e.ym===neuesterYm)
+    .reduce((s,e)=>{
+      const b = Number(e.amount)||0;
+      if(e.wer==='sie') return s;
+      return s + (e.wer==='ich' ? b : b/2);
+    }, 0);
+  const monatMeins = neuesterSums.meins + moebelMonat;
   const fixPrivat = EXPENSE_CATS.filter(c=>c.mode==='fixed' && !c.shared)
     .reduce((s,c)=>s + (neuesterSums.proKat[c.key]||0), 0);
   const verf = verfuegbar(node, neuesterYm || heute);
@@ -8168,7 +8192,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 27;
+const APP_FASSUNG = 28;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
