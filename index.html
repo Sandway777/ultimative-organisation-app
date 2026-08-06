@@ -3012,6 +3012,39 @@ function bizUebernehmen(){
   return 2;
 }
 
+/* Der Juli-Monat tauchte immer wieder auf: juliNachAugust raeumte ihn, danach
+   legte wohnenUebernehmen ihn neu an. Dessen Aufruf ist raus, hier wird der
+   Rest einmal endgueltig entfernt - offene Posten wandern nach August. */
+const JULI_ENDE_KEY = 'juli-endgueltig-2026-08-05';
+function juliEndgueltigWeg(){
+  if(data.uebernommen && data.uebernommen[JULI_ENDE_KEY]) return 0;
+  const n = data.nodes['privat:ausgaben'];
+  if(!n || !n.months || !n.months['2026-07']){
+    if(!data.uebernommen) data.uebernommen = {};
+    data.uebernommen[JULI_ENDE_KEY] = true;
+    return 0;
+  }
+  const juli = n.months['2026-07'];
+  if(!n.months['2026-08']) n.months['2026-08'] = {cats: emptyExpenseCats(), closed:false};
+  const ziel = n.months['2026-08'].cats;
+  let dazu = 0;
+  EXPENSE_CATS.forEach(cat=>{
+    if(!Array.isArray(ziel[cat.key])) ziel[cat.key] = [];
+    const da = new Set(ziel[cat.key].map(e=>(e.label||'').toLowerCase().trim()));
+    (juli.cats[cat.key]||[]).forEach(e=>{
+      const key = (e.label||'').toLowerCase().trim();
+      if(key && da.has(key)) return;      /* steht im August schon */
+      ziel[cat.key].push({...e, id:uid(),
+        date: e.date ? '2026-08'+e.date.slice(7) : ''});
+      dazu++;
+    });
+  });
+  delete n.months['2026-07'];
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[JULI_ENDE_KEY] = true;
+  return dazu;
+}
+
 /* Erster Einkauf im August. Eigener Schluessel, weil die Uebernahme oben
    zu dem Zeitpunkt schon gelaufen war. */
 const REWE_KEY = 'essen-rewe-2026-08-05';
@@ -3644,11 +3677,14 @@ function migrateData(){
   modulPlatzhalterWeg();
   amazonZurueck();
   nikaElternUebernehmen();
-  wohnenUebernehmen();
+  /* wohnenUebernehmen() entfaellt: legte Miete und Internet im Juli an und
+     erzeugte den Monat dabei neu, nachdem juliNachAugust ihn geraeumt hatte.
+     Beides steht laengst im August. */
   ideenUebernehmen();
   augustAntraegeUebernehmen();
   studiumUebernehmen();
   kundenUebernehmen();
+  juliEndgueltigWeg();
 
   /* Ganz zum Schluss, wenn auch die uebernommenen Kategorien stehen: alle
      Idee-Board-Karten einmal zuklappen. Weiter oben lief das ins Leere, weil
@@ -8649,7 +8685,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 38;
+const APP_FASSUNG = 39;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
