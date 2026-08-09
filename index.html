@@ -1192,22 +1192,28 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .um-neu button{width:auto;height:auto;border-radius:7px;padding:6px 12px;
   font-size:0.78rem;flex-shrink:0;}
 
-/* Sammelliste "Ohne Termin" - steht ueber den Tagen, eigene Farbe, damit man
-   sie nicht mit einem Tag verwechselt. */
-.sammel{background:var(--card);border:1px solid var(--line);border-radius:11px;
-  border-left:3px solid var(--idea, #C08A2E);margin-bottom:18px;overflow:hidden;}
-.sammel-kopf{display:flex;align-items:baseline;gap:10px;width:100%;border:none;
-  background:none;cursor:pointer;padding:12px 15px;text-align:left;
-  font-family:inherit;color:inherit;flex-wrap:wrap;}
-.sammel-kopf:hover{background:rgba(255,255,255,.025);}
-.sammel-pfeil{color:var(--ink-soft);font-size:0.8rem;flex-shrink:0;}
-.sammel-titel{font-family:'Fraunces',serif;font-size:1.02rem;color:var(--ink);flex-shrink:0;}
-.sammel-hint{font-size:0.72rem;color:var(--ink-soft);flex:1;min-width:0;}
-.sammel-zahl{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;
-  color:var(--ink-soft);flex-shrink:0;}
-.sammel-body{padding:0 15px 13px;}
-.sammel.zu .sammel-body{display:none;}
-.move-offen{border-color:var(--idea, #C08A2E) !important;}
+/* Auswahl-Ebene des Notizzettels: erst waehlen, wo die Notiz hin soll.
+   Zwei grosse Kacheln - am Handy sah man von der zweiten Liste sonst nichts,
+   ohne lange zu scrollen. */
+.ebenen{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:14px;max-width:760px;}
+.ebene{display:flex;flex-direction:column;align-items:flex-start;gap:3px;
+  padding:20px 18px;border-radius:13px;cursor:pointer;text-align:left;
+  font-family:inherit;color:inherit;
+  background:var(--card);border:1px solid var(--line);transition:.15s;}
+.ebene:hover{transform:translateY(-2px);border-color:var(--ink-soft);}
+.ebene.offen{border-left:3px solid #C08A2E;}
+.ebene.tage{border-left:3px solid var(--business);}
+.ebene-icon{font-size:1.5rem;margin-bottom:4px;}
+.ebene-titel{font-family:'Fraunces',serif;font-size:1.14rem;color:var(--ink);}
+.ebene-sub{font-size:0.78rem;color:var(--ink-soft);}
+.ebene-zahl{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;
+  color:var(--ink-soft);margin-top:7px;}
+.move-offen{border-color:#C08A2E !important;}
+@media(max-width:820px){
+  .ebenen{grid-template-columns:1fr;gap:11px;}
+  .ebene{padding:16px 15px;}
+}
 
 .day-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
 .day-card h4{font-family:'Fraunces',serif;font-size:0.98rem;margin:0 0 8px;color:var(--ink);}
@@ -8304,34 +8310,88 @@ function verschiebeBoxOeffnen(knopf, vonTag, item, c){
   });
 }
 
+/* Welche Ebene des Notizzettels gerade offen ist. Liegt ausserhalb von data -
+   das ist Anzeigezustand, der nicht in den Export gehoert. */
+let notizEbene = null;   /* null = Auswahl, 'offen' = Sammelliste, 'tage' = Tage */
+
 function renderDailyNotes(c){
-  /* Zwei Ebenen: oben die Sammelliste fuer alles ohne festen Termin, darunter
-     die Tage. Vieles faellt einem ein, bevor klar ist, wann man es macht -
-     das gehoerte bisher in irgendeinen Tag, wo es nicht hingehoert. */
   if(!Array.isArray(data.dailyNotes.offen)) data.dailyNotes.offen = [];
-  const offenZu = !!data.dailyNotes.offenZu;
   const offenAnzahl = data.dailyNotes.offen.filter(i=>!i.done).length;
+  const tageAnzahl = data.dailyNotes.days.reduce((s,d)=>s+d.items.filter(i=>!i.done).length, 0);
 
-  c.innerHTML = `
-    <div class="head-row"><div><h1 class="zt">🗓️ Notizzettel</h1><div class="head-meta">Gesammeltes ohne Termin · darunter die Tage · offene Punkte mit → verschieben</div></div></div>
-    <div class="divider"></div>
-
-    <section class="sammel${offenZu?' zu':''}">
-      <button class="sammel-kopf" id="sammel-klapp">
-        <span class="sammel-pfeil">${offenZu?'▸':'▾'}</span>
-        <span class="sammel-titel">📌 Ohne Termin</span>
-        <span class="sammel-hint">was noch keinen Tag hat</span>
-        <span class="sammel-zahl">${offenAnzahl} offen</span>
-      </button>
-      <div class="sammel-body">
-        <div class="input-row">
-          <input type="text" id="offen-input" placeholder="To-do notieren, Termin später …" maxlength="200">
-          <button id="offen-add">+</button>
-        </div>
-        <ul class="mini-list" id="offen-list"></ul>
+  /* Erst waehlen, dann schreiben: zwei Kacheln statt beider Listen
+     untereinander. Am Handy sah man sonst von der zweiten Ebene nichts,
+     ohne lange zu scrollen. */
+  if(notizEbene === null){
+    c.innerHTML = `
+      <div class="head-row"><div><h1 class="zt">🗓️ Notizzettel</h1><div class="head-meta">Wo soll die Notiz hin?</div></div></div>
+      <div class="divider"></div>
+      <div class="ebenen">
+        <button class="ebene offen" data-ebene="offen">
+          <span class="ebene-icon">📌</span>
+          <span class="ebene-titel">Ohne Termin</span>
+          <span class="ebene-sub">Sammelliste – wann ist noch unklar</span>
+          <span class="ebene-zahl">${offenAnzahl} offen</span>
+        </button>
+        <button class="ebene tage" data-ebene="tage">
+          <span class="ebene-icon">🗓️</span>
+          <span class="ebene-titel">Nach Tagen</span>
+          <span class="ebene-sub">To-dos mit festem Datum</span>
+          <span class="ebene-zahl">${tageAnzahl} offen</span>
+        </button>
       </div>
-    </section>
+    `;
+    c.querySelectorAll('[data-ebene]').forEach(b=>b.addEventListener('click',()=>{
+      notizEbene = b.dataset.ebene;
+      renderDailyNotes(c);
+    }));
+    return;
+  }
 
+  /* --- Ebene "Ohne Termin" --- */
+  if(notizEbene === 'offen'){
+    c.innerHTML = `
+      <button class="entry-back" id="notiz-zurueck">← Zurück</button>
+      <div class="head-row"><div><h1 class="zt">📌 Ohne Termin</h1><div class="head-meta">${
+        offenAnzahl} offen · mit → auf einen Tag schieben</div></div></div>
+      <div class="divider"></div>
+      <div class="input-row">
+        <input type="text" id="offen-input" placeholder="To-do notieren, Termin später …" maxlength="200">
+        <button id="offen-add">+</button>
+      </div>
+      <ul class="mini-list" id="offen-list"></ul>
+    `;
+    document.getElementById('notiz-zurueck').addEventListener('click',()=>{
+      notizEbene = null; renderDailyNotes(c);
+    });
+    const offenUl = document.getElementById('offen-list');
+    const offenInp = document.getElementById('offen-input');
+    renderMiniList(offenUl, data.dailyNotes.offen, {showMove:true});
+    bindMiniList(offenUl, data.dailyNotes.offen, ()=>{
+      renderMiniList(offenUl, data.dailyNotes.offen, {showMove:true}); persist();
+    });
+    offenUl.addEventListener('click',(e)=>{
+      const mv = e.target.closest('.mini-move');
+      if(!mv) return;
+      const it = data.dailyNotes.offen.find(i=>i.id===mv.dataset.id);
+      if(it) verschiebeBoxOeffnen(mv, {items:data.dailyNotes.offen, date:null}, it, c);
+    });
+    const offenNeu = ()=>{
+      const t = offenInp.value.trim(); if(!t) return;
+      data.dailyNotes.offen.unshift({id:uid(), text:t, done:false});
+      offenInp.value=''; persist(); renderDailyNotes(c);
+      const neu = document.getElementById('offen-input'); if(neu) neu.focus();
+    };
+    document.getElementById('offen-add').addEventListener('click', offenNeu);
+    offenInp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') offenNeu(); });
+    return;
+  }
+
+  /* --- Ebene "Nach Tagen" --- */
+  c.innerHTML = `
+    <button class="entry-back" id="notiz-zurueck">← Zurück</button>
+    <div class="head-row"><div><h1 class="zt">🗓️ Nach Tagen</h1><div class="head-meta">letzte 7 Tage · offene Punkte mit → verschieben</div></div></div>
+    <div class="divider"></div>
     <div class="ib-quick">
       <input type="date" id="daily-date-input">
       <button class="ib-btn primary" id="daily-date-add">Tag hinzufügen / öffnen</button>
@@ -8339,34 +8399,9 @@ function renderDailyNotes(c){
     <div id="daily-days"></div>
   `;
   const today = isoToday();
-
-  document.getElementById('sammel-klapp').addEventListener('click',()=>{
-    data.dailyNotes.offenZu = !data.dailyNotes.offenZu;
-    persist(); renderDailyNotes(c);
+  document.getElementById('notiz-zurueck').addEventListener('click',()=>{
+    notizEbene = null; renderDailyNotes(c);
   });
-
-  /* Sammelliste: dieselbe Mechanik wie ein Tag, nur ohne Datum. Der
-     Verschieben-Pfeil legt den Punkt auf einen echten Tag. */
-  const offenUl = document.getElementById('offen-list');
-  const offenInp = document.getElementById('offen-input');
-  const offenRefresh = ()=>{ persist(); renderDailyNotes(c); };
-  renderMiniList(offenUl, data.dailyNotes.offen, {showMove:true});
-  bindMiniList(offenUl, data.dailyNotes.offen, ()=>{
-    renderMiniList(offenUl, data.dailyNotes.offen, {showMove:true}); persist();
-  });
-  offenUl.addEventListener('click',(e)=>{
-    const mv = e.target.closest('.mini-move');
-    if(!mv) return;
-    const it = data.dailyNotes.offen.find(i=>i.id===mv.dataset.id);
-    if(it) verschiebeBoxOeffnen(mv, {items:data.dailyNotes.offen, date:null}, it, c);
-  });
-  const offenNeu = ()=>{
-    const t = offenInp.value.trim(); if(!t) return;
-    data.dailyNotes.offen.unshift({id:uid(), text:t, done:false});
-    offenInp.value=''; offenRefresh();
-  };
-  document.getElementById('offen-add').addEventListener('click', offenNeu);
-  offenInp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') offenNeu(); });
   document.getElementById('daily-date-add').addEventListener('click',()=>{
     const picked = document.getElementById('daily-date-input').value;
     if(!picked) return;
@@ -8770,7 +8805,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 40;
+const APP_FASSUNG = 41;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
