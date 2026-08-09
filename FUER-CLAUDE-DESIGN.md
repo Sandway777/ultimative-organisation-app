@@ -12,8 +12,23 @@ Login, keine Fremden. Ersetzt viele verstreute Notizdateien. Alles auf Deutsch.
 **Benutzt wird sie zu 90 % am iPhone**, hochkant, oft im Stehen und
 nebenbei. Der Desktop ist Zweitgerät. Entwürfe bitte zuerst fürs Handy denken.
 
-Technisch: eine einzige HTML-Datei, kein Build, keine Bibliotheken. Alles was
-kommt, muss in handgeschriebenem CSS umsetzbar sein.
+## Technik – bitte zuerst lesen
+
+**Kein React, kein Tailwind, kein shadcn, kein npm, kein Build.**
+
+Die ganze App ist **eine einzige `index.html`**: HTML, CSS und JavaScript in
+einer Datei, alles von Hand geschrieben. Etwa 8.700 Zeilen. Man öffnet die
+Datei im Browser, fertig. Sie läuft als PWA offline vom Homescreen.
+
+Das heißt für die Entwürfe:
+
+- Umsetzbar sein muss alles in **reinem CSS** – Custom Properties, Flexbox,
+  Grid, `@media`. Das ist reichlich, aber es gibt keine Utility-Klassen und
+  keine Komponentenbibliothek, aus der ich etwas ziehen könnte.
+- Schriften kommen über Google Fonts, sonst keine externen Abhängigkeiten.
+- Keine Icon-Bibliothek – ich benutze **Emoji** als Icons (👥 🏠 🎓 💪 …).
+  Wenn ein Entwurf das ändern will, bitte sagen wie.
+- Kein Dark-/Light-Umschalter vorhanden; aktuell nur eine feste Fassung.
 
 ## Aufbau: Seitenleiste + Hauptfläche
 
@@ -111,9 +126,44 @@ Dunkel, warm-neutral, ruhig. **Fraunces** (Serife) für Überschriften,
 --danger:#E0708C
 ```
 
+Weitere Akzente: Ideenboard Gold `#D9A648`, Notizzettel Altrosa `#A06F94`.
+Jede Säulenfarbe hat eine gedämpfte Hintergrund-Variante für Tags und
+Marken (`--privat-bg:#33262A` usw.).
+
+**Maße heute:** Radien 10–14 px, Innenabstand in Karten 12–16 px, Trenner
+1 px, kleine Labels 0,62–0,68 rem in Versalien mit `letter-spacing:.05em`.
+Ein festes Spacing-Raster gibt es **nicht** – die Werte sind über die Zeit
+gewachsen. Ein sauberes System dafür wäre willkommen.
+
 Das Dunkle und die Schriften sind **nicht in Stein gemeißelt** – wenn ein
 Entwurf mit hellem Papier oder anderen Schriften besser funktioniert, gern
 zeigen.
+
+## Was mich an der jetzigen Fassung stört
+
+<!-- LEON: hier eintragen, bevor du die Datei abgibst.
+     Je konkreter, desto brauchbarer die Entwürfe. Beispiele fuer die Art:
+     "Die Ausgaben-Kopfzeile wirkt ueberladen."
+     "Zugeklappte Bloecke sehen aus wie aufgeklappte."
+     "Am Handy sind mir die Plus/Minus-Knoepfe zu klein."
+     Wenn dir nichts einfaellt: streich diesen Abschnitt lieber ganz,
+     statt ihn leer zu lassen. -->
+
+## Apps, deren Optik mir gefällt
+
+<!-- LEON: zwei oder drei nennen, mit einem Satz warum.
+     Muessen keine Organisations-Apps sein. -->
+
+## Zustände, die vorkommen
+
+Bitte in den Entwürfen mitdenken – nicht nur den schönen Idealfall:
+
+- **Leer** – neuer Monat ohne Belege, Jahr ohne Ziele, Kur ohne Ablauf
+- **Voll** – Packliste mit 30 Punkten, 36 Module, 36 Kundenkacheln
+- **Zugeklappt** – muss klar von aufgeklappt unterscheidbar sein
+- **Warnung** – Frist läuft ab, Budget überschritten, „30 % hinten",
+  versäumter Kur-Tag
+- **Erledigt** – abgehakt, durchgestrichen, zurückgenommen
 
 ## Zwei Dinge, die bleiben müssen
 
@@ -139,11 +189,28 @@ ohne Aussage – und kein farbloses Grau-in-Grau.
 
 ## Was ich mir wünsche
 
-Mehrere Entwürfe in verschiedene Richtungen, damit ich vergleichen kann.
-Am hilfreichsten wäre je Entwurf:
+**Schritt 1 – mehrere Richtungen zum Vergleichen.** Bitte nicht die ganze App
+durchdesignen, sondern je Entwurf dieselben zwei Bildschirme, damit ich sie
+nebeneinander halten kann:
 
-- die **Ausgaben-Seite** mit den drei Kacheln und den Töpfen
-- ein **verschachtelter Bereich** (Module oder Umzug)
-- die **Seitenleiste** mit den vier Säulenfarben
+- die **Ausgaben-Seite** mit den drei Kacheln und den Töpfen (viele Zahlen)
+- ein **verschachtelter Bereich**, Module oder Umzug (Hierarchie)
 
-Danach suche ich mir eine Richtung aus und setze sie um.
+Dazu je Entwurf ein Satz, worin die Richtung besteht.
+
+**Schritt 2 – wenn ich mich entschieden habe: eine Design-Spec als Textdatei.**
+Bilder allein helfen mir nicht weiter, ich muss es ja in CSS nachbauen. Gebraucht
+werden:
+
+- **Token-Tabelle** – Farben, Schriftgrößen, Abstände, Radien, Rahmen, Schatten,
+  jeweils als CSS-Custom-Property mit Namen und Wert
+- **Komponentenregeln** in Worten – wie eine Karte gebaut ist, wie eine
+  zuklappbare Gruppe, ein Fortschrittsbalken, ein Tag, ein Eingabefeld, ein
+  Zustand (offen / läuft / fertig / Warnung)
+- **die Säulenfarben** und wo sie auftauchen dürfen
+- **was am Handy anders ist** als am Desktop
+
+Diese Datei werfe ich dann in Claude Code, und die App wird danach umgebaut.
+
+Also: erst das System festlegen, dann ein, zwei Bildschirme beispielhaft,
+dann setze ich um. Nicht alles auf einmal.
