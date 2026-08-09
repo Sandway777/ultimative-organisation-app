@@ -1192,6 +1192,34 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .um-neu button{width:auto;height:auto;border-radius:7px;padding:6px 12px;
   font-size:0.78rem;flex-shrink:0;}
 
+/* ---- Ziele ---- */
+.ebene.jahr{border-left:3px solid var(--sport);}
+.ebene.leben{border-left:3px solid var(--uni);}
+.ziel{padding:11px 0;border-top:1px solid var(--line-soft);}
+.ziel:first-child{border-top:none;}
+.ziel.fertig .ziel-text{color:var(--ink-soft);text-decoration:line-through;}
+.ziel-kopf{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+.ziel-text{flex:1;font-size:0.9rem;color:var(--ink);min-width:0;}
+.ziel-bar{margin:8px 0 5px;}
+.ziel-fuss{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.ziel-plus,.ziel-minus{width:26px;height:26px;border-radius:6px;flex-shrink:0;
+  border:1px solid var(--line);background:none;color:var(--ink);cursor:pointer;
+  font-size:0.9rem;line-height:1;padding:0;}
+.ziel-plus:hover,.ziel-minus:hover{border-color:var(--sport);color:var(--sport);}
+.ziel-stand{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:var(--ink);}
+.ziel-stand i{font-style:normal;color:var(--ink-soft);font-size:0.68rem;}
+.ziel-plan{font-family:'IBM Plex Mono',monospace;font-size:0.64rem;
+  margin-left:auto;padding:2px 8px;border-radius:20px;}
+.ziel-plan.ok{color:var(--sport);background:rgba(127,177,105,.13);}
+.ziel-plan.hinten{color:var(--danger);background:rgba(224,112,140,.13);}
+.ziel-naechster{font-size:0.72rem;color:var(--ink-soft);}
+.ziel-warum{margin-bottom:10px;}
+.ziel-warum label{font-size:0.72rem;color:var(--ink-soft);display:block;}
+.ziel-warum input{width:100%;margin-top:4px;background:var(--bg);
+  border:1px solid var(--line);border-radius:7px;color:var(--ink);
+  font-family:inherit;font-size:0.84rem;padding:7px 10px;}
+.kd-jahr.fertig{opacity:.65;}
+
 /* Auswahl-Ebene des Notizzettels: erst waehlen, wo die Notiz hin soll.
    Zwei grosse Kacheln - am Handy sah man von der zweiten Liste sonst nichts,
    ohne lange zu scrollen. */
@@ -2087,7 +2115,17 @@ function antragStatusDef(key){
 const GLOBAL_NODES = [
   {key:'ideaboard', title:'Idee-Board',           icon:'📇', sub:'automatisch einsortiert'},
   {key:'daily',     title:'Notizzettel',icon:'🗓️', sub:'Tage + Gesammeltes'},
-  {key:'months',    title:'Monatsübersicht',      icon:'📆', sub:'alle vier Bereiche'}
+  {key:'months',    title:'Monatsübersicht',      icon:'📆', sub:'alle vier Bereiche'},
+  {key:'ziele',     title:'Ziele',                icon:'🎯', sub:'Jahr + Leben'}
+];
+
+/* Die vier Saeulen als Zuordnung fuer Ziele - ein Ziel gehoert immer zu einem
+   Lebensbereich, das gibt der Liste Struktur ohne zweite Ebene. */
+const ZIEL_BEREICHE = [
+  {key:'privat',   label:'Privat',   icon:'🏠'},
+  {key:'business', label:'Business', icon:'💼'},
+  {key:'uni',      label:'Uni',      icon:'🎓'},
+  {key:'sport',    label:'Sport',    icon:'🏃'}
 ];
 const MONTH_GRADIENT = 'linear-gradient(90deg,var(--privat),var(--business),var(--uni),var(--sport))';
 const PALETTE = ['#2B6E6B','#4A5A8C','#C08A2E','#B5563A','#6B7A3A','#3E6B8C','#8A5A2E','#5A6B7A'];
@@ -2120,6 +2158,8 @@ function saveCollapsed(){
    'offen' = Sammelliste, 'tage' = Tage. Anzeigezustand, gehoert nicht in
    den Export - steht hier oben, weil renderSidebar ihn zuruecksetzt. */
 let notizEbene = null;
+/* Welche Ziel-Ebene offen ist: null = Auswahl, 'jahr' | 'leben' */
+let zielEbene = null;
 /* Handy: zeigt die Detailspalte statt der Liste */
 let showDetailMobile = false;
 
@@ -2436,6 +2476,22 @@ function alteNotizenUebernehmen(){
   };
   if(!data.dailyNotes) data.dailyNotes = {days:[], offen:[]};
   if(!Array.isArray(data.dailyNotes.offen)) data.dailyNotes.offen = [];
+  /* Ziele: zwei Listen, beide duerfen leer sein. */
+  if(!data.ziele || typeof data.ziele!=='object') data.ziele = {jahr:[], leben:[]};
+  if(!Array.isArray(data.ziele.jahr))  data.ziele.jahr = [];
+  if(!Array.isArray(data.ziele.leben)) data.ziele.leben = [];
+  data.ziele.jahr.forEach(x=>{
+    if(typeof x.ziel!=='number')  x.ziel = Number(x.ziel)||0;
+    if(typeof x.stand!=='number') x.stand = Number(x.stand)||0;
+    if(typeof x.erreicht!=='boolean') x.erreicht = false;
+    if(typeof x.einheit!=='string') x.einheit = '';
+  });
+  data.ziele.leben.forEach(x=>{
+    if(!Array.isArray(x.schritte)) x.schritte = [];
+    if(typeof x.warum!=='string') x.warum = '';
+    if(typeof x.erreicht!=='boolean') x.erreicht = false;
+    if(typeof x.zu!=='boolean') x.zu = false;
+  });
   if(!Array.isArray(data.dailyNotes.days)) data.dailyNotes.days = [];
   Object.keys(tage).forEach(datum=>{
     let tag = data.dailyNotes.days.find(d=>d.date===datum);
@@ -4037,6 +4093,7 @@ function handyTitelSetzen(){
   if(id==='ideaboard')      t = '📇 Idee-Board';
   else if(id==='daily')     t = '🗓️ Notizzettel';
   else if(id==='months')    t = '📆 Monatsübersicht';
+  else if(id==='ziele')     t = '🎯 Ziele';
   else if(id && id.includes(':')){
     const [b,k] = id.split(':');
     const def = (STRUKTUR[b]||[]).find(d=>d.key===k);
@@ -4064,6 +4121,7 @@ function renderSidebar(){
          landet man wieder in der zuletzt geoeffneten Liste und kommt nicht
          mehr an die andere. */
       if(g.key === 'daily') notizEbene = null;
+      if(g.key === 'ziele') zielEbene = null;
       data.activeId=g.key; renderAll(); persist();
     });
     gWrap.appendChild(div);
@@ -4136,6 +4194,7 @@ function renderMain(){
   if(data.activeId==='ideaboard'){ setContentBereichClass(null); renderIdeaBoard(c); return; }
   if(data.activeId==='daily'){ pruneDailyNotes(); setContentBereichClass(null,true); renderDailyNotes(c); return; }
   if(data.activeId==='months'){ setContentBereichClass(null); renderMonths(c); return; }
+  if(data.activeId==='ziele'){ setContentBereichClass(null); renderZiele(c); return; }
   if(typeof data.activeId==='string' && data.activeId.startsWith('bereich:')){
     const key = data.activeId.split(':')[1];
     setContentBereichClass(key);
@@ -8464,6 +8523,278 @@ function renderDailyNotes(c){
   });
 }
 
+/* ---------------- ZIELE ----------------
+   Zwei Ebenen, weil die beiden Sorten verschiedene Fragen beantworten:
+
+   Jahresziele sind messbar und haben eine Frist - dort zaehlt "wie weit bin
+   ich und reicht die Zeit noch". Darum ein Zielwert mit Fortschritt und ein
+   Hinweis, ob man im Plan liegt (verstrichene Zeit gegen erreichten Anteil).
+
+   Lebensziele sind gross und ohne Datum - dort zaehlt "was ist der naechste
+   Schritt". Darum keine Prozente, sondern Schritte zum Abhaken. */
+function zieleNode(){
+  if(!data.ziele || typeof data.ziele!=='object') data.ziele = {jahr:[], leben:[]};
+  if(!Array.isArray(data.ziele.jahr))  data.ziele.jahr = [];
+  if(!Array.isArray(data.ziele.leben)) data.ziele.leben = [];
+  return data.ziele;
+}
+
+/* Anteil des Jahres, der schon vorbei ist - Vergleichsmass fuer den
+   Fortschritt eines Jahresziels. */
+function jahrAnteil(jahr){
+  const j = Number(jahr) || new Date().getFullYear();
+  const start = new Date(j, 0, 1), ende = new Date(j+1, 0, 1);
+  const jetzt = new Date();
+  if(jetzt <= start) return 0;
+  if(jetzt >= ende)  return 1;
+  return (jetzt - start) / (ende - start);
+}
+
+function renderZiele(c){
+  const z = zieleNode();
+  const jahr = String(new Date().getFullYear());
+  const jahrOffen  = z.jahr.filter(x=>!x.erreicht && String(x.jahr)===jahr).length;
+  const lebenOffen = z.leben.filter(x=>!x.erreicht).length;
+
+  if(zielEbene === null){
+    c.innerHTML = `
+      <div class="head-row"><div><h1 class="zt">🎯 Ziele</h1><div class="head-meta">Worauf willst du schauen?</div></div></div>
+      <div class="divider"></div>
+      <div class="ebenen">
+        <button class="ebene jahr" data-zebene="jahr">
+          <span class="ebene-icon">📅</span>
+          <span class="ebene-titel">Jahresziele ${jahr}</span>
+          <span class="ebene-sub">messbar, mit Frist – zeigt ob du im Plan liegst</span>
+          <span class="ebene-zahl">${jahrOffen} offen</span>
+        </button>
+        <button class="ebene leben" data-zebene="leben">
+          <span class="ebene-icon">🌅</span>
+          <span class="ebene-titel">Lebensziele</span>
+          <span class="ebene-sub">die großen Richtungen – in Schritte zerlegt</span>
+          <span class="ebene-zahl">${lebenOffen} offen</span>
+        </button>
+      </div>
+    `;
+    c.querySelectorAll('[data-zebene]').forEach(b=>b.addEventListener('click',()=>{
+      zielEbene = b.dataset.zebene; renderZiele(c);
+    }));
+    return;
+  }
+  if(zielEbene === 'jahr') renderJahresziele(c, z, jahr);
+  else                     renderLebensziele(c, z);
+}
+
+/* ---- Jahresziele: messbar, mit Zeitvergleich ---- */
+function renderJahresziele(c, z, jahr){
+  const jahre = [...new Set(z.jahr.map(x=>String(x.jahr||jahr)))].sort().reverse();
+  if(!jahre.length) jahre.push(jahr);
+  const anteil = jahrAnteil(jahr);
+
+  c.innerHTML = `
+    <button class="entry-back" id="ziel-zurueck">← Zurück</button>
+    <div class="head-row"><div><h1 class="zt">📅 Jahresziele</h1><div class="head-meta">${
+      Math.round(anteil*100)} % des Jahres ${jahr} sind vorbei</div></div></div>
+    <div class="divider"></div>
+    <div class="kd-neu">
+      <input type="text" id="jz-text" placeholder="Ziel, z. B. 12 Bücher lesen" maxlength="80">
+      <input type="text" id="jz-ziel" inputmode="decimal" placeholder="Zielwert" maxlength="8">
+      <input type="text" id="jz-einheit" placeholder="Einheit" maxlength="14">
+      <select id="jz-bereich">
+        ${ZIEL_BEREICHE.map(b=>`<option value="${b.key}">${b.icon} ${b.label}</option>`).join('')}
+      </select>
+      <button class="ib-btn primary" id="jz-add">+ Ziel</button>
+    </div>
+    <div id="jz-liste"></div>
+  `;
+  document.getElementById('ziel-zurueck').addEventListener('click',()=>{
+    zielEbene = null; renderZiele(c);
+  });
+
+  const neu = ()=>{
+    const t = (document.getElementById('jz-text').value||'').trim();
+    if(!t){ document.getElementById('jz-text').focus(); return; }
+    const zw = parseAmount(document.getElementById('jz-ziel').value);
+    z.jahr.unshift({id:uid(), text:t, jahr, bereich:document.getElementById('jz-bereich').value,
+                    ziel: zw===null ? 0 : zw, stand:0,
+                    einheit:(document.getElementById('jz-einheit').value||'').trim(),
+                    erreicht:false, notiz:''});
+    persist(); renderZiele(c);
+  };
+  document.getElementById('jz-add').addEventListener('click', neu);
+  ['jz-text','jz-ziel','jz-einheit'].forEach(id=>
+    document.getElementById(id).addEventListener('keydown',(e)=>{ if(e.key==='Enter') neu(); }));
+
+  const wrap = document.getElementById('jz-liste');
+  if(z.jahr.length===0){
+    wrap.innerHTML = '<div class="empty-mini">Noch kein Jahresziel.</div>';
+    return;
+  }
+  wrap.innerHTML = jahre.map(j=>{
+    const ziele = z.jahr.filter(x=>String(x.jahr||jahr)===j);
+    if(!ziele.length) return '';
+    const a = jahrAnteil(j);
+    return `<section class="kd-jahr">
+      <div class="kd-jahr-kopf" style="cursor:default">
+        <span class="kd-jahr-titel">${j}</span>
+        <span class="kd-jahr-zahl">${ziele.filter(x=>!x.erreicht).length} offen</span>
+        <span class="kd-jahr-meta"></span>
+      </div>
+      <div class="kd-body">${ziele.map(zl=>{
+        const soll = Number(zl.ziel)||0;
+        const ist  = Number(zl.stand)||0;
+        const proz = soll>0 ? Math.max(0, Math.min(100, ist/soll*100)) : (zl.erreicht?100:0);
+        /* Im Plan heisst: mindestens so weit wie das Jahr fortgeschritten ist. */
+        const imPlan = soll>0 ? (ist/soll) >= a*0.95 : true;
+        const b = ZIEL_BEREICHE.find(x=>x.key===zl.bereich) || ZIEL_BEREICHE[0];
+        return `<div class="ziel${zl.erreicht?' fertig':''}" data-zid="${zl.id}">
+          <div class="ziel-kopf">
+            <button class="uk-status" data-zdone="${zl.id}"
+              title="${zl.erreicht?'erreicht':'offen'} – tippen zum Wechseln">${zl.erreicht?'✓':'○'}</button>
+            <span class="ziel-text">${escapeHtml(zl.text)}</span>
+            <span class="kd-chip">${b.icon} ${b.label}</span>
+            <button class="mini-del" data-zdel="${zl.id}" aria-label="Löschen">×</button>
+          </div>
+          ${soll>0 ? `
+          <div class="ziel-bar"><div class="mod-bar"><div class="mod-bar-fill"
+            style="width:${proz}%;background:${imPlan?'var(--sport)':'var(--danger)'};"></div></div></div>
+          <div class="ziel-fuss">
+            <button class="ziel-minus" data-zminus="${zl.id}">−</button>
+            <span class="ziel-stand">${ist}${zl.einheit?' '+escapeHtml(zl.einheit):''}
+              <i>von ${soll}</i></span>
+            <button class="ziel-plus" data-zplus="${zl.id}">+</button>
+            <span class="ziel-plan ${imPlan?'ok':'hinten'}">${
+              zl.erreicht ? 'erreicht' :
+              imPlan ? 'im Plan' : `${Math.round((a - ist/soll)*100)} % hinten`}</span>
+          </div>` : ''}
+        </div>`;
+      }).join('')}</div>
+    </section>`;
+  }).join('');
+
+  const refresh = ()=>{ persist(); renderZiele(c); };
+  wrap.querySelectorAll('[data-zdone]').forEach(b=>b.addEventListener('click',()=>{
+    const zl = z.jahr.find(x=>x.id===b.dataset.zdone); if(!zl) return;
+    zl.erreicht = !zl.erreicht; refresh();
+  }));
+  wrap.querySelectorAll('[data-zdel]').forEach(b=>b.addEventListener('click',()=>{
+    const i = z.jahr.findIndex(x=>x.id===b.dataset.zdel);
+    if(i>-1) z.jahr.splice(i,1); refresh();
+  }));
+  wrap.querySelectorAll('[data-zplus]').forEach(b=>b.addEventListener('click',()=>{
+    const zl = z.jahr.find(x=>x.id===b.dataset.zplus); if(!zl) return;
+    zl.stand = (Number(zl.stand)||0) + 1;
+    if(Number(zl.ziel)>0 && zl.stand >= Number(zl.ziel)) zl.erreicht = true;
+    refresh();
+  }));
+  wrap.querySelectorAll('[data-zminus]').forEach(b=>b.addEventListener('click',()=>{
+    const zl = z.jahr.find(x=>x.id===b.dataset.zminus); if(!zl) return;
+    zl.stand = Math.max(0, (Number(zl.stand)||0) - 1);
+    if(Number(zl.ziel)>0 && zl.stand < Number(zl.ziel)) zl.erreicht = false;
+    refresh();
+  }));
+}
+
+/* ---- Lebensziele: Richtung statt Prozente, in Schritte zerlegt ---- */
+function renderLebensziele(c, z){
+  c.innerHTML = `
+    <button class="entry-back" id="ziel-zurueck">← Zurück</button>
+    <div class="head-row"><div><h1 class="zt">🌅 Lebensziele</h1><div class="head-meta">die großen Richtungen · jedes in Schritte zerlegt</div></div></div>
+    <div class="divider"></div>
+    <div class="kd-neu">
+      <input type="text" id="lz-text" placeholder="Ziel, z. B. eigene Firma im Gesundheitswesen" maxlength="100">
+      <select id="lz-bereich">
+        ${ZIEL_BEREICHE.map(b=>`<option value="${b.key}">${b.icon} ${b.label}</option>`).join('')}
+      </select>
+      <button class="ib-btn primary" id="lz-add">+ Ziel</button>
+    </div>
+    <div id="lz-liste"></div>
+  `;
+  document.getElementById('ziel-zurueck').addEventListener('click',()=>{
+    zielEbene = null; renderZiele(c);
+  });
+
+  const neu = ()=>{
+    const t = (document.getElementById('lz-text').value||'').trim();
+    if(!t){ document.getElementById('lz-text').focus(); return; }
+    z.leben.unshift({id:uid(), text:t, bereich:document.getElementById('lz-bereich').value,
+                     warum:'', schritte:[], erreicht:false, zu:false});
+    persist(); renderZiele(c);
+  };
+  document.getElementById('lz-add').addEventListener('click', neu);
+  document.getElementById('lz-text').addEventListener('keydown',(e)=>{ if(e.key==='Enter') neu(); });
+
+  const wrap = document.getElementById('lz-liste');
+  if(z.leben.length===0){
+    wrap.innerHTML = '<div class="empty-mini">Noch kein Lebensziel.</div>';
+    return;
+  }
+  const refresh = ()=>{ persist(); renderZiele(c); };
+  wrap.innerHTML = '';
+  z.leben.forEach(zl=>{
+    const b = ZIEL_BEREICHE.find(x=>x.key===zl.bereich) || ZIEL_BEREICHE[0];
+    const offen = zl.schritte.filter(s=>!s.done).length;
+    const naechster = zl.schritte.find(s=>!s.done);
+    const karte = document.createElement('section');
+    karte.className = 'kd-jahr'+(zl.zu?' zu':'')+(zl.erreicht?' fertig':'');
+    karte.innerHTML = `
+      <button class="kd-jahr-kopf" data-lzu="${zl.id}">
+        <span class="kd-klapp">${zl.zu?'▸':'▾'}</span>
+        <span class="kd-jahr-titel">${escapeHtml(zl.text)}</span>
+        <span class="kd-chip">${b.icon} ${b.label}</span>
+        <span class="kd-jahr-meta">${
+          naechster ? `<span class="ziel-naechster">nächster: ${escapeHtml(naechster.text)}</span>`
+                    : (zl.schritte.length ? 'alle Schritte fertig' : 'noch keine Schritte')}</span>
+        <span class="kd-jahr-zahl">${offen}</span>
+        <span class="del-btn kd-jahr-del" role="button" aria-label="Ziel löschen">🗑</span>
+      </button>
+      <div class="kd-body">
+        <div class="ziel-warum">
+          <label>Warum das?
+            <input type="text" class="lz-warum" value="${escapeHtml(zl.warum||'')}"
+                   placeholder="was es dir bringt – hilft an schlechten Tagen" maxlength="160">
+          </label>
+        </div>
+        <ul class="mini-list lz-schritte"></ul>
+        <div class="input-row">
+          <input type="text" class="lz-s-text" placeholder="Nächster Schritt …" maxlength="120">
+          <button class="lz-s-add">+</button>
+        </div>
+      </div>
+    `;
+    const ul = karte.querySelector('.lz-schritte');
+    renderMiniList(ul, zl.schritte);
+    bindMiniList(ul, zl.schritte, ()=>{ persist(); renderZiele(c); });
+
+    karte.querySelector('[data-lzu]').addEventListener('click',(e)=>{
+      if(e.target.closest('.kd-jahr-del')) return;
+      zl.zu = !zl.zu; refresh();
+    });
+    const del = karte.querySelector('.kd-jahr-del');
+    del.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      if(del.dataset.confirm==='1'){
+        const i = z.leben.findIndex(x=>x.id===zl.id);
+        if(i>-1) z.leben.splice(i,1); refresh();
+      } else {
+        del.dataset.confirm='1'; del.textContent='wirklich?'; del.classList.add('confirm');
+        setTimeout(()=>{ if(del.dataset.confirm==='1'){
+          del.dataset.confirm=''; del.textContent='🗑'; del.classList.remove('confirm'); } }, 2500);
+      }
+    });
+    const warumInp = karte.querySelector('.lz-warum');
+    warumInp.addEventListener('change',()=>{ zl.warum = warumInp.value.trim(); persist(); });
+    const sInp = karte.querySelector('.lz-s-text');
+    const sNeu = ()=>{
+      const t = sInp.value.trim(); if(!t) return;
+      zl.schritte.push({id:uid(), text:t, done:false});
+      sInp.value=''; refresh();
+    };
+    karte.querySelector('.lz-s-add').addEventListener('click', sNeu);
+    sInp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') sNeu(); });
+    wrap.appendChild(karte);
+  });
+}
+
 /* ---------------- IDEA BOARD ---------------- */
 function renderIdeaBoard(c){
   c.innerHTML = `
@@ -8816,7 +9147,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 43;
+const APP_FASSUNG = 44;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */

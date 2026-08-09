@@ -68,6 +68,31 @@ Ein neuer Typ braucht vier Dinge: Eintrag in `STRUKTUR`, Default in
 `emptyNodeContent`, ein Zweig im Dispatch von `renderMain`, plus Absicherung in
 `migrateData` – sonst verlieren bestehende Nutzerdaten beim Typwechsel ihren Inhalt.
 
+### Ziele (Hauptbereich)
+
+Zwei Ebenen mit **bewusst verschiedener Mechanik**, weil sie verschiedene
+Fragen beantworten:
+
+- **Jahresziele** sind messbar und haben eine Frist. Zielwert + Stand ergeben
+  einen Balken; verglichen wird gegen den **verstrichenen Anteil des Jahres**
+  (`jahrAnteil()`). Daraus entsteht „im Plan" oder „35 % hinten" – die
+  eigentliche Information. Der Balken färbt sich rot, sobald man zurückliegt.
+  Hochgezählt wird mit +/− statt Tippen; erreicht der Stand den Zielwert,
+  gilt das Ziel automatisch als erreicht.
+- **Lebensziele** haben kein Datum und keine Prozente – dort zählt der
+  **nächste Schritt**. Jedes Ziel führt eine Schrittliste; der erste offene
+  Schritt steht in der Kopfzeile, auch zugeklappt. Dazu ein Feld „Warum das?"
+  – hilft an schlechten Tagen und ist der Grund, warum das Ziel überhaupt
+  dasteht.
+
+Beide tragen einen Säulen-Bezug (`ZIEL_BEREICHE`), damit erkennbar ist, wohin
+ein Ziel gehört, ohne eine zweite Verschachtelung zu bauen.
+
+Die Ebenenwahl (`zielEbene`) liegt wie `notizEbene` außerhalb von `data` –
+Anzeigezustand gehört nicht in den Export. Beide werden zurückgesetzt, wenn
+man den Bereich über die Navigation aufruft, sonst kommt man aus einer Ebene
+nicht mehr heraus.
+
 ### Privat: Umzug
 
 `moving` – war ursprünglich eine flache `checklist`, das trug die Notizen nicht:
