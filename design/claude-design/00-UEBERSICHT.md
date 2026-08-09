@@ -191,19 +191,58 @@ nebeneinander halten kann:
 
 Dazu je Entwurf ein Satz, worin die Richtung besteht.
 
-**Schritt 2 – wenn ich mich entschieden habe: eine Design-Spec als Textdatei.**
-Bilder allein helfen mir nicht weiter, ich muss es ja in CSS nachbauen. Gebraucht
-werden:
+## Wichtig: ich will am Ende zwischen den Designs umschalten können
 
-- **Token-Tabelle** – Farben, Schriftgrößen, Abstände, Radien, Rahmen, Schatten,
-  jeweils als CSS-Custom-Property mit Namen und Wert
+Ich entscheide mich **nicht** für einen Entwurf und verwerfe den Rest. Ich
+möchte mehrere davon einbauen und in der App per Knopf wechseln können – so
+wie andere Apps zwischen hell und dunkel umschalten, nur eben ganze Designs.
+
+**Das ändert, wie die Entwürfe gebaut sein müssen:**
+
+Alle Entwürfe sollen **denselben Satz Token-Namen** benutzen und sich nur in
+den **Werten** unterscheiden. Also überall `--card`, `--ink`, `--radius-l`,
+`--font-titel` – und in Entwurf A ist `--radius-l:14px`, in Entwurf B
+`--radius-l:2px`. Dann ist der Umschalter am Ende nur ein Attribut am
+`<html>`-Element:
+
+```css
+:root            { --card:#1C1E21; --radius-l:14px; }
+[data-design="b"]{ --card:#FBF7F0; --radius-l:2px;  }
+```
+
+Was das bedeutet:
+
+- Bitte **nicht** je Entwurf eine eigene Namensordnung erfinden. Ein
+  gemeinsames Vokabular für alle.
+- Alles, was sich zwischen den Entwürfen unterscheidet, muss ein Token sein –
+  nicht nur Farben, sondern auch **Schriften, Radien, Abstände, Rahmenstärken,
+  Schatten, Zeilenhöhen**. Was fest im CSS steht, lässt sich später nicht
+  umschalten.
+- Unterschiede im **Aufbau** (andere Reihenfolge, andere Anordnung der
+  Elemente) sind schwer umschaltbar. Wenn ein Entwurf das braucht, bitte
+  ausdrücklich sagen – dann entscheide ich, ob es mir das wert ist.
+- Jeder Entwurf braucht einen **kurzen Namen**, der später am Knopf steht
+  (z. B. „Papier", „Nacht", „Klar").
+
+Am liebsten also: **ein System, mehrere Fassungen** – nicht vier Designs, die
+nichts miteinander zu tun haben.
+
+## Schritt 2 – die Design-Spec als Textdatei
+
+Wenn die Richtungen stehen, brauche ich sie als Text. Bilder allein helfen mir
+nicht weiter, ich muss es ja in CSS nachbauen. Gebraucht werden:
+
+- **Ein gemeinsames Token-Verzeichnis** – jeder Name einmal erklärt (wofür er
+  da ist), dann eine Spalte je Entwurf mit dem Wert. So sehe ich auf einen
+  Blick, was sich zwischen den Fassungen ändert.
 - **Komponentenregeln** in Worten – wie eine Karte gebaut ist, wie eine
   zuklappbare Gruppe, ein Fortschrittsbalken, ein Tag, ein Eingabefeld, ein
-  Zustand (offen / läuft / fertig / Warnung)
-- **die Säulenfarben** und wo sie auftauchen dürfen
+  Zustand (offen / läuft / fertig / Warnung). Diese Regeln gelten für **alle**
+  Fassungen; nur die Token dahinter wechseln.
+- **die Säulenfarben** je Fassung und wo sie auftauchen dürfen
 - **was am Handy anders ist** als am Desktop
 
 Diese Datei werfe ich dann in Claude Code, und die App wird danach umgebaut.
 
-Also: erst das System festlegen, dann ein, zwei Bildschirme beispielhaft,
+Also: erst das gemeinsame System festlegen, dann die Fassungen darauf,
 dann setze ich um. Nicht alles auf einmal.
