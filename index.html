@@ -8295,6 +8295,10 @@ function verschiebeBoxOeffnen(knopf, vonTag, item, c){
     item.done = false;                      /* nicht geschafft heisst wieder offen */
     tag.items.unshift(item);
     dailySortieren();
+    /* Aus der Sammelliste heraus in die Tage wechseln - sonst steht man vor
+       der Liste, aus der der Punkt gerade verschwunden ist, und sieht nicht,
+       wo er gelandet ist. */
+    if(!vonTag.date) notizEbene = 'tage';
     persist(); renderDailyNotes(c);
     showSaveToast('Verschoben auf '+fmtDay(ziel));
   };
@@ -8310,6 +8314,7 @@ function verschiebeBoxOeffnen(knopf, vonTag, item, c){
     if(idx>-1) vonTag.items.splice(idx,1);
     item.done = false;
     data.dailyNotes.offen.unshift(item);
+    notizEbene = 'offen';                  /* mitgehen, wohin der Punkt wandert */
     persist(); renderDailyNotes(c);
     showSaveToast('Zurück zu „Ohne Termin"');
   });
@@ -8811,7 +8816,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 42;
+const APP_FASSUNG = 43;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
