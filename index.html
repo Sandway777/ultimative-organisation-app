@@ -1192,6 +1192,23 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .um-neu button{width:auto;height:auto;border-radius:7px;padding:6px 12px;
   font-size:0.78rem;flex-shrink:0;}
 
+/* Sammelliste "Ohne Termin" - steht ueber den Tagen, eigene Farbe, damit man
+   sie nicht mit einem Tag verwechselt. */
+.sammel{background:var(--card);border:1px solid var(--line);border-radius:11px;
+  border-left:3px solid var(--idea, #C08A2E);margin-bottom:18px;overflow:hidden;}
+.sammel-kopf{display:flex;align-items:baseline;gap:10px;width:100%;border:none;
+  background:none;cursor:pointer;padding:12px 15px;text-align:left;
+  font-family:inherit;color:inherit;flex-wrap:wrap;}
+.sammel-kopf:hover{background:rgba(255,255,255,.025);}
+.sammel-pfeil{color:var(--ink-soft);font-size:0.8rem;flex-shrink:0;}
+.sammel-titel{font-family:'Fraunces',serif;font-size:1.02rem;color:var(--ink);flex-shrink:0;}
+.sammel-hint{font-size:0.72rem;color:var(--ink-soft);flex:1;min-width:0;}
+.sammel-zahl{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;
+  color:var(--ink-soft);flex-shrink:0;}
+.sammel-body{padding:0 15px 13px;}
+.sammel.zu .sammel-body{display:none;}
+.move-offen{border-color:var(--idea, #C08A2E) !important;}
+
 .day-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
 .day-card h4{font-family:'Fraunces',serif;font-size:0.98rem;margin:0 0 8px;color:var(--ink);}
 
@@ -2063,7 +2080,7 @@ function antragStatusDef(key){
 
 const GLOBAL_NODES = [
   {key:'ideaboard', title:'Idee-Board',           icon:'📇', sub:'automatisch einsortiert'},
-  {key:'daily',     title:'Täglicher Notizzettel',icon:'🗓️', sub:'letzte 7 Tage'},
+  {key:'daily',     title:'Notizzettel',icon:'🗓️', sub:'Tage + Gesammeltes'},
   {key:'months',    title:'Monatsübersicht',      icon:'📆', sub:'alle vier Bereiche'}
 ];
 const MONTH_GRADIENT = 'linear-gradient(90deg,var(--privat),var(--business),var(--uni),var(--sport))';
@@ -2407,7 +2424,8 @@ function alteNotizenUebernehmen(){
       'Stundenzettel an Kühn schicken'
     ]
   };
-  if(!data.dailyNotes) data.dailyNotes = {days:[]};
+  if(!data.dailyNotes) data.dailyNotes = {days:[], offen:[]};
+  if(!Array.isArray(data.dailyNotes.offen)) data.dailyNotes.offen = [];
   if(!Array.isArray(data.dailyNotes.days)) data.dailyNotes.days = [];
   Object.keys(tage).forEach(datum=>{
     let tag = data.dailyNotes.days.find(d=>d.date===datum);
@@ -3251,7 +3269,8 @@ function findNodeDef(nodeId){
 }
 
 function migrateData(){
-  if(!data.dailyNotes) data.dailyNotes = {days:[]};
+  if(!data.dailyNotes) data.dailyNotes = {days:[], offen:[]};
+  if(!Array.isArray(data.dailyNotes.offen)) data.dailyNotes.offen = [];
   if(!data.ideaBoard)  data.ideaBoard = {categories:[],items:[]};
   if(!data.ideaBoard.zu || typeof data.ideaBoard.zu!=='object') data.ideaBoard.zu = {};
   if(!data.nodes)      data.nodes = {};
@@ -4006,7 +4025,7 @@ function handyTitelSetzen(){
   let t = 'Notizblock';
   const id = data.activeId;
   if(id==='ideaboard')      t = '📇 Idee-Board';
-  else if(id==='daily')     t = '🗓️ Täglicher Zettel';
+  else if(id==='daily')     t = '🗓️ Notizzettel';
   else if(id==='months')    t = '📆 Monatsübersicht';
   else if(id && id.includes(':')){
     const [b,k] = id.split(':');
@@ -8245,6 +8264,7 @@ function verschiebeBoxOeffnen(knopf, vonTag, item, c){
     <div class="move-neu">
       <input type="date" class="move-datum" value="${isoLocal(morgen)}">
       <button class="ib-btn primary move-los">Auf dieses Datum</button>
+      ${vonTag.date ? '<button class="move-ziel move-offen">📌 Ohne Termin</button>' : ''}
       <button class="move-abbruch">Abbrechen</button>
     </div>
   `;
@@ -8262,8 +8282,21 @@ function verschiebeBoxOeffnen(knopf, vonTag, item, c){
     persist(); renderDailyNotes(c);
     showSaveToast('Verschoben auf '+fmtDay(ziel));
   };
-  box.querySelectorAll('.move-ziel').forEach(b=>
-    b.addEventListener('click',()=>schieben(b.dataset.datum)));
+  box.querySelectorAll('.move-ziel').forEach(b=>{
+    if(b.classList.contains('move-offen')) return;   /* eigener Handler unten */
+    b.addEventListener('click',()=>schieben(b.dataset.datum));
+  });
+  /* Zurueck in die Sammelliste: der Termin steht doch noch nicht fest. */
+  const zurueck = box.querySelector('.move-offen');
+  if(zurueck) zurueck.addEventListener('click',()=>{
+    if(!Array.isArray(data.dailyNotes.offen)) data.dailyNotes.offen = [];
+    const idx = vonTag.items.findIndex(i=>i.id===item.id);
+    if(idx>-1) vonTag.items.splice(idx,1);
+    item.done = false;
+    data.dailyNotes.offen.unshift(item);
+    persist(); renderDailyNotes(c);
+    showSaveToast('Zurück zu „Ohne Termin"');
+  });
   box.querySelector('.move-los').addEventListener('click',()=>
     schieben(box.querySelector('.move-datum').value));
   box.querySelector('.move-abbruch').addEventListener('click',()=>{
@@ -8272,9 +8305,33 @@ function verschiebeBoxOeffnen(knopf, vonTag, item, c){
 }
 
 function renderDailyNotes(c){
+  /* Zwei Ebenen: oben die Sammelliste fuer alles ohne festen Termin, darunter
+     die Tage. Vieles faellt einem ein, bevor klar ist, wann man es macht -
+     das gehoerte bisher in irgendeinen Tag, wo es nicht hingehoert. */
+  if(!Array.isArray(data.dailyNotes.offen)) data.dailyNotes.offen = [];
+  const offenZu = !!data.dailyNotes.offenZu;
+  const offenAnzahl = data.dailyNotes.offen.filter(i=>!i.done).length;
+
   c.innerHTML = `
-    <div class="head-row"><div><h1 class="zt">🗓️ Täglicher Notizzettel</h1><div class="head-meta">letzte 7 Tage · offene Punkte mit → auf einen anderen Tag schieben</div></div></div>
+    <div class="head-row"><div><h1 class="zt">🗓️ Notizzettel</h1><div class="head-meta">Gesammeltes ohne Termin · darunter die Tage · offene Punkte mit → verschieben</div></div></div>
     <div class="divider"></div>
+
+    <section class="sammel${offenZu?' zu':''}">
+      <button class="sammel-kopf" id="sammel-klapp">
+        <span class="sammel-pfeil">${offenZu?'▸':'▾'}</span>
+        <span class="sammel-titel">📌 Ohne Termin</span>
+        <span class="sammel-hint">was noch keinen Tag hat</span>
+        <span class="sammel-zahl">${offenAnzahl} offen</span>
+      </button>
+      <div class="sammel-body">
+        <div class="input-row">
+          <input type="text" id="offen-input" placeholder="To-do notieren, Termin später …" maxlength="200">
+          <button id="offen-add">+</button>
+        </div>
+        <ul class="mini-list" id="offen-list"></ul>
+      </div>
+    </section>
+
     <div class="ib-quick">
       <input type="date" id="daily-date-input">
       <button class="ib-btn primary" id="daily-date-add">Tag hinzufügen / öffnen</button>
@@ -8282,6 +8339,34 @@ function renderDailyNotes(c){
     <div id="daily-days"></div>
   `;
   const today = isoToday();
+
+  document.getElementById('sammel-klapp').addEventListener('click',()=>{
+    data.dailyNotes.offenZu = !data.dailyNotes.offenZu;
+    persist(); renderDailyNotes(c);
+  });
+
+  /* Sammelliste: dieselbe Mechanik wie ein Tag, nur ohne Datum. Der
+     Verschieben-Pfeil legt den Punkt auf einen echten Tag. */
+  const offenUl = document.getElementById('offen-list');
+  const offenInp = document.getElementById('offen-input');
+  const offenRefresh = ()=>{ persist(); renderDailyNotes(c); };
+  renderMiniList(offenUl, data.dailyNotes.offen, {showMove:true});
+  bindMiniList(offenUl, data.dailyNotes.offen, ()=>{
+    renderMiniList(offenUl, data.dailyNotes.offen, {showMove:true}); persist();
+  });
+  offenUl.addEventListener('click',(e)=>{
+    const mv = e.target.closest('.mini-move');
+    if(!mv) return;
+    const it = data.dailyNotes.offen.find(i=>i.id===mv.dataset.id);
+    if(it) verschiebeBoxOeffnen(mv, {items:data.dailyNotes.offen, date:null}, it, c);
+  });
+  const offenNeu = ()=>{
+    const t = offenInp.value.trim(); if(!t) return;
+    data.dailyNotes.offen.unshift({id:uid(), text:t, done:false});
+    offenInp.value=''; offenRefresh();
+  };
+  document.getElementById('offen-add').addEventListener('click', offenNeu);
+  offenInp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') offenNeu(); });
   document.getElementById('daily-date-add').addEventListener('click',()=>{
     const picked = document.getElementById('daily-date-input').value;
     if(!picked) return;
@@ -8685,7 +8770,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 39;
+const APP_FASSUNG = 40;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
