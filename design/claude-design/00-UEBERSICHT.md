@@ -10,7 +10,14 @@ Persönliche Organisations-App für **einen einzigen Nutzer**. Kein Team, kein
 Login, keine Fremden. Ersetzt viele verstreute Notizdateien. Alles auf Deutsch.
 
 **Benutzt wird sie zu 90 % am iPhone**, hochkant, oft im Stehen und
-nebenbei. Der Desktop ist Zweitgerät. Entwürfe bitte zuerst fürs Handy denken.
+nebenbei. Entwürfe bitte zuerst fürs Handy denken.
+
+**Der Desktop muss aber mitkommen.** Er ist das Zweitgerät – dort wird
+getippt, wenn viel einzutragen ist (Belege, Module, Packlisten). Heute läuft
+dort im Grunde dieselbe schmale Spalte, nur breiter; die Fläche wird kaum
+genutzt. Ob dort mehr nebeneinander gehört oder ob die ruhige Spalte richtig
+ist, entscheidet ihr – aber der Desktop soll nicht wie ein Nachgedanke
+aussehen. Bitte je Entwurf **beide Breiten** zeigen.
 
 ## Technik – bitte zuerst lesen
 
@@ -190,11 +197,12 @@ ohne Aussage – und kein farbloses Grau-in-Grau.
 ## Was ich mir wünsche
 
 **Schritt 1 – mehrere Richtungen zum Vergleichen.** Bitte nicht die ganze App
-durchdesignen, sondern je Entwurf dieselben zwei Bildschirme, damit ich sie
+durchdesignen, sondern je Entwurf dieselben Bildschirme, damit ich sie
 nebeneinander halten kann:
 
 - die **Ausgaben-Seite** mit den drei Kacheln und den Töpfen (viele Zahlen)
 - ein **verschachtelter Bereich**, Module oder Umzug (Hierarchie)
+- beides **einmal am Handy und einmal am Desktop**
 
 Dazu je Entwurf ein Satz, worin die Richtung besteht.
 
