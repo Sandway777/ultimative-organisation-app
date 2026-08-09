@@ -146,21 +146,6 @@ Das Dunkle und die Schriften sind **nicht in Stein gemeißelt** – wenn ein
 Entwurf mit hellem Papier oder anderen Schriften besser funktioniert, gern
 zeigen.
 
-## Was mich an der jetzigen Fassung stört
-
-<!-- LEON: hier eintragen, bevor du die Datei abgibst.
-     Je konkreter, desto brauchbarer die Entwürfe. Beispiele fuer die Art:
-     "Die Ausgaben-Kopfzeile wirkt ueberladen."
-     "Zugeklappte Bloecke sehen aus wie aufgeklappte."
-     "Am Handy sind mir die Plus/Minus-Knoepfe zu klein."
-     Wenn dir nichts einfaellt: streich diesen Abschnitt lieber ganz,
-     statt ihn leer zu lassen. -->
-
-## Apps, deren Optik mir gefällt
-
-<!-- LEON: zwei oder drei nennen, mit einem Satz warum.
-     Muessen keine Organisations-Apps sein. -->
-
 ## Zustände, die vorkommen
 
 Bitte in den Entwürfen mitdenken – nicht nur den schönen Idealfall:
