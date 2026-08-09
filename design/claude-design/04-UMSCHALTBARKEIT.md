@@ -83,3 +83,37 @@ dichte dunkle können denselben HTML-Aufbau haben.
 Drei oder vier. Sie sollten **deutlich verschieden** wirken – sonst lohnt der
 Umschalter nicht. Aber sie sollten aus **einem System** kommen: gleiche
 Namen, gleiche Regeln, andere Werte.
+
+## Und jede Fassung braucht hell und dunkel
+
+Jedes Design soll es **zweimal** geben: eine helle und eine dunkle Variante.
+Bei drei Designs also sechs Farbsätze.
+
+Wichtig: Das ist **keine bloße Umkehrung**. Eine helle Fassung braucht andere
+Kontraste, oft andere Sättigung bei den Säulenfarben (auf Weiß wirken sie
+schnell grell, auf Dunkel schnell matt), manchmal auch andere Schatten – auf
+Hell trägt ein weicher Schatten, auf Dunkel eher eine hellere Kante.
+
+Die **Struktur bleibt dieselbe**: gleiche Radien, gleiche Abstände, gleiche
+Schriften, gleiche Komponentenregeln. Nur die Farb-Token wechseln. Ein Design
+ist also: eine Form + zwei Farbsätze.
+
+Technisch werden es zwei Attribute:
+
+```css
+:root                                { /* Struktur-Token, für alle gleich */ }
+
+[data-design="nacht"][data-mode="dunkel"] { --paper:#141517; --card:#1C1E21; --ink:#E6E8EA; }
+[data-design="nacht"][data-mode="hell"]   { --paper:#F4F2EE; --card:#FFFFFF; --ink:#1A1C1E; }
+
+[data-design="papier"][data-mode="dunkel"]{ … }
+[data-design="papier"][data-mode="hell"]  { … }
+```
+
+**Im Token-Verzeichnis bitte je Fassung zwei Spalten** – hell und dunkel.
+Struktur-Token (Radien, Abstände, Schriften) stehen nur einmal, weil sie in
+beiden Modi gleich sind. So sehe ich sofort, was wirklich vom Modus abhängt.
+
+Wenn eine Richtung **nur** hell oder **nur** dunkel funktioniert, sagt es
+lieber, statt eine schlechte Gegenvariante zu bauen. Dann ist es eben eine
+Fassung mit einem Modus.

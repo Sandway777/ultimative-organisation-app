@@ -23,8 +23,9 @@ Alles, was Claude Design braucht, um Design-Entwürfe für den
 ## Was zurückkommen soll
 
 Drei bis vier Design-Fassungen (je Handy **und** Desktop), die aus **einem
-System** kommen: gleiche Token-Namen, andere Werte. Ich baue sie alle ein und
-schalte in der App per Knopf zwischen ihnen um.
+System** kommen: gleiche Token-Namen, andere Werte. Jede Fassung **einmal hell
+und einmal dunkel**. Ich baue sie alle ein und schalte in der App per Knopf
+zwischen ihnen um.
 
 Dazu eine **Design-Spec als Textdatei**: ein Token-Verzeichnis mit einer
 Spalte je Fassung, plus Komponentenregeln in Worten. Details in
