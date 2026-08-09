@@ -1195,7 +1195,16 @@ tr.row-off .tt-num{text-decoration:line-through;}
 /* ---- Ziele ---- */
 .ebene.jahr{border-left:3px solid var(--sport);}
 .ebene.leben{border-left:3px solid var(--uni);}
+/* Gruppe je Bereich - Ueberschrift statt Marke an jeder Zeile. */
+.ziel-gruppe{margin-bottom:14px;}
+.ziel-gruppe:last-child{margin-bottom:0;}
+.ziel-gruppe-kopf{display:flex;justify-content:space-between;align-items:baseline;
+  gap:10px;font-family:'IBM Plex Mono',monospace;font-size:0.66rem;
+  letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);
+  padding-bottom:5px;border-bottom:1px solid var(--line-soft);margin-bottom:2px;}
+.ziel-gruppe-kopf span{font-size:0.62rem;opacity:.7;}
 .ziel{padding:11px 0;border-top:1px solid var(--line-soft);}
+.ziel-gruppe .ziel:first-of-type{border-top:none;}
 .ziel:first-child{border-top:none;}
 .ziel.fertig .ziel-text{color:var(--ink-soft);text-decoration:line-through;}
 .ziel-kopf{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
@@ -2121,11 +2130,21 @@ const GLOBAL_NODES = [
 
 /* Die vier Saeulen als Zuordnung fuer Ziele - ein Ziel gehoert immer zu einem
    Lebensbereich, das gibt der Liste Struktur ohne zweite Ebene. */
+/* Mehr als die vier Saeulen: Ziele betreffen auch Sachen, die in der App
+   sonst keinen Bereich haben - Gesundheit, Kopf, Innenleben. Reihenfolge
+   nach Naehe: erst das Aeussere (Alltag, Arbeit), dann das Eigene. */
 const ZIEL_BEREICHE = [
-  {key:'privat',   label:'Privat',   icon:'🏠'},
-  {key:'business', label:'Business', icon:'💼'},
-  {key:'uni',      label:'Uni',      icon:'🎓'},
-  {key:'sport',    label:'Sport',    icon:'🏃'}
+  {key:'privat',    label:'Privat',      icon:'🏠'},
+  {key:'business',  label:'Business',    icon:'💼'},
+  {key:'uni',       label:'Uni',         icon:'🎓'},
+  {key:'finanzen',  label:'Finanzen',    icon:'💰'},
+  {key:'koerper',   label:'Körper',      icon:'💪'},
+  {key:'gesundheit',label:'Gesundheit',  icon:'🌿'},
+  {key:'geist',     label:'Geistige Entwicklung', icon:'🧠'},
+  {key:'wissen',    label:'Wissen',      icon:'📚'},
+  {key:'spirit',    label:'Spiritualität',icon:'🕊️'},
+  {key:'sozial',    label:'Beziehungen', icon:'🤝'},
+  {key:'sport',     label:'Sport',       icon:'🏃'}
 ];
 const MONTH_GRADIENT = 'linear-gradient(90deg,var(--privat),var(--business),var(--uni),var(--sport))';
 const PALETTE = ['#2B6E6B','#4A5A8C','#C08A2E','#B5563A','#6B7A3A','#3E6B8C','#8A5A2E','#5A6B7A'];
@@ -8639,35 +8658,45 @@ function renderJahresziele(c, z, jahr){
         <span class="kd-jahr-zahl">${ziele.filter(x=>!x.erreicht).length} offen</span>
         <span class="kd-jahr-meta"></span>
       </div>
-      <div class="kd-body">${ziele.map(zl=>{
-        const soll = Number(zl.ziel)||0;
-        const ist  = Number(zl.stand)||0;
-        const proz = soll>0 ? Math.max(0, Math.min(100, ist/soll*100)) : (zl.erreicht?100:0);
-        /* Im Plan heisst: mindestens so weit wie das Jahr fortgeschritten ist. */
-        const imPlan = soll>0 ? (ist/soll) >= a*0.95 : true;
-        const b = ZIEL_BEREICHE.find(x=>x.key===zl.bereich) || ZIEL_BEREICHE[0];
-        return `<div class="ziel${zl.erreicht?' fertig':''}" data-zid="${zl.id}">
-          <div class="ziel-kopf">
-            <button class="uk-status" data-zdone="${zl.id}"
-              title="${zl.erreicht?'erreicht':'offen'} – tippen zum Wechseln">${zl.erreicht?'✓':'○'}</button>
-            <span class="ziel-text">${escapeHtml(zl.text)}</span>
-            <span class="kd-chip">${b.icon} ${b.label}</span>
-            <button class="mini-del" data-zdel="${zl.id}" aria-label="Löschen">×</button>
-          </div>
-          ${soll>0 ? `
-          <div class="ziel-bar"><div class="mod-bar"><div class="mod-bar-fill"
-            style="width:${proz}%;background:${imPlan?'var(--sport)':'var(--danger)'};"></div></div></div>
-          <div class="ziel-fuss">
-            <button class="ziel-minus" data-zminus="${zl.id}">−</button>
-            <span class="ziel-stand">${ist}${zl.einheit?' '+escapeHtml(zl.einheit):''}
-              <i>von ${soll}</i></span>
-            <button class="ziel-plus" data-zplus="${zl.id}">+</button>
-            <span class="ziel-plan ${imPlan?'ok':'hinten'}">${
-              zl.erreicht ? 'erreicht' :
-              imPlan ? 'im Plan' : `${Math.round((a - ist/soll)*100)} % hinten`}</span>
-          </div>` : ''}
-        </div>`;
-      }).join('')}</div>
+      <div class="kd-body">${
+        /* Nach Bereich gruppiert: bei elf Bereichen waere eine flache Liste
+           mit Marken daneben unuebersichtlich - die Zugehoerigkeit stuende
+           nur als Text da statt sichtbar zu sein. Leere Bereiche fallen weg. */
+        ZIEL_BEREICHE.map(b=>{
+          const inB = ziele.filter(x=>(x.bereich||'privat')===b.key);
+          if(!inB.length) return '';
+          return `<div class="ziel-gruppe">
+            <div class="ziel-gruppe-kopf">${b.icon} ${b.label}
+              <span>${inB.filter(x=>!x.erreicht).length} offen</span></div>
+            ${inB.map(zl=>{
+              const soll = Number(zl.ziel)||0;
+              const ist  = Number(zl.stand)||0;
+              const proz = soll>0 ? Math.max(0, Math.min(100, ist/soll*100)) : (zl.erreicht?100:0);
+              /* Im Plan heisst: mindestens so weit wie das Jahr fortgeschritten ist. */
+              const imPlan = soll>0 ? (ist/soll) >= a*0.95 : true;
+              return `<div class="ziel${zl.erreicht?' fertig':''}" data-zid="${zl.id}">
+                <div class="ziel-kopf">
+                  <button class="uk-status" data-zdone="${zl.id}"
+                    title="${zl.erreicht?'erreicht':'offen'} – tippen zum Wechseln">${zl.erreicht?'✓':'○'}</button>
+                  <span class="ziel-text">${escapeHtml(zl.text)}</span>
+                  <button class="mini-del" data-zdel="${zl.id}" aria-label="Löschen">×</button>
+                </div>
+                ${soll>0 ? `
+                <div class="ziel-bar"><div class="mod-bar"><div class="mod-bar-fill"
+                  style="width:${proz}%;background:${imPlan?'var(--sport)':'var(--danger)'};"></div></div></div>
+                <div class="ziel-fuss">
+                  <button class="ziel-minus" data-zminus="${zl.id}">−</button>
+                  <span class="ziel-stand">${ist}${zl.einheit?' '+escapeHtml(zl.einheit):''}
+                    <i>von ${soll}</i></span>
+                  <button class="ziel-plus" data-zplus="${zl.id}">+</button>
+                  <span class="ziel-plan ${imPlan?'ok':'hinten'}">${
+                    zl.erreicht ? 'erreicht' :
+                    imPlan ? 'im Plan' : `${Math.round((a - ist/soll)*100)} % hinten`}</span>
+                </div>` : ''}
+              </div>`;
+            }).join('')}
+          </div>`;
+        }).join('')}</div>
     </section>`;
   }).join('');
 
@@ -9147,7 +9176,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 44;
+const APP_FASSUNG = 45;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
