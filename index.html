@@ -2116,6 +2116,10 @@ if(!collapsedSaeulen.__zuGesetzt){
 function saveCollapsed(){
   try{ localStorage.setItem('notizblock-collapsed', JSON.stringify(collapsedSaeulen)); }catch(e){}
 }
+/* Welche Ebene des Notizzettels gerade offen ist: null = Auswahl,
+   'offen' = Sammelliste, 'tage' = Tage. Anzeigezustand, gehoert nicht in
+   den Export - steht hier oben, weil renderSidebar ihn zuruecksetzt. */
+let notizEbene = null;
 /* Handy: zeigt die Detailspalte statt der Liste */
 let showDetailMobile = false;
 
@@ -4055,7 +4059,13 @@ function renderSidebar(){
         <div class="main-btn-title">${g.title}</div>
         <div class="main-btn-sub">${g.sub}</div>
       </div>`;
-    div.addEventListener('click',()=>{ data.activeId=g.key; renderAll(); persist(); });
+    div.addEventListener('click',()=>{
+      /* Aus der Navigation kommt man immer auf der Auswahl-Ebene an - sonst
+         landet man wieder in der zuletzt geoeffneten Liste und kommt nicht
+         mehr an die andere. */
+      if(g.key === 'daily') notizEbene = null;
+      data.activeId=g.key; renderAll(); persist();
+    });
     gWrap.appendChild(div);
   });
 
@@ -8310,10 +8320,6 @@ function verschiebeBoxOeffnen(knopf, vonTag, item, c){
   });
 }
 
-/* Welche Ebene des Notizzettels gerade offen ist. Liegt ausserhalb von data -
-   das ist Anzeigezustand, der nicht in den Export gehoert. */
-let notizEbene = null;   /* null = Auswahl, 'offen' = Sammelliste, 'tage' = Tage */
-
 function renderDailyNotes(c){
   if(!Array.isArray(data.dailyNotes.offen)) data.dailyNotes.offen = [];
   const offenAnzahl = data.dailyNotes.offen.filter(i=>!i.done).length;
@@ -8805,7 +8811,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 41;
+const APP_FASSUNG = 42;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
