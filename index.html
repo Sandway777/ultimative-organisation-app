@@ -959,9 +959,11 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .exp-budget{margin:10px 0 2px;}
 .exp-budget-kopf{display:flex;justify-content:space-between;align-items:baseline;
   gap:8px;margin-bottom:5px;}
-.exp-budget-aus{font-family:'IBM Plex Mono',monospace;font-size:0.86rem;color:var(--ink);}
+.exp-budget-aus{font-family:'IBM Plex Mono',monospace;font-size:0.95rem;
+  color:var(--business);font-weight:600;}
+.exp-budget-aus.drueber{color:var(--danger);}
 .exp-budget-von{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;color:var(--ink-soft);}
-.exp-budget-fuss b.ok{color:var(--business);font-weight:600;}
+
 .exp-budget-fuss{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;
   color:var(--ink-soft);margin-top:4px;}
 .exp-budget-fuss b{color:var(--danger);font-weight:600;}
@@ -6066,18 +6068,18 @@ function renderExpenseCats(c, def, node, monat, gesperrt, ym, vs){
         const proz = Math.max(0, Math.min(100, aus/cat.budget*100));
         const drueber = aus > cat.budget;
         const teiler = cat.shared ? 2 : 1;
+        /* Grosse Zahl ist der REST, nicht das Ausgegebene: bei einem Budget
+           lautet die Frage "wie viel habe ich noch", nicht "wie viel ist weg".
+           Das Ausgegebene steht daneben, damit beides nachvollziehbar bleibt. */
         return `<div class="exp-budget">
           <div class="exp-budget-kopf">
-            <span class="exp-budget-aus">${eur(aus)}</span>
-            <span class="exp-budget-von">von ${eur(cat.budget)}</span>
+            <span class="exp-budget-aus${drueber?' drueber':''}">${eur(drueber ? -rest : rest)}</span>
+            <span class="exp-budget-von">${drueber ? 'überzogen' : `übrig von ${eur(cat.budget)}`}</span>
           </div>
           <div class="mod-bar"><div class="mod-bar-fill"
             style="width:${proz}%;background:${drueber?'var(--danger)':'var(--business)'};"></div></div>
-          <div class="exp-budget-fuss">${
-            drueber
-              ? `<b>${eur(-rest)} überzogen</b>`
-              : `<b class="ok">${eur(rest)}</b> übrig`
-          }${cat.shared ? ` · dein Anteil ${eur(aus/teiler)} von ${eur(cat.budget/teiler)}` : ''}</div>
+          <div class="exp-budget-fuss">${eur(aus)} ausgegeben${
+            cat.shared ? ` · dein Anteil ${eur(aus/teiler)} von ${eur(cat.budget/teiler)}` : ''}</div>
         </div>`;
       })() : ''}
       <!-- Der Budget-Balken bleibt auch zugeklappt stehen - er ist die
@@ -9201,7 +9203,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 46;
+const APP_FASSUNG = 47;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
