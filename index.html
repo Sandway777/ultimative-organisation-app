@@ -948,6 +948,13 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .sum-zeile.summe{border-top:1px solid var(--line-soft);margin-top:5px;
   padding-top:7px;color:var(--ink);}
 .sum-zeile.summe b{font-size:0.84rem;font-weight:600;}
+/* Nachsatz unter der Summe: erklaert, warum "Mein Geld" mit einer anderen
+   Zahl rechnet als der Monat kostet. Ohne den Satz sehen die beiden
+   Kacheln aus, als widersprechen sie sich. */
+.sum-zeile.hinweis{opacity:.72;font-size:0.68rem;padding:2px 0;}
+.sum-zeile.hinweis:first-of-type{padding-top:6px;}
+.sum-zeile.hinweis b{font-size:0.68rem;color:var(--ink-soft);}
+.sum-zeile.hinweis i{font-size:0.65rem;line-height:1.45;display:block;}
 
 .exp-budget{margin:10px 0 2px;}
 .exp-budget-kopf{display:flex;justify-content:space-between;align-items:baseline;
@@ -3954,8 +3961,19 @@ function expenseSums(monat){
   EXPENSE_GRUPPEN.forEach(g=>{
     proGruppe[g.key] = catsDerGruppe(g.key).reduce((s,c)=>s+(proKatPlan[c.key]||0), 0);
   });
+  /* Zweite Rechnung ohne Budget-Aufschlag: was WIRKLICH ausgegeben wurde.
+     Die Plan-Zahlen beantworten "was kann der Monat hoechstens kosten",
+     die Ist-Zahlen "was ist tatsaechlich weg". Fuer den Kontostand zaehlt
+     nur das Ist - sonst kostet ein leerer Monat schon 175 EUR, blosz weil
+     ein Essensbudget dasteht. */
+  let istGemeinsam = 0, istEigene = 0;
+  EXPENSE_CATS.forEach(cat=>{
+    if(cat.shared) istGemeinsam += proKat[cat.key]; else istEigene += proKat[cat.key];
+  });
   return {proKat, proKatPlan, proGruppe, gemeinsam, eigene,
-          meins: gemeinsam/2 + eigene, alles: gemeinsam + eigene};
+          meins: gemeinsam/2 + eigene, alles: gemeinsam + eigene,
+          istGemeinsam, istEigene,
+          istMeins: istGemeinsam/2 + istEigene, istAlles: istGemeinsam + istEigene};
 }
 
 /* Was von Leons Haelfte wirklich noch da ist: sein Anteil am Budget minus
@@ -4000,15 +4018,18 @@ function verfuegbar(node, ym){
      was insgesamt ausgegeben wurde. Vorher stand hier nur der eine Monat,
      dazu die komplette Moebel-Haelfte; der laufende Monat war damit doppelt
      drin, weil seine Moebelkaeufe in beiden Zahlen steckten. */
+  /* istMeins statt meins: vom Kontostand geht nur ab, was wirklich
+     ausgegeben wurde. Ein Budget ist eine Planung, kein Abfluss. */
   let alleMonate = 0;
   Object.keys(node.months||{}).forEach(k=>{
-    alleMonate += expenseSums(node.months[k]).meins;
+    alleMonate += expenseSums(node.months[k]).istMeins;
   });
   return {
     start,
     startGesamt: start + semesterVorab,
-    monatsKosten: s.meins,      /* nur der angezeigte Monat, fuer die Anzeige */
-    alleMonate,                 /* alle Monate zusammen */
+    monatsKosten: s.meins,      /* geplant - was der Monat hoechstens kostet */
+    monatsIst: s.istMeins,      /* tatsaechlich ausgegeben in diesem Monat */
+    alleMonate,                 /* alle Monate zusammen, tatsaechlich */
     moebelMeins: mo.meins,
     semester, semesterVorab,
     rest: start + semesterVorab - alleMonate - mo.meins - semester
@@ -5710,6 +5731,10 @@ function renderExpenses(c, def){
           }).join('')}
           ${moebelMonat ? `<div class="sum-zeile"><span>🛋️ Wohnungseinrichtung <i>dieser Monat</i></span><b>${eur(moebelMonat)}</b></div>` : ''}
           <div class="sum-zeile summe"><span>zusammen</span><b>${eur(monatMeins)}</b></div>
+          ${neuesterSums.istMeins < neuesterSums.meins - 0.005 ? `
+          <div class="sum-zeile hinweis"><span>davon wirklich ausgegeben</span><b>${eur(neuesterSums.istMeins + moebelMonat)}</b></div>
+          <div class="sum-zeile hinweis"><span><i>Der Rest ist eingeplantes Budget, das noch nicht weg ist.
+            „Mein Geld" rechnet nur mit dem, was wirklich raus ist.</i></span><b></b></div>` : ''}
         </div>
       </div>
 
@@ -5723,7 +5748,7 @@ function renderExpenses(c, def){
         <div class="sum-rechnung" id="rechnung-geld">
           <div class="sum-zeile"><span>Startgeld</span><b>${eur(verf.start)}</b></div>
           ${verf.semesterVorab ? `<div class="sum-zeile plus"><span>+ vorab gezahlt <i>Uni</i></span><b>+ ${eur(verf.semesterVorab)}</b></div>` : ''}
-          <div class="sum-zeile minus"><span>− alle Monate <i>dein Anteil</i></span><b>− ${eur(verf.alleMonate)}</b></div>
+          <div class="sum-zeile minus"><span>− alle Monate <i>wirklich ausgegeben</i></span><b>− ${eur(verf.alleMonate)}</b></div>
           <div class="sum-zeile minus"><span>− Wohnungseinrichtung <i>deine Hälfte</i></span><b>− ${eur(verf.moebelMeins)}</b></div>
           ${verf.semester ? `<div class="sum-zeile minus"><span>− Semesterkosten</span><b>− ${eur(verf.semester)}</b></div>` : ''}
           <div class="sum-zeile summe"><span>bleibt</span><b>${eur(verf.rest)}</b></div>
@@ -9176,7 +9201,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 45;
+const APP_FASSUNG = 46;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
