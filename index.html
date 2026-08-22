@@ -1138,6 +1138,51 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .app-zeit-text{font-size:0.75rem;color:var(--ink-soft);line-height:1.45;
   margin-top:5px;}
 
+
+/* ---- Heute ----
+   Kompakt gehalten: eine Zeile je Sache, kein Rahmen um jeden Eintrag.
+   Die Bloecke sind nur durch eine Ueberschrift getrennt, nicht durch Karten -
+   sonst wirkt eine Liste aus acht Sachen wie acht Baustellen. */
+.hu-neu{display:flex;gap:8px;margin-bottom:18px;}
+.hu-neu input{flex:1;min-width:0;padding:11px 13px;border-radius:10px;
+  border:1px solid var(--line);background:var(--field);color:var(--ink);
+  font-family:'IBM Plex Sans',sans-serif;font-size:0.88rem;}
+.hu-neu input:focus{outline:none;border-color:var(--daily);}
+.hu-neu .ib-btn{flex-shrink:0;}
+
+.hu-block{margin-bottom:18px;}
+.hu-block:last-child{margin-bottom:0;}
+.hu-block-kopf{display:flex;justify-content:space-between;align-items:baseline;
+  font-family:'IBM Plex Mono',monospace;font-size:0.66rem;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-soft);padding-bottom:6px;
+  border-bottom:1px solid var(--line);margin-bottom:2px;}
+.hu-block-kopf span{font-size:0.62rem;opacity:.65;}
+.hu-block.over .hu-block-kopf{color:var(--danger);border-bottom-color:var(--danger);}
+.hu-block.jetzt .hu-block-kopf{color:var(--ink);}
+.hu-block.leise{opacity:.72;}
+
+.hu-zeile{display:flex;align-items:center;gap:10px;padding:10px 0;
+  border-bottom:1px solid var(--line-soft);}
+.hu-zeile:last-child{border-bottom:none;}
+.hu-punkt{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin:0 5px;}
+.hu-mitte{flex:1;min-width:0;}
+.hu-text{font-size:0.9rem;color:var(--ink);line-height:1.35;
+  word-break:break-word;}
+.hu-quelle{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;
+  margin-top:2px;opacity:.85;}
+
+/* Schieben und Hinspringen: klein, aber gross genug zum Treffen (36px). */
+.hu-schieb,.hu-hin{border:1px solid var(--line);background:none;
+  color:var(--ink-soft);border-radius:8px;width:32px;height:32px;
+  flex-shrink:0;cursor:pointer;font-size:0.95rem;line-height:1;padding:0;}
+.hu-schieb:hover,.hu-hin:hover{color:var(--ink);border-color:var(--ink-soft);}
+.hu-hin{font-size:1.15rem;}
+
+.hu-frei{padding:46px 16px;text-align:center;}
+.hu-frei-icon{font-size:2rem;color:var(--business);margin-bottom:10px;}
+.hu-frei-text{font-family:'Fraunces',serif;font-size:1.1rem;color:var(--ink);}
+.hu-frei-sub{font-size:0.8rem;color:var(--ink-soft);margin-top:5px;}
+
 .exp-budget{margin:10px 0 2px;}
 .exp-budget-kopf{display:flex;justify-content:space-between;align-items:baseline;
   gap:8px;margin-bottom:5px;}
@@ -2323,6 +2368,7 @@ function antragStatusDef(key){
 }
 
 const GLOBAL_NODES = [
+  {key:'heute',     title:'Heute',                icon:'👋', sub:'was jetzt ansteht'},
   {key:'ideaboard', title:'Idee-Board',           icon:'📇', sub:'automatisch einsortiert'},
   {key:'daily',     title:'Notizzettel',icon:'🗓️', sub:'Tage + Gesammeltes'},
   {key:'months',    title:'Monatsübersicht',      icon:'📆', sub:'alle vier Bereiche'},
@@ -3544,7 +3590,7 @@ function defaultData(){
     dailyNotes:{days:[]},
     nodes,
     months,
-    activeId:'ideaboard'
+    activeId:'heute'
   };
 }
 
@@ -4030,10 +4076,17 @@ async function load(){
      eine Sammlung zum Nachschlagen - was heute ansteht, gehoert nach vorne.
      Der Schnitt setzt das einmal um, auch auf Geraeten, die noch das Board
      gespeichert hatten; danach bleibt wieder stehen, wo Leon zuletzt war. */
-  if(!data.activeId) data.activeId = 'daily';
+  if(!data.activeId) data.activeId = 'heute';
   if(!data.startUmgestellt){
     if(data.activeId === 'ideaboard') data.activeId = 'daily';
     data.startUmgestellt = true;
+  }
+  /* Zweiter Schnitt: "Heute" sammelt aus allen Bereichen zusammen, was
+     ansteht - das gehoert vor den einzelnen Zettel. Eigener Merker, damit
+     danach wieder stehenbleibt, wo Leon zuletzt war. */
+  if(!data.startHeute){
+    if(data.activeId === 'daily' || data.activeId === 'ideaboard') data.activeId = 'heute';
+    data.startHeute = true;
   }
   migrateData();
   pruneDailyNotes();
@@ -4340,7 +4393,8 @@ function handyTitelSetzen(){
   if(!el) return;
   let t = 'Notizblock';
   const id = data.activeId;
-  if(id==='ideaboard')      t = '📇 Idee-Board';
+  if(id==='heute')          t = '👋 Heute';
+  else if(id==='ideaboard') t = '📇 Idee-Board';
   else if(id==='daily')     t = '🗓️ Notizzettel';
   else if(id==='months')    t = '📆 Monatsübersicht';
   else if(id==='ziele')     t = '🎯 Ziele';
@@ -4441,6 +4495,7 @@ function renderSidebar(){
 /* ---------------- MAIN AREA DISPATCH ---------------- */
 function renderMain(){
   const c = document.getElementById('main-content');
+  if(data.activeId==='heute'){ pruneDailyNotes(); setContentBereichClass(null); renderHeute(c); return; }
   if(data.activeId==='ideaboard'){ setContentBereichClass(null); renderIdeaBoard(c); return; }
   if(data.activeId==='daily'){ pruneDailyNotes(); setContentBereichClass(null,true); renderDailyNotes(c); return; }
   if(data.activeId==='months'){ setContentBereichClass(null); renderMonths(c); return; }
@@ -6072,6 +6127,7 @@ const APP_BEREICHE = [
     {t:'Kuren',              d:'Ablauf einrichten, dann täglich abhaken'}
   ]},
   {saeule:'Übergreifend', farbe:'var(--idea)', punkte:[
+    {t:'Heute',           d:'was quer aus allen Bereichen ansteht', neu:true},
     {t:'Idee-Board',      d:'lose Einfälle'},
     {t:'Notizzettel',     d:'Tage + Sammelliste ohne Termin'},
     {t:'Monatsübersicht', d:'alle vier Säulen nebeneinander'},
@@ -6092,6 +6148,8 @@ const APP_BEREICHE = [
 
 /* Was sich wann geaendert hat - neueste zuerst. Beim Weiterbauen ergaenzen. */
 const APP_VERLAUF = [
+  {v:51, d:'22.08.2026', t:'Heute-Bildschirm',
+   b:'Zieht quer aus allen Bereichen zusammen, was ansteht – heute, morgen, diese Woche. Neue Startseite.'},
   {v:49, d:'22.08.2026', t:'Die App über sich selbst',
    b:'Eigene Säule: was drin ist, was noch kommt, was sich geändert hat.'},
   {v:48, d:'22.08.2026', t:'Deadlines für Business',
@@ -6328,6 +6386,271 @@ function renderAppVerlauf(c, def){
     <div class="app-fuss">Nur die größeren Schritte – kleine Korrekturen
       stehen nicht drin.</div>
   `;
+}
+
+
+/* ---------------- HEUTE ----------------
+   Zieht quer aus allen Bereichen zusammen, was ansteht. Sammelt nur -
+   gespeichert wird weiterhin dort, wo die Sachen herkommen. Ein Haken hier
+   schreibt in denselben Datensatz wie im Bereich selbst, nicht in eine Kopie.
+
+   Drei Bloecke: heute, morgen, diese Woche. Bewusst knapp gehalten - eine
+   Zeile je Sache, kein Beiwerk. Ist nichts los, steht das auch da statt
+   Fuellmaterial. */
+
+/* Alles einsammeln, was ein Datum traegt. Liefert Eintraege mit:
+   wann ('ueber'|'heute'|'morgen'|'woche'), text, quelle, ziel (Bereich zum
+   Hinspringen), erledigt-Funktion (falls abhakbar). */
+function heuteSammeln(){
+  const heute = isoToday();
+  const d = new Date(); d.setHours(0,0,0,0);
+  const morgen = isoLocal(new Date(d.getTime() + 86400000));
+  const raus = [];
+
+  const einordnen = (datum)=>{
+    if(!datum) return null;
+    const tage = daysUntil(datum);
+    if(tage === null) return null;
+    if(tage < 0)  return 'ueber';
+    if(tage === 0) return 'heute';
+    if(tage === 1) return 'morgen';
+    if(tage <= 7)  return 'woche';
+    return null;
+  };
+
+  /* --- Notizzettel: die To-dos des Tages --- */
+  (data.dailyNotes && data.dailyNotes.days || []).forEach(tag=>{
+    const wann = einordnen(tag.date);
+    if(!wann) return;
+    (tag.items||[]).forEach(it=>{
+      if(it.done) return;
+      raus.push({wann, datum:tag.date, text:it.text, quelle:'Notizzettel', icon:'🗓️',
+                 farbe:'var(--daily)', ziel:'daily', ebene:'tage',
+                 hakenTyp:'daily', hakenId:it.id, tagDate:tag.date});
+    });
+  });
+
+  /* --- Business: Deadlines --- */
+  const fr = data.nodes['business:fristen'];
+  if(fr && Array.isArray(fr.items)){
+    fr.items.forEach(it=>{
+      if(it.done) return;
+      const wann = einordnen(it.due);
+      if(!wann) return;
+      raus.push({wann, datum:it.due, text:it.text, quelle:'Deadline', icon:'⏳',
+                 farbe:'var(--business)', ziel:'business:fristen',
+                 hakenTyp:'frist', hakenId:it.id});
+    });
+  }
+
+  /* --- Privat: Antraege mit Frist --- */
+  const an = data.nodes['privat:antraege'];
+  if(an && Array.isArray(an.items)){
+    an.items.forEach(it=>{
+      if(it.status === 'erledigt') return;
+      const wann = einordnen(it.due);
+      if(!wann) return;
+      raus.push({wann, datum:it.due, text:it.text, quelle:'Antrag', icon:'📄',
+                 farbe:'var(--privat)', ziel:'privat:antraege'});
+    });
+  }
+
+  /* --- Uni: Pruefungen --- */
+  const pr = data.nodes['uni:pruefungen'];
+  if(pr && Array.isArray(pr.items)){
+    pr.items.forEach(it=>{
+      if(it.done) return;
+      const wann = einordnen(it.date || it.due);
+      if(!wann) return;
+      raus.push({wann, datum:it.date || it.due, text:it.text, quelle:'Prüfung', icon:'📝',
+                 farbe:'var(--uni)', ziel:'uni:pruefungen'});
+    });
+  }
+
+  /* --- Sport: Kur-Anwendungen von heute --- */
+  const ku = data.nodes['sport:kuren'];
+  if(ku && Array.isArray(ku.cures)){
+    ku.cures.forEach(k=>{
+      if(!k.von || !k.bis) return;
+      if(heute < k.von || heute > k.bis) return;
+      cureSlotsForDay(k, heute).forEach(sl=>{
+        if(cureIsDone(k, heute, sl.key)) return;
+        raus.push({wann:'heute', datum:heute,
+                   text: sl.item.text + (sl.item.dose ? ' · ' + sl.item.dose : ''),
+                   quelle: kurZeit(sl.zeit).label + ' · ' + k.name, icon:'🌿',
+                   farbe:'var(--sport)', ziel:'sport:kuren',
+                   hakenTyp:'kur', kurId:k.id, slotKey:sl.key});
+      });
+    });
+  }
+
+  /* --- Sport: Training von heute --- */
+  const tr = data.nodes['sport:training'];
+  if(tr && tr.weeks){
+    const woche = tr.weeks[heute.slice(0,7)];
+    if(woche && woche.days){
+      /* Montag = 0, getDay() liefert Sonntag = 0 */
+      const wt = (new Date().getDay() + 6) % 7;
+      (woche.days[wt] || []).forEach(u=>{
+        if(u.done) return;
+        const f = TR_FOKUS.find(x=>x.key===u.fokus);
+        raus.push({wann:'heute', datum:heute, text:u.text,
+                   quelle:'Training' + (f ? ' · ' + f.label : ''), icon:'🏃',
+                   farbe:'var(--sport)', ziel:'sport:training',
+                   hakenTyp:'training', wt, uebungId:u.id});
+      });
+    }
+  }
+
+  /* Sortierung: innerhalb eines Blocks nach Datum, dann nach Quelle. */
+  const rang = {ueber:0, heute:1, morgen:2, woche:3};
+  raus.sort((a,b)=> (rang[a.wann]-rang[b.wann]) || (a.datum||'').localeCompare(b.datum||''));
+  return raus;
+}
+
+/* Einen Eintrag abhaken - schreibt immer in den Originaldatensatz. */
+function heuteAbhaken(e){
+  if(e.hakenTyp === 'daily'){
+    const tag = (data.dailyNotes.days||[]).find(t=>t.date===e.tagDate);
+    const it = tag && (tag.items||[]).find(i=>i.id===e.hakenId);
+    if(it) it.done = true;
+  } else if(e.hakenTyp === 'frist'){
+    const it = (data.nodes['business:fristen'].items||[]).find(i=>i.id===e.hakenId);
+    if(it) it.done = true;
+  } else if(e.hakenTyp === 'kur'){
+    const k = (data.nodes['sport:kuren'].cures||[]).find(x=>x.id===e.kurId);
+    if(k){
+      if(!k.done) k.done = {};
+      if(!k.done[e.datum]) k.done[e.datum] = {};
+      k.done[e.datum][e.slotKey] = true;
+    }
+  } else if(e.hakenTyp === 'training'){
+    const tr = data.nodes['sport:training'];
+    const woche = tr.weeks[e.datum.slice(0,7)];
+    const u = woche && woche.days[e.wt] && woche.days[e.wt].find(x=>x.id===e.uebungId);
+    if(u) u.done = true;
+  }
+  persist();
+}
+
+/* Einen Notizzettel-Eintrag auf ein anderes Datum schieben. */
+function heuteVerschieben(e, tage){
+  if(e.hakenTyp !== 'daily') return;
+  const tag = (data.dailyNotes.days||[]).find(t=>t.date===e.tagDate);
+  const it = tag && (tag.items||[]).find(i=>i.id===e.hakenId);
+  if(!it) return;
+  const d = new Date(e.tagDate + 'T12:00:00');
+  d.setDate(d.getDate() + tage);
+  const ziel = isoLocal(d);
+  let zt = data.dailyNotes.days.find(t=>t.date===ziel);
+  if(!zt){ zt = {date:ziel, items:[]}; data.dailyNotes.days.push(zt); }
+  tag.items = tag.items.filter(i=>i.id!==it.id);
+  zt.items.push(it);
+  if(typeof dailySortieren === 'function') dailySortieren();
+  persist();
+}
+
+const HEUTE_BLOECKE = [
+  {key:'ueber',  titel:'Liegengeblieben', ton:'over'},
+  {key:'heute',  titel:'Heute',           ton:'jetzt'},
+  {key:'morgen', titel:'Morgen',          ton:''},
+  {key:'woche',  titel:'Diese Woche',     ton:'leise'}
+];
+
+function renderHeute(c){
+  const alles = heuteSammeln();
+  const heute = isoToday();
+  const d = new Date();
+  const wochentag = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][d.getDay()];
+  const heuteZahl = alles.filter(e=>e.wann==='heute' || e.wann==='ueber').length;
+
+  c.innerHTML = `
+    <div class="head-row"><div>
+      <h1 class="zt">👋 Heute</h1>
+      <div class="head-meta">${wochentag}, ${fmtDate(heute)}${
+        heuteZahl ? ' · ' + heuteZahl + ' offen' : ''}</div>
+    </div></div>
+    <div class="divider"></div>
+
+    <div class="hu-neu">
+      <input type="text" id="hu-text" placeholder="Was willst du heute machen?" maxlength="140">
+      <button class="ib-btn primary" id="hu-add">+ Auf heute</button>
+    </div>
+
+    <div id="hu-liste"></div>
+  `;
+
+  const liste = document.getElementById('hu-liste');
+  liste.innerHTML = HEUTE_BLOECKE.map(bl=>{
+    const drin = alles.filter(e=>e.wann===bl.key);
+    if(!drin.length) return '';
+    return `<section class="hu-block ${bl.ton}">
+      <div class="hu-block-kopf">${bl.titel}<span>${drin.length}</span></div>
+      ${drin.map((e,i)=>`
+        <div class="hu-zeile" data-hu="${bl.key}-${i}">
+          ${e.hakenTyp ? `<button class="uk-status" data-huhaken="${bl.key}-${i}"
+            title="abhaken">○</button>` : `<span class="hu-punkt"
+            style="background:${e.farbe};"></span>`}
+          <div class="hu-mitte">
+            <div class="hu-text">${escapeHtml(e.text)}</div>
+            <div class="hu-quelle" style="color:${e.farbe};">${e.icon} ${escapeHtml(e.quelle)}${
+              bl.key!=='heute' && e.datum ? ' · ' + fmtDate(e.datum) : ''}</div>
+          </div>
+          ${e.hakenTyp==='daily' ? `<button class="hu-schieb"
+            data-huschieb="${bl.key}-${i}" title="auf morgen schieben">→</button>` : ''}
+          <button class="hu-hin" data-huhin="${bl.key}-${i}"
+            title="im Bereich öffnen">›</button>
+        </div>
+      `).join('')}
+    </section>`;
+  }).join('') || `<div class="hu-frei">
+      <div class="hu-frei-icon">✓</div>
+      <div class="hu-frei-text">Nichts offen für heute.</div>
+      <div class="hu-frei-sub">Schreib oben rein, wenn dir etwas einfällt.</div>
+    </div>`;
+
+  /* Zeilen wieder auffindbar machen - der Index zeigt in die gefilterte Liste. */
+  const holen = (schluessel)=>{
+    const [bk, idx] = String(schluessel).split('-');
+    return alles.filter(e=>e.wann===bk)[Number(idx)];
+  };
+
+  function aufHeute(){
+    const inp = document.getElementById('hu-text');
+    const text = inp.value.trim();
+    if(!text) return;
+    if(!data.dailyNotes) data.dailyNotes = {days:[], offen:[]};
+    if(!Array.isArray(data.dailyNotes.days)) data.dailyNotes.days = [];
+    let tag = data.dailyNotes.days.find(t=>t.date===heute);
+    if(!tag){ tag = {date:heute, items:[]}; data.dailyNotes.days.push(tag); }
+    tag.items.push({id:uid(), text, done:false});
+    if(typeof dailySortieren === 'function') dailySortieren();
+    inp.value = '';
+    persist(); renderMain();
+  }
+  document.getElementById('hu-add').addEventListener('click', aufHeute);
+  document.getElementById('hu-text').addEventListener('keydown', ev=>{
+    if(ev.key === 'Enter') aufHeute();
+  });
+
+  liste.querySelectorAll('[data-huhaken]').forEach(b=>b.addEventListener('click',()=>{
+    const e = holen(b.dataset.huhaken);
+    if(e){ heuteAbhaken(e); renderMain(); }
+  }));
+
+  liste.querySelectorAll('[data-huschieb]').forEach(b=>b.addEventListener('click',()=>{
+    const e = holen(b.dataset.huschieb);
+    if(e){ heuteVerschieben(e, 1); renderMain(); }
+  }));
+
+  liste.querySelectorAll('[data-huhin]').forEach(b=>b.addEventListener('click',()=>{
+    const e = holen(b.dataset.huhin);
+    if(!e) return;
+    if(e.ebene) notizEbene = e.ebene;
+    data.activeId = e.ziel;
+    showDetailMobile = false;
+    renderAll();
+  }));
 }
 
 /* ---------------- AUSGABEN ----------------
@@ -9882,7 +10205,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 50;
+const APP_FASSUNG = 51;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
