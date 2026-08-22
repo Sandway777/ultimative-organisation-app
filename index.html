@@ -43,6 +43,9 @@
   --privat:#E08060; --business:#4FA8A2; --uni:#8494CC; --sport:#7FB169; --danger:#E0708C;
   --privat-bg:#33262A; --business-bg:#1D3335; --uni-bg:#252A3B; --sport-bg:#26312A;
   --idea:#D9A648; --daily:#A06F94;
+  /* Die App selbst ist keine Lebenssaeule, sondern das Werkzeug - eigene,
+     bewusst kuehlere Farbe, damit sie sich von Privat/Business/Uni/Sport abhebt. */
+  --app:#9A8FC4; --app-bg:#2A2739;
   --field:#191B1E;      /* Eingabefelder */
 }
 *{box-sizing:border-box;}
@@ -278,6 +281,7 @@ h1.zt{font-family:'Fraunces',serif;font-weight:600;font-size:1.9rem;margin:0;col
   letter-spacing:.03em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;margin-left:8px;color:#fff;}
 .bereich-tag.privat{background:var(--privat);} .bereich-tag.business{background:var(--business);} .bereich-tag.uni{background:var(--uni);}
 .bereich-tag.sport{background:var(--sport);}
+.bereich-tag.meta{background:var(--app);}
 
 .content.bereich-privat h1.zt{color:var(--privat);}
 .content.bereich-privat .input-row input:focus{border-bottom-color:var(--privat);}
@@ -302,6 +306,12 @@ h1.zt{font-family:'Fraunces',serif;font-weight:600;font-size:1.9rem;margin:0;col
 .content.bereich-sport .mini-checkbox svg{stroke:var(--sport);}
 .content.bereich-sport .mini-item.done .mini-checkbox{border-color:var(--sport);background:var(--sport-bg);}
 .content.bereich-sport .input-row button{background:var(--sport);}
+
+.content.bereich-meta h1.zt{color:var(--app);}
+.content.bereich-meta .input-row input:focus{border-bottom-color:var(--app);}
+.content.bereich-meta .mini-checkbox svg{stroke:var(--app);}
+.content.bereich-meta .mini-item.done .mini-checkbox{border-color:var(--app);background:var(--app-bg);}
+.content.bereich-meta .input-row button{background:var(--app);}
 .confirm-row{display:flex;align-items:center;gap:8px;font-size:0.82rem;flex-shrink:0;}
 .confirm-row button{border:none;border-radius:6px;padding:5px 11px;font-size:0.78rem;cursor:pointer;font-family:inherit;}
 .confirm-yes{background:var(--danger);color:#fff;} .confirm-no{background:#2A2E33;color:var(--ink);}
@@ -1037,6 +1047,95 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .leer-hinweis{padding:22px 16px;text-align:center;color:var(--ink-soft);
   font-size:0.83rem;line-height:1.5;border:1px dashed var(--line);
   border-radius:11px;}
+
+
+/* ---- Die App ueber sich selbst ----
+   Kacheln oben, darunter Gruppen. Farbe kommt je Gruppe ueber --gf herein,
+   damit die Saeulen ihre eigene Farbe behalten. */
+.app-kacheln{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));
+  gap:9px;margin-bottom:16px;}
+.app-kachel{background:var(--card);border:1px solid var(--line);
+  border-radius:11px;padding:12px 13px;}
+.app-kachel.gross{grid-column:1/-1;border-color:var(--app);background:var(--app-bg);}
+.app-kachel-label{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);}
+.app-kachel.gross .app-kachel-label{color:var(--app);}
+.app-kachel-zahl{font-family:'Fraunces',serif;font-size:1.55rem;font-weight:600;
+  color:var(--ink);line-height:1.15;margin-top:3px;}
+.app-kachel-zahl.klein{font-size:1.05rem;}
+.app-kachel-note{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;
+  color:var(--ink-soft);margin-top:3px;line-height:1.35;}
+
+.app-gruppe{background:var(--card);border:1px solid var(--line);
+  border-left:3px solid var(--gf,var(--app));border-radius:11px;
+  margin-bottom:11px;overflow:hidden;}
+.app-gruppe-kopf{display:flex;justify-content:space-between;align-items:baseline;
+  padding:11px 14px 8px;font-family:'IBM Plex Mono',monospace;font-size:0.67rem;
+  letter-spacing:.05em;text-transform:uppercase;color:var(--gf,var(--app));}
+.app-gruppe-kopf span{color:var(--ink-soft);font-size:0.62rem;}
+.app-gruppe-body{padding:0 14px 9px;}
+.app-punkt{display:flex;align-items:flex-start;gap:9px;padding:7px 0;
+  border-top:1px solid var(--line-soft);}
+.app-gruppe-body .app-punkt:first-child{border-top:none;}
+.app-punkt-haken{color:var(--gf,var(--app));font-size:0.8rem;flex-shrink:0;
+  line-height:1.5;}
+.app-punkt-mitte{flex:1;min-width:0;}
+.app-punkt-titel{font-size:0.86rem;color:var(--ink);line-height:1.35;}
+.app-punkt-sub{font-size:0.72rem;color:var(--ink-soft);line-height:1.4;
+  margin-top:1px;}
+.app-neu{font-family:'IBM Plex Mono',monospace;font-size:0.56rem;
+  letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;
+  border-radius:999px;background:var(--app-bg);color:var(--app);
+  border:1px solid var(--app);vertical-align:1px;}
+.app-neu.wichtig{background:var(--privat-bg);color:var(--privat);
+  border-color:var(--privat);}
+
+.app-fuss{font-size:0.7rem;color:var(--ink-soft);line-height:1.5;
+  padding:12px 2px 0;opacity:.75;}
+
+/* Ideen: Karte mit Titel, Begruendung und Statuszeile.
+   Die Knoepfe stehen offen da statt in einem Menue - am Handy soll ein
+   Tipp reichen, um etwas auf "dran" zu setzen. */
+.app-idee{padding:11px 0;border-top:1px solid var(--line-soft);}
+.frist-gruppe-body .app-idee:first-child{border-top:none;}
+.app-idee.blass{opacity:.55;}
+.app-idee-kopf{display:flex;align-items:flex-start;gap:8px;}
+.app-idee-titel{flex:1;font-size:0.88rem;color:var(--ink);line-height:1.35;
+  word-break:break-word;}
+.app-idee.blass .app-idee-titel{text-decoration:line-through;}
+.app-idee-note{font-size:0.73rem;color:var(--ink-soft);line-height:1.45;
+  margin-top:3px;}
+.app-idee-knoepfe{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.app-st{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;
+  padding:4px 9px;border-radius:999px;border:1px solid var(--line);
+  background:none;color:var(--ink-soft);cursor:pointer;}
+.app-st:hover{border-color:var(--ink-soft);color:var(--ink);}
+.app-st.aktiv{background:var(--app-bg);color:var(--app);border-color:var(--app);}
+.frist-gruppe.dran{border-color:var(--app);}
+.frist-gruppe.weg{opacity:.6;}
+
+/* Verlauf als Zeitstrahl - die Linie macht sichtbar, dass es eine Abfolge
+   ist und keine Liste gleichrangiger Punkte. */
+.app-zeit{position:relative;padding-left:2px;}
+.app-zeit-eintrag{display:flex;gap:12px;padding-bottom:16px;position:relative;}
+.app-zeit-eintrag::before{content:'';position:absolute;left:19px;top:20px;
+  bottom:-2px;width:1px;background:var(--line);}
+.app-zeit-eintrag:last-child::before{display:none;}
+.app-zeit-marke{display:flex;flex-direction:column;align-items:center;gap:5px;
+  flex-shrink:0;width:38px;}
+.app-zeit-punkt{width:9px;height:9px;border-radius:50%;background:var(--line);
+  border:2px solid var(--paper);margin-top:5px;}
+.app-zeit-eintrag.jetzt .app-zeit-punkt{background:var(--app);
+  box-shadow:0 0 0 3px var(--app-bg);}
+.app-zeit-v{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;
+  color:var(--ink-soft);}
+.app-zeit-eintrag.jetzt .app-zeit-v{color:var(--app);}
+.app-zeit-mitte{flex:1;min-width:0;}
+.app-zeit-titel{font-size:0.9rem;color:var(--ink);line-height:1.3;}
+.app-zeit-datum{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;
+  color:var(--ink-soft);margin-top:2px;}
+.app-zeit-text{font-size:0.75rem;color:var(--ink-soft);line-height:1.45;
+  margin-top:5px;}
 
 .exp-budget{margin:10px 0 2px;}
 .exp-budget-kopf{display:flex;justify-content:space-between;align-items:baseline;
@@ -2110,10 +2209,11 @@ async function cloudVerbinden(token){
 }
 
 const STORAGE_KEY = 'ultimativer-notizblock-v1';
-const BEREICHE = {privat:{label:'Privat',color:'var(--privat)'},business:{label:'Business',color:'var(--business)'},uni:{label:'Uni',color:'var(--uni)'},sport:{label:'Sport und Gesundheit',color:'var(--sport)'}};
-const TYPE_LABELS = {checklist:'Checkliste', month:'Monat', trip:'Reise', trips:'Reisen', months:'Monate', deadlines:'Fristen', fristen:'Deadlines'};
+const BEREICHE = {privat:{label:'Privat',color:'var(--privat)'},business:{label:'Business',color:'var(--business)'},uni:{label:'Uni',color:'var(--uni)'},sport:{label:'Sport und Gesundheit',color:'var(--sport)'},
+  meta:{label:'Die App',color:'var(--app)'}};
+const TYPE_LABELS = {checklist:'Checkliste', month:'Monat', trip:'Reise', trips:'Reisen', months:'Monate', deadlines:'Fristen', fristen:'Deadlines', appstand:'Stand', appideen:'Ideen', appverlauf:'Verlauf'};
 /* Kurzform fuer enge Stellen (Filter-Chips, Tag neben dem Titel) */
-const BEREICH_SHORT = {privat:'Privat', business:'Business', uni:'Uni', sport:'Sport'};
+const BEREICH_SHORT = {privat:'Privat', business:'Business', uni:'Uni', sport:'Sport', meta:'App'};
 
 /* ---------------- FESTE STRUKTUR ----------------
    Die vier Saeulen und ihre festen Unterpunkte. Diese Liste ist der Bauplan:
@@ -2146,6 +2246,14 @@ const STRUKTUR = {
   sport: [
     {key:'training',  title:'Trainingsübersicht',      icon:'🏃', type:'training'},
     {key:'kuren',     title:'Kuren',                   icon:'🌿', type:'cures'}
+  ],
+  /* Die App ueber sich selbst: was drin ist, was noch kommt, was sich
+     geaendert hat. Bewusst eine eigene Saeule und nicht unter Business -
+     die App ist kein Geschaeft, sondern das Werkzeug fuer alles andere. */
+  meta: [
+    {key:'stand',   title:'Stand',      icon:'📊', type:'appstand'},
+    {key:'ideen',   title:'Ideen',      icon:'💡', type:'appideen'},
+    {key:'verlauf', title:'Was kam wann', icon:'🕘', type:'appverlauf'}
   ]
 };
 /* Uebergreifende Punkte - gehoeren keiner Saeule, weil sie alle vier abdecken. */
@@ -2339,6 +2447,9 @@ function emptyNodeContent(type){
   if(type==='trips')      return {trips: []};
   if(type==='deadlines')  return {items: []};
   if(type==='fristen')    return {items: []};
+  if(type==='appstand')   return {};
+  if(type==='appideen')   return {items: [], zu:{}};
+  if(type==='appverlauf') return {};
   if(type==='ideas')      return {items: []};
   if(type==='timetable')  return {slots: []};
   if(type==='exams')      return {items: []};
@@ -4352,6 +4463,9 @@ function renderMain(){
   else if(def.type==='trips')     renderTrips(c, def);
   else if(def.type==='deadlines') renderDeadlines(c, def);
   else if(def.type==='fristen')   renderFristen(c, def);
+  else if(def.type==='appstand')  renderAppStand(c, def);
+  else if(def.type==='appideen')  renderAppIdeen(c, def);
+  else if(def.type==='appverlauf')renderAppVerlauf(c, def);
   else if(def.type==='expenses')  renderExpenses(c, def);
   else if(def.type==='ideas')     renderIdeas(c, def);
   else if(def.type==='timetable') renderTimetable(c, def);
@@ -5915,6 +6029,304 @@ function renderFristen(c, def){
     z.items = z.items.filter(x=>x.id !== b.dataset.fdel);
     persist(); renderMain();
   }));
+}
+
+
+/* ---------------- DIE APP UEBER SICH SELBST ----------------
+   Drei Unterpunkte: was drin ist (Stand), was noch kommt (Ideen), was sich
+   geaendert hat (Verlauf). Stand und Verlauf stehen fest im Code - sie
+   beschreiben die App und nicht Leons Eingaben. Nur die Ideen sind eine
+   echte Liste, die er selbst pflegt.
+
+   Wichtig beim Weiterbauen: APP_BEREICHE und APP_VERLAUF von Hand
+   nachziehen, wenn etwas dazukommt. Es gibt bewusst keine Automatik -
+   die haette raten muessen, was eine Aenderung fuer Leon bedeutet. */
+
+/* Was die App heute kann - eine Zeile je Bereich, gruppiert wie im Menue. */
+const APP_BEREICHE = [
+  {saeule:'Privat', farbe:'var(--privat)', punkte:[
+    {t:'Reisen',        d:'Reisen mit Zeitraum'},
+    {t:'Anträge',       d:'Fristen, Unterlagen, Status'},
+    {t:'Ausgaben',      d:'gemeinsam/privat getrennt, Möbeltopf, Budgets'},
+    {t:'Umzug',         d:'drei Phasen mit eigenen Gruppen'}
+  ]},
+  {saeule:'Business', farbe:'var(--business)', punkte:[
+    {t:'Deadlines',       d:'nach Dringlichkeit gruppiert', neu:true},
+    {t:'Nächste Schritte',d:'einfache Hakenliste'},
+    {t:'Optimierungen',   d:'Ideen als Karten'},
+    {t:'Marge',           d:'Einkauf, Verkauf, Gewinn'},
+    {t:'Kunden Design',   d:'je Jahr, mit Gerät (PC/Laptop)'},
+    {t:'Geschäftskonto',  d:'Kontostand und laufende Abbuchungen'}
+  ]},
+  {saeule:'Uni', farbe:'var(--uni)', punkte:[
+    {t:'Vor dem Start',   d:'Checkliste'},
+    {t:'Stundenplan',     d:'Wochenraster'},
+    {t:'Prüfungstermine', d:'mit Datum'},
+    {t:'Lernplan',        d:'was wann lernen'},
+    {t:'Module & Noten',  d:'36 Module, 180 CP, Wahlpflicht, Schnitt'},
+    {t:'Semesterkosten',  d:'je Semester, Beitrag und Online-Module'}
+  ]},
+  {saeule:'Sport und Gesundheit', farbe:'var(--sport)', punkte:[
+    {t:'Trainingsübersicht', d:'ein Wochenplan je Monat'},
+    {t:'Kuren',              d:'Ablauf einrichten, dann täglich abhaken'}
+  ]},
+  {saeule:'Übergreifend', farbe:'var(--idea)', punkte:[
+    {t:'Idee-Board',      d:'lose Einfälle'},
+    {t:'Notizzettel',     d:'Tage + Sammelliste ohne Termin'},
+    {t:'Monatsübersicht', d:'alle vier Säulen nebeneinander'},
+    {t:'Ziele',           d:'Jahresziele messbar, Lebensziele in Schritten'}
+  ]},
+  {saeule:'Die App selbst', farbe:'var(--app)', punkte:[
+    {t:'Stand',        d:'was die App heute kann', neu:true},
+    {t:'Ideen',        d:'was noch kommen soll, mit Status', neu:true},
+    {t:'Was kam wann', d:'Verlauf der Fassungen', neu:true}
+  ]},
+  {saeule:'Technik', farbe:'var(--app)', punkte:[
+    {t:'Cloud-Sync',   d:'privates GitHub-Gist, verbindet sich beim Start neu'},
+    {t:'Offline',      d:'läuft ohne Internet, Service Worker'},
+    {t:'Export/Import',d:'JSON, jederzeit – das Sicherheitsnetz'},
+    {t:'Selbst-Update',d:'holt sich neue Fassungen automatisch'}
+  ]}
+];
+
+/* Was sich wann geaendert hat - neueste zuerst. Beim Weiterbauen ergaenzen. */
+const APP_VERLAUF = [
+  {v:49, d:'22.08.2026', t:'Die App über sich selbst',
+   b:'Eigene Säule: was drin ist, was noch kommt, was sich geändert hat.'},
+  {v:48, d:'22.08.2026', t:'Deadlines für Business',
+   b:'Aufgaben mit Termin, gruppiert nach Dringlichkeit statt als flache Liste.'},
+  {v:47, d:'13.08.2026', t:'Budget-Töpfe zeigen den Rest',
+   b:'Vorher stand groß da, was ausgegeben wurde. Bei einem Budget zählt aber, was noch übrig ist.'},
+  {v:46, d:'13.08.2026', t:'Rechenfehler beim Kontostand behoben',
+   b:'Das Essensbudget wurde abgezogen, obwohl es nicht ausgegeben war – ein leerer Monat kostete sofort 175 €.'},
+  {v:45, d:'09.08.2026', t:'Jahresziele mit elf Lebensbereichen',
+   b:'Gesundheit, Spiritualität, geistige Entwicklung und Körper kamen dazu, gruppiert nach Bereich.'},
+  {v:44, d:'09.08.2026', t:'Ziele als eigener Hauptbereich',
+   b:'Jahresziele messbar mit Zeitvergleich, Lebensziele in Schritte zerlegt.'},
+  {v:43, d:'08.08.2026', t:'Notizzettel zweistufig',
+   b:'Erst wählen wohin – Tages-To-do oder Sammelliste ohne Termin.'},
+  {v:42, d:'07.08.2026', t:'Ausgaben umgebaut',
+   b:'Gemeinsam und privat getrennt, Möbelbudget als zwei Hälften, drei Kacheln oben.'},
+  {v:40, d:'05.08.2026', t:'Semesterkosten und Geschäftskonto',
+   b:'Uni-Kosten historisch über alle Semester, Business mit Kontostand.'},
+  {v:36, d:'31.07.2026', t:'Kunden Design',
+   b:'Nachweis, wie viele Designs pro Jahr und auf welchem Gerät.'},
+  {v:30, d:'30.07.2026', t:'Umzug mit Phasen',
+   b:'Statt flacher Liste: vorher / packen / nachher mit eigenen Gruppen.'},
+  {v:20, d:'28.07.2026', t:'Cloud-Sync über GitHub-Gist',
+   b:'Kostenlos, kein Azure. Zweites Gerät braucht nur denselben Schlüssel.'}
+];
+
+/* --- Stand: was ist drin --- */
+function renderAppStand(c, def){
+  const gesamt = APP_BEREICHE.reduce((s,g)=>s+g.punkte.length, 0);
+  const neuste = APP_VERLAUF[0];
+  c.innerHTML = renderNodeHead(def, 'Fassung ' + APP_FASSUNG) + `
+    <div class="app-kacheln">
+      <div class="app-kachel gross">
+        <div class="app-kachel-label">Fassung</div>
+        <div class="app-kachel-zahl">${APP_FASSUNG}</div>
+        <div class="app-kachel-note">seit ${neuste.d} · ${escapeHtml(neuste.t)}</div>
+      </div>
+      <div class="app-kachel">
+        <div class="app-kachel-label">Bereiche</div>
+        <div class="app-kachel-zahl">${gesamt}</div>
+        <div class="app-kachel-note">in ${APP_BEREICHE.length} Gruppen</div>
+      </div>
+      <div class="app-kachel">
+        <div class="app-kachel-label">Läuft</div>
+        <div class="app-kachel-zahl klein">offline</div>
+        <div class="app-kachel-note">mit Cloud-Abgleich</div>
+      </div>
+    </div>
+
+    ${APP_BEREICHE.map(g=>`
+      <section class="app-gruppe" style="--gf:${g.farbe};">
+        <div class="app-gruppe-kopf">${escapeHtml(g.saeule)}
+          <span>${g.punkte.length}</span></div>
+        <div class="app-gruppe-body">
+          ${g.punkte.map(pt=>`
+            <div class="app-punkt">
+              <span class="app-punkt-haken">✓</span>
+              <div class="app-punkt-mitte">
+                <div class="app-punkt-titel">${escapeHtml(pt.t)}${
+                  pt.neu ? ' <span class="app-neu">neu</span>' : ''}</div>
+                <div class="app-punkt-sub">${escapeHtml(pt.d)}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </section>
+    `).join('')}
+
+    <div class="app-fuss">Diese Liste steht fest im Programm und wird beim
+      Weiterbauen mitgepflegt – sie ist kein Automatismus.</div>
+  `;
+}
+
+/* --- Ideen: was noch kommen soll --- */
+const APP_IDEE_STATUS = [
+  {key:'offen',  titel:'Noch offen',   icon:'○', ton:''},
+  {key:'dran',   titel:'Dran',         icon:'◐', ton:'dran'},
+  {key:'fertig', titel:'Erledigt',     icon:'✓', ton:'done', zu:true},
+  {key:'weg',    titel:'Verworfen',    icon:'×', ton:'weg',  zu:true}
+];
+
+/* Startbestand: die Vorschlaege aus der Recherche zu anderen Apps plus was
+   in Gespraechen aufkam. Wird einmalig eingesetzt, danach gehoert die Liste
+   Leon - geloeschtes kommt nicht wieder. */
+const APP_IDEEN_START = [
+  {t:'Heute-Bildschirm',   b:'Zieht quer aus allem zusammen was heute ansteht: überfällige Deadlines, Tages-To-dos, fällige Kur-Anwendungen, Training, Prüfungen. Die Daten sind alle da, sie werden nur nirgends zusammengeführt.', w:'gross'},
+  {t:'Suchen',             b:'Eine Zeile, die über alle Bereiche geht. Bei 16 Inhaltstypen findet man eine alte Notiz sonst nicht wieder.', w:'gross'},
+  {t:'Wiederkehrendes',    b:'Miete, Semesterbeitrag, Blutwerte, Steuer: einmal eintragen, kommt beim Abhaken von selbst wieder.', w:'gross'},
+  {t:'Schnell erfassen',   b:'Ein Knopf, der in jedem Bereich sichtbar ist und in die Sammelliste wirft – ohne vorher zu entscheiden wohin.', w:'mittel'},
+  {t:'Wochenrückblick',    b:'Was war offen, was ist erledigt, was schiebt sich seit Wochen. Laut Recherche der Punkt, der solche Systeme am Leben hält.', w:'mittel'},
+  {t:'Anhänge',            b:'Foto vom Beleg, PDF vom Antrag. Geht offline als Data-URI, kostet nichts.', w:'mittel'},
+  {t:'Design umschaltbar', b:'Mehrere Farbfassungen, per Knopf wechselbar wie hell/dunkel. Entwürfe laufen bei Claude Design.', w:'mittel'},
+  {t:'Einnahmen',          b:'Bisher nur Ausgaben. Für den echten Kontostand fehlt die Gegenseite.', w:'klein'},
+  {t:'Echte Handy-App',    b:'Die PWA-Verknüpfung stört – lieber eine richtige App auf dem Homescreen.', w:'klein'}
+];
+
+function appIdeenStart(z){
+  if(z.startGesetzt) return;
+  z.startGesetzt = true;
+  if(!Array.isArray(z.items)) z.items = [];
+  APP_IDEEN_START.forEach(i=>{
+    z.items.push({id:uid(), text:i.t, note:i.b, wichtig:i.w, status:'offen'});
+  });
+}
+
+function renderAppIdeen(c, def){
+  const z = data.nodes[def.nodeId];
+  if(!Array.isArray(z.items)) z.items = [];
+  if(!z.zu || typeof z.zu !== 'object') z.zu = {};
+  appIdeenStart(z);
+
+  const offen = z.items.filter(i=>i.status==='offen').length;
+  const dran  = z.items.filter(i=>i.status==='dran').length;
+
+  c.innerHTML = renderNodeHead(def, offen + ' offen') + `
+    <div class="app-kacheln">
+      <div class="app-kachel gross">
+        <div class="app-kachel-label">Noch offen</div>
+        <div class="app-kachel-zahl">${offen}</div>
+        <div class="app-kachel-note">${dran ? dran + ' gerade dran' : 'nichts angefangen'}</div>
+      </div>
+      <div class="app-kachel">
+        <div class="app-kachel-label">Erledigt</div>
+        <div class="app-kachel-zahl">${z.items.filter(i=>i.status==='fertig').length}</div>
+        <div class="app-kachel-note">schon gebaut</div>
+      </div>
+    </div>
+
+    <div class="frist-neu">
+      <input type="text" id="ai-text" placeholder="Was fehlt der App noch?" maxlength="140">
+      <div class="frist-neu-zeile">
+        <input type="text" id="ai-note" placeholder="Warum? (kann leer bleiben)" maxlength="300">
+        <button class="ib-btn primary" id="ai-add">+ Idee</button>
+      </div>
+    </div>
+
+    <div id="ai-liste"></div>
+  `;
+
+  const liste = document.getElementById('ai-liste');
+  liste.innerHTML = APP_IDEE_STATUS.map(st=>{
+    const drin = z.items.filter(i=>(i.status||'offen')===st.key);
+    if(!drin.length) return '';
+    const zu = z.zu[st.key] !== undefined ? z.zu[st.key] : !!st.zu;
+    /* Innerhalb "offen" nach Wichtigkeit sortiert - gross zuerst. */
+    const rang = {gross:0, mittel:1, klein:2};
+    drin.sort((a,b)=>(rang[a.wichtig]??1)-(rang[b.wichtig]??1));
+    return `<section class="frist-gruppe ${st.ton}${zu?' zu':''}">
+      <button class="frist-gruppe-kopf" data-aigruppe="${st.key}">
+        <span class="frist-gruppe-pfeil">${zu?'▸':'▾'}</span>
+        <span class="frist-gruppe-titel">${st.icon} ${st.titel}</span>
+        <span class="frist-gruppe-zahl">${drin.length}</span>
+      </button>
+      <div class="frist-gruppe-body">
+        ${drin.map(it=>`
+          <div class="app-idee ${it.status==='fertig'||it.status==='weg'?'blass':''}" data-aid="${it.id}">
+            <div class="app-idee-kopf">
+              <div class="app-idee-titel">${escapeHtml(it.text)}${
+                it.wichtig==='gross' && it.status==='offen' ? ' <span class="app-neu wichtig">wichtig</span>' : ''}</div>
+              <button class="mini-del" data-aidel="${it.id}" aria-label="Löschen">×</button>
+            </div>
+            ${it.note ? `<div class="app-idee-note">${escapeHtml(it.note)}</div>` : ''}
+            <div class="app-idee-knoepfe">
+              ${APP_IDEE_STATUS.map(s2=>`<button class="app-st${
+                (it.status||'offen')===s2.key?' aktiv':''}" data-aist="${it.id}"
+                data-aiwert="${s2.key}">${s2.icon} ${s2.titel}</button>`).join('')}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </section>`;
+  }).join('') || `<div class="leer-hinweis">Noch keine Ideen. Schreib oben rein,
+    was der App fehlt.</div>`;
+
+  function anlegen(){
+    const inp = document.getElementById('ai-text');
+    const text = inp.value.trim();
+    if(!text) return;
+    const note = document.getElementById('ai-note');
+    z.items.push({id:uid(), text, note: note.value.trim(), wichtig:'mittel', status:'offen'});
+    inp.value = ''; note.value = '';
+    persist(); renderMain();
+  }
+  document.getElementById('ai-add').addEventListener('click', anlegen);
+  document.getElementById('ai-text').addEventListener('keydown', e=>{
+    if(e.key === 'Enter') anlegen();
+  });
+
+  liste.querySelectorAll('[data-aigruppe]').forEach(b=>b.addEventListener('click',()=>{
+    const k = b.dataset.aigruppe;
+    const st = APP_IDEE_STATUS.find(x=>x.key===k);
+    const jetzt = z.zu[k] !== undefined ? z.zu[k] : !!(st && st.zu);
+    z.zu[k] = !jetzt;
+    persist(); renderMain();
+  }));
+
+  liste.querySelectorAll('[data-aist]').forEach(b=>b.addEventListener('click',()=>{
+    const it = z.items.find(x=>x.id===b.dataset.aist);
+    if(!it) return;
+    it.status = b.dataset.aiwert;
+    persist(); renderMain();
+  }));
+
+  liste.querySelectorAll('[data-aidel]').forEach(b=>b.addEventListener('click',()=>{
+    if(b.dataset.confirm !== '1'){
+      b.dataset.confirm = '1'; b.textContent = '?';
+      setTimeout(()=>{ if(b.dataset.confirm==='1'){ b.dataset.confirm=''; b.textContent='×'; } }, 2500);
+      return;
+    }
+    z.items = z.items.filter(x=>x.id !== b.dataset.aidel);
+    persist(); renderMain();
+  }));
+}
+
+/* --- Verlauf: was kam wann --- */
+function renderAppVerlauf(c, def){
+  c.innerHTML = renderNodeHead(def, APP_VERLAUF.length + ' Einträge') + `
+    <div class="app-zeit">
+      ${APP_VERLAUF.map((e,i)=>`
+        <div class="app-zeit-eintrag${i===0?' jetzt':''}">
+          <div class="app-zeit-marke">
+            <span class="app-zeit-punkt"></span>
+            <span class="app-zeit-v">v${e.v}</span>
+          </div>
+          <div class="app-zeit-mitte">
+            <div class="app-zeit-titel">${escapeHtml(e.t)}${
+              i===0 ? ' <span class="app-neu">aktuell</span>' : ''}</div>
+            <div class="app-zeit-datum">${e.d}</div>
+            <div class="app-zeit-text">${escapeHtml(e.b)}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="app-fuss">Nur die größeren Schritte – kleine Korrekturen
+      stehen nicht drin.</div>
+  `;
 }
 
 /* ---------------- AUSGABEN ----------------
@@ -9469,7 +9881,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 48;
+const APP_FASSUNG = 49;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
