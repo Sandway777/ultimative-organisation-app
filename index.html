@@ -169,6 +169,7 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--ink);background:var(--si
 .saeule-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 .saeule.privat .saeule-dot{background:var(--privat);} .saeule.business .saeule-dot{background:var(--business);}
 .saeule.uni .saeule-dot{background:var(--uni);}       .saeule.sport .saeule-dot{background:var(--sport);}
+.saeule.meta .saeule-dot{background:var(--app);}
 .saeule-name{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:.09em;
   color:rgba(255,255,255,.55);font-weight:500;}
 .saeule-head.active .saeule-name{color:#fff;}
@@ -9881,7 +9882,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 49;
+const APP_FASSUNG = 50;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
