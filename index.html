@@ -1248,6 +1248,36 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .schw-zahlen b{color:var(--ink);font-weight:600;}
 .schw-zahlen .warn b,.schw-zahlen .warn{color:var(--danger);}
 
+/* Zeitraum als Strecke: von wann bis wann, und wie weit man drin ist.
+   Der Balken zeigt die verstrichene Zeit, nicht den Erfolg - wie weit
+   man ist, sieht man an der Strecke darueber. */
+.schw-zeitraum{margin-bottom:13px;}
+.schw-zr-kopf{display:flex;justify-content:space-between;align-items:baseline;
+  gap:10px;font-family:'IBM Plex Mono',monospace;font-size:0.63rem;
+  color:var(--ink-soft);margin-bottom:5px;}
+.schw-zr-rest{flex-shrink:0;color:var(--ink);}
+.schw-zeitraum.vorbei .schw-zr-rest{color:var(--danger);}
+
+/* Von/bis nebeneinander, mit Beschriftung - ohne sie raet man, welches
+   Feld welches ist. */
+/* Beim Anlegen dieselbe Beschriftung wie beim Bearbeiten - zweimal
+   "tt.mm.jjjj" nebeneinander sagt nicht, welches Feld welches ist. */
+.schw-neu-zeit{display:flex;gap:8px;margin:8px 0;}
+.schw-neu-zeit label{flex:1;min-width:0;display:flex;align-items:center;gap:6px;
+  font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--ink-soft);}
+.schw-neu-zeit input{flex:1;min-width:0;padding:9px 10px;border-radius:9px;
+  border:1px solid var(--line);background:var(--field);color:var(--ink);
+  font-family:'IBM Plex Mono',monospace;font-size:0.74rem;}
+.schw-neu-zeit input:focus{outline:none;border-color:var(--sport);}
+
+.schw-zeitfeld{display:flex;gap:8px;margin-top:8px;}
+.schw-zeitfeld label{flex:1;min-width:0;display:flex;align-items:center;gap:6px;
+  font-family:'IBM Plex Mono',monospace;font-size:0.63rem;color:var(--ink-soft);}
+.schw-zeitfeld input{flex:1;min-width:0;padding:7px 9px;border-radius:8px;
+  border:1px solid var(--line);background:var(--field);color:var(--ink);
+  font-family:'IBM Plex Mono',monospace;font-size:0.7rem;}
+.schw-zeitfeld input:focus{outline:none;border-color:var(--sport);}
+
 .schw-teil{border-top:1px solid var(--line-soft);padding-top:11px;margin-top:11px;}
 .schw-teil-kopf{display:flex;justify-content:space-between;align-items:baseline;
   font-family:'IBM Plex Mono',monospace;font-size:0.63rem;letter-spacing:.05em;
@@ -9785,6 +9815,12 @@ function schwaechenListe(){
     if(!s.tage || typeof s.tage !== 'object') s.tage = {};
     if(typeof s.warum !== 'string') s.warum = '';
     if(typeof s.frist !== 'string') s.frist = '';
+    /* Zeitraum: ab wann laeuft das. Alte Staende hatten nur die Frist -
+       dann gilt der erste abgehakte Tag als Start, sonst heute. */
+    if(typeof s.von !== 'string'){
+      const tage = Object.keys(s.tage||{}).sort();
+      s.von = tage.length ? tage[0] : isoToday();
+    }
   });
   return z.schwaechen;
 }
@@ -9837,10 +9873,11 @@ function renderSchwaechen(c, z){
 
     <div class="frist-neu">
       <input type="text" id="schw-text" placeholder="Was willst du nicht mehr machen?" maxlength="120">
-      <div class="frist-neu-zeile">
-        <input type="date" id="schw-frist" title="bis wann weg?">
-        <button class="ib-btn primary" id="schw-add">+ Eintragen</button>
+      <div class="schw-neu-zeit">
+        <label>ab <input type="date" id="schw-von"></label>
+        <label>bis <input type="date" id="schw-frist"></label>
       </div>
+      <button class="ib-btn primary full" id="schw-add">+ Eintragen</button>
     </div>
 
     <div id="schw-liste"></div>
@@ -9855,6 +9892,19 @@ function renderSchwaechen(c, z){
     const zahl = schwZahlen(s);
     const heutTag = s.tage[heute] || {};
     const tageBis = s.frist ? daysUntil(s.frist) : null;
+    /* Zeitraum: wie weit ist die Strecke, die er sich vorgenommen hat?
+       Nur wenn beide Enden stehen - sonst ist es keine Strecke. */
+    let zr = null;
+    if(s.von && s.frist && s.frist > s.von){
+      const start = new Date(s.von + 'T12:00:00');
+      const ende  = new Date(s.frist + 'T12:00:00');
+      const jetzt = new Date(); jetzt.setHours(12,0,0,0);
+      const ganz = Math.round((ende - start) / 86400000);
+      const durch = Math.max(0, Math.round((jetzt - start) / 86400000));
+      zr = {ganz, durch: Math.min(durch, ganz),
+            proz: Math.max(0, Math.min(100, durch / ganz * 100)),
+            vorbei: jetzt > ende};
+    }
     /* Die letzten 14 Tage als Streifen - Muster sieht man nur im Verlauf. */
     const streifen = [];
     const d = new Date(); d.setHours(12,0,0,0);
@@ -9906,9 +9956,26 @@ function renderSchwaechen(c, z){
           <span><b>${zahl.strecke}</b> Tage am Stück</span>
           <span><b>${zahl.ok}</b> sauber</span>
           <span class="${zahl.rueck?'warn':''}"><b>${zahl.rueck}</b> Rückfälle</span>
-          ${tageBis !== null ? `<span class="${tageBis<0?'warn':''}">${
-            tageBis < 0 ? `Frist ${-tageBis} Tg. über` : `noch ${tageBis} Tg.`}</span>` : ''}
         </div>
+
+        ${zr ? `
+        <div class="schw-zeitraum${zr.vorbei?' vorbei':''}">
+          <div class="schw-zr-kopf">
+            <span>${fmtDate(s.von)} → ${fmtDate(s.frist)}</span>
+            <span class="schw-zr-rest">${
+              zr.vorbei ? `Zeitraum ${-tageBis} Tg. vorbei`
+                        : `Tag ${zr.durch} von ${zr.ganz}`}</span>
+          </div>
+          <div class="mod-bar"><div class="mod-bar-fill"
+            style="width:${zr.proz}%;background:${zr.vorbei?'var(--danger)':'var(--sport)'};"></div></div>
+        </div>` : (tageBis !== null ? `
+        <div class="schw-zeitraum${tageBis<0?' vorbei':''}">
+          <div class="schw-zr-kopf">
+            <span>bis ${fmtDate(s.frist)}</span>
+            <span class="schw-zr-rest">${
+              tageBis < 0 ? `${-tageBis} Tg. über` : `noch ${tageBis} Tg.`}</span>
+          </div>
+        </div>` : '')}
 
         <div class="schw-teil">
           <div class="schw-teil-kopf">Was ich mir sage
@@ -9956,8 +10023,12 @@ function renderSchwaechen(c, z){
             <input type="text" class="schw-inp" data-swarum="${s.id}"
               placeholder="Wofür lässt du es? (kurz)" maxlength="200"
               value="${escapeHtml(s.warum||'')}">
-            <input type="date" class="schw-datum" data-sfrist="${s.id}"
-              value="${s.frist||''}" title="bis wann weg?">
+          </div>
+          <div class="schw-zeitfeld">
+            <label>von <input type="date" data-svon="${s.id}"
+              value="${s.von||''}"></label>
+            <label>bis <input type="date" data-sfrist="${s.id}"
+              value="${s.frist||''}"></label>
           </div>
           <button class="schw-loeschen" data-sdel="${s.id}">Schwäche löschen</button>
         </div>
@@ -9974,9 +10045,11 @@ function renderSchwaechen(c, z){
     const text = inp.value.trim();
     if(!text) return;
     liste.push({id:uid(), text, warum:'',
+                von: document.getElementById('schw-von').value || isoToday(),
                 frist: document.getElementById('schw-frist').value || '',
                 gegen:[], regeln:[], tage:{}, zu:false});
     inp.value = '';
+    document.getElementById('schw-von').value = '';
     document.getElementById('schw-frist').value = '';
     persist(); renderSchwaechen(c, z);
   }
@@ -10073,6 +10146,10 @@ function renderSchwaechen(c, z){
   host.querySelectorAll('[data-swarum]').forEach(i=>i.addEventListener('change',()=>{
     const s = finde(i.dataset.swarum);
     if(s){ s.warum = i.value.trim(); persist(); renderSchwaechen(c, z); }
+  }));
+  host.querySelectorAll('[data-svon]').forEach(i=>i.addEventListener('change',()=>{
+    const s = finde(i.dataset.svon);
+    if(s){ s.von = i.value || ''; persist(); renderSchwaechen(c, z); }
   }));
   host.querySelectorAll('[data-sfrist]').forEach(i=>i.addEventListener('change',()=>{
     const s = finde(i.dataset.sfrist);
@@ -10668,7 +10745,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 52;
+const APP_FASSUNG = 53;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
