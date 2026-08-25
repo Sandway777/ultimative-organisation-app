@@ -1183,6 +1183,116 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .hu-frei-text{font-family:'Fraunces',serif;font-size:1.1rem;color:var(--ink);}
 .hu-frei-sub{font-size:0.8rem;color:var(--ink-soft);margin-top:5px;}
 
+
+/* ---- Ziele: Schwaechen ----
+   Ton bewusst ruhig: kein Rot als Grundfarbe, kein Alarm. Wer hier
+   nachschaut, hat schon genug Druck. Gruen fuer gehaltene Tage, Rot nur
+   fuer den einzelnen Rueckfall. */
+.ebene.schwach{--eb:var(--sport);}
+
+.schw{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  margin-bottom:12px;overflow:hidden;}
+.schw-kopf{display:flex;align-items:center;gap:10px;width:100%;padding:13px 15px;
+  background:none;border:none;color:inherit;cursor:pointer;text-align:left;
+  font-family:inherit;}
+.schw-pfeil{font-size:0.72rem;color:var(--ink-soft);flex-shrink:0;}
+.schw-titel{flex:1;font-family:'Fraunces',serif;font-size:1rem;font-weight:600;
+  color:var(--ink);line-height:1.3;}
+.schw-strecke{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;
+  color:var(--ink-soft);flex-shrink:0;padding:3px 9px;border-radius:999px;
+  border:1px solid var(--line);}
+.schw-strecke.laeuft{color:var(--sport);border-color:var(--sport);
+  background:var(--sport-bg);font-weight:600;}
+.schw-body{padding:0 15px 14px;}
+.schw.zu .schw-body{display:none;}
+
+/* Das Wofuer steht oben und hat Gewicht - es ist der Grund, warum das
+   Ganze ueberhaupt dasteht. */
+.schw-warum{background:var(--sport-bg);border-left:3px solid var(--sport);
+  border-radius:0 8px 8px 0;padding:9px 12px;margin-bottom:12px;
+  font-size:0.85rem;color:var(--ink);line-height:1.45;}
+.schw-warum-label{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--sport);
+  margin-bottom:3px;}
+
+.schw-heute{border:1px solid var(--line);border-radius:10px;padding:11px 13px;
+  margin-bottom:11px;}
+.schw-heute.ok{border-color:var(--sport);background:var(--sport-bg);}
+.schw-heute.rueck{border-color:var(--danger);background:var(--privat-bg);}
+.schw-heute-label{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);
+  margin-bottom:6px;}
+.schw-heute-text{font-size:0.92rem;color:var(--ink);margin-bottom:7px;
+  line-height:1.4;}
+.schw-heute.ok .schw-heute-text{color:var(--sport);font-weight:600;}
+.schw-heute.rueck .schw-heute-text{color:var(--danger);}
+.schw-heute-knoepfe{display:flex;gap:8px;flex-wrap:wrap;}
+.schw-btn{font-family:'IBM Plex Sans',sans-serif;font-size:0.8rem;
+  padding:8px 14px;border-radius:9px;border:1px solid var(--line);
+  background:none;color:var(--ink-soft);cursor:pointer;}
+.schw-btn.gut{background:var(--sport);border-color:var(--sport);color:#14210F;
+  font-weight:600;}
+.schw-btn.schlecht{border-color:var(--line);}
+.schw-btn.schlecht:hover{color:var(--danger);border-color:var(--danger);}
+.schw-btn.zurueck{font-size:0.7rem;padding:5px 11px;}
+
+/* Vierzehn Tage als Streifen - Muster sieht man nur im Verlauf. */
+.schw-streifen{display:flex;gap:3px;margin-bottom:7px;}
+.schw-tag{flex:1;height:22px;border-radius:4px;background:var(--line-soft);
+  border:1px solid transparent;}
+.schw-tag.ok{background:var(--sport);}
+.schw-tag.rueck{background:var(--danger);}
+.schw-tag.jetzt{border-color:var(--ink-soft);}
+.schw-zahlen{display:flex;flex-wrap:wrap;gap:12px;font-family:'IBM Plex Mono',monospace;
+  font-size:0.63rem;color:var(--ink-soft);margin-bottom:14px;}
+.schw-zahlen b{color:var(--ink);font-weight:600;}
+.schw-zahlen .warn b,.schw-zahlen .warn{color:var(--danger);}
+
+.schw-teil{border-top:1px solid var(--line-soft);padding-top:11px;margin-top:11px;}
+.schw-teil-kopf{display:flex;justify-content:space-between;align-items:baseline;
+  font-family:'IBM Plex Mono',monospace;font-size:0.63rem;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--ink-soft);margin-bottom:7px;}
+.schw-teil-kopf span{opacity:.7;font-size:0.6rem;}
+
+.schw-gegen{display:flex;align-items:flex-start;gap:8px;padding:6px 0;
+  border-bottom:1px solid var(--line-soft);}
+.schw-gegen:last-of-type{border-bottom:none;}
+.schw-gegen-text{flex:1;font-size:0.84rem;color:var(--ink);line-height:1.45;}
+
+.schw-regel{padding:8px 0;border-bottom:1px solid var(--line-soft);}
+.schw-regel:last-of-type{border-bottom:none;}
+.schw-regel-oben{display:flex;align-items:flex-start;gap:8px;}
+.schw-regel-text{flex:1;font-size:0.84rem;color:var(--ink-soft);line-height:1.4;}
+.schw-regel.heute .schw-regel-text{color:var(--ink);}
+.schw-wochentage{display:flex;gap:3px;margin-top:6px;}
+.schw-wt{flex:1;font-family:'IBM Plex Mono',monospace;font-size:0.58rem;
+  padding:4px 0;border-radius:6px;border:1px solid var(--line);
+  background:none;color:var(--ink-soft);cursor:pointer;opacity:.5;}
+.schw-wt.an{opacity:1;color:var(--sport);border-color:var(--sport);
+  background:var(--sport-bg);}
+
+.schw-zeile{display:flex;gap:7px;margin-top:8px;}
+.schw-inp{flex:1;min-width:0;padding:8px 11px;border-radius:8px;
+  border:1px solid var(--line);background:var(--field);color:var(--ink);
+  font-family:'IBM Plex Sans',sans-serif;font-size:0.82rem;}
+.schw-inp:focus{outline:none;border-color:var(--sport);}
+.schw-datum{flex-shrink:0;padding:8px 10px;border-radius:8px;
+  border:1px solid var(--line);background:var(--field);color:var(--ink);
+  font-family:'IBM Plex Mono',monospace;font-size:0.72rem;}
+.schw-plus{flex-shrink:0;width:36px;border-radius:8px;border:1px solid var(--line);
+  background:none;color:var(--ink-soft);cursor:pointer;font-size:1.1rem;
+  line-height:1;padding:0;}
+.schw-plus:hover{color:var(--sport);border-color:var(--sport);}
+.schw-leer{font-size:0.76rem;color:var(--ink-soft);line-height:1.5;
+  padding:4px 0;opacity:.8;}
+
+.schw-loeschen{width:100%;margin-top:10px;padding:8px;border-radius:8px;
+  border:1px solid var(--line);background:none;color:var(--ink-soft);
+  font-family:'IBM Plex Sans',sans-serif;font-size:0.74rem;cursor:pointer;}
+.schw-loeschen:hover{color:var(--danger);border-color:var(--danger);}
+.schw-loeschen.confirm{color:var(--danger);border-color:var(--danger);
+  background:var(--privat-bg);}
+
 .exp-budget{margin:10px 0 2px;}
 .exp-budget-kopf{display:flex;justify-content:space-between;align-items:baseline;
   gap:8px;margin-bottom:5px;}
@@ -6131,7 +6241,7 @@ const APP_BEREICHE = [
     {t:'Idee-Board',      d:'lose Einfälle'},
     {t:'Notizzettel',     d:'Tage + Sammelliste ohne Termin'},
     {t:'Monatsübersicht', d:'alle vier Säulen nebeneinander'},
-    {t:'Ziele',           d:'Jahresziele messbar, Lebensziele in Schritten'}
+    {t:'Ziele',           d:'Jahresziele, Lebensziele, Schwächen'}
   ]},
   {saeule:'Die App selbst', farbe:'var(--app)', punkte:[
     {t:'Stand',        d:'was die App heute kann', neu:true},
@@ -6148,6 +6258,8 @@ const APP_BEREICHE = [
 
 /* Was sich wann geaendert hat - neueste zuerst. Beim Weiterbauen ergaenzen. */
 const APP_VERLAUF = [
+  {v:52, d:'22.08.2026', t:'Ziele: Schwächen',
+   b:'Was du lassen willst – mit Gegenargumenten, eigenen Regeln je Wochentag und einer Strecke sauberer Tage.'},
   {v:51, d:'22.08.2026', t:'Heute-Bildschirm',
    b:'Zieht quer aus allen Bereichen zusammen, was ansteht – heute, morgen, diese Woche. Neue Startseite.'},
   {v:49, d:'22.08.2026', t:'Die App über sich selbst',
@@ -9584,6 +9696,7 @@ function zieleNode(){
   if(!data.ziele || typeof data.ziele!=='object') data.ziele = {jahr:[], leben:[]};
   if(!Array.isArray(data.ziele.jahr))  data.ziele.jahr = [];
   if(!Array.isArray(data.ziele.leben)) data.ziele.leben = [];
+  if(!Array.isArray(data.ziele.schwaechen)) data.ziele.schwaechen = [];
   return data.ziele;
 }
 
@@ -9603,6 +9716,12 @@ function renderZiele(c){
   const jahr = String(new Date().getFullYear());
   const jahrOffen  = z.jahr.filter(x=>!x.erreicht && String(x.jahr)===jahr).length;
   const lebenOffen = z.leben.filter(x=>!x.erreicht).length;
+  /* Beste laufende Strecke - die Zahl, die man sehen will. */
+  const schwListe = schwaechenListe();
+  const schwBest = schwListe.reduce((m,s)=>Math.max(m, schwStrecke(s)), 0);
+  const schwZahl = schwListe.length
+    ? (schwBest ? schwBest + ' Tage am Stück' : schwListe.length + ' im Blick')
+    : 'noch keine';
 
   if(zielEbene === null){
     c.innerHTML = `
@@ -9621,6 +9740,12 @@ function renderZiele(c){
           <span class="ebene-sub">die großen Richtungen – in Schritte zerlegt</span>
           <span class="ebene-zahl">${lebenOffen} offen</span>
         </button>
+        <button class="ebene schwach" data-zebene="schwach">
+          <span class="ebene-icon">🛡️</span>
+          <span class="ebene-titel">Schwächen</span>
+          <span class="ebene-sub">was du lassen willst – mit Regeln und Strecke</span>
+          <span class="ebene-zahl">${schwZahl}</span>
+        </button>
       </div>
     `;
     c.querySelectorAll('[data-zebene]').forEach(b=>b.addEventListener('click',()=>{
@@ -9628,8 +9753,346 @@ function renderZiele(c){
     }));
     return;
   }
-  if(zielEbene === 'jahr') renderJahresziele(c, z, jahr);
-  else                     renderLebensziele(c, z);
+  if(zielEbene === 'jahr')         renderJahresziele(c, z, jahr);
+  else if(zielEbene === 'schwach') renderSchwaechen(c, z);
+  else                             renderLebensziele(c, z);
+}
+
+
+/* ---------------- ZIELE: SCHWAECHEN ----------------
+   Was Leon nicht mehr machen will. Anders als ein Ziel, das man erreicht:
+   hier geht es ums Lassen, und das misst sich in Tagen ohne Rueckfall.
+
+   Aufbau je Schwaeche:
+   - text      was er lassen will
+   - warum     wofuer er es lassen will (steht an schlechten Tagen ganz oben)
+   - gegen[]   Gegenargumente fuer den Moment der Versuchung
+   - frist     bis wann sie weg sein soll
+   - regeln[]  konkrete Regeln fuer die Woche, je mit Wochentagen
+   - tage      {"YYYY-MM-DD": {ok:true} | {rueck:true, ausloeser:'...'}}
+
+   Ein Haken je Tag fuer alle Regeln zusammen, nicht je Regel: Leon wollte
+   es bewusst einfach. Wer abends drei Haken setzen muss, setzt bald keinen. */
+
+const SCHW_WOCHENTAGE = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+
+function schwaechenListe(){
+  const z = zieleNode();
+  if(!Array.isArray(z.schwaechen)) z.schwaechen = [];
+  z.schwaechen.forEach(s=>{
+    if(!Array.isArray(s.gegen))  s.gegen  = [];
+    if(!Array.isArray(s.regeln)) s.regeln = [];
+    if(!s.tage || typeof s.tage !== 'object') s.tage = {};
+    if(typeof s.warum !== 'string') s.warum = '';
+    if(typeof s.frist !== 'string') s.frist = '';
+  });
+  return z.schwaechen;
+}
+
+/* Wie lange laeuft es schon sauber? Zaehlt rueckwaerts ab heute und
+   stoppt beim ersten Rueckfall. Leere Tage brechen die Strecke nicht -
+   nicht abgehakt heisst vergessen, nicht rueckfaellig. */
+function schwStrecke(s){
+  let strecke = 0;
+  const d = new Date(); d.setHours(12,0,0,0);
+  for(let i = 0; i < 400; i++){
+    const ds = isoLocal(d);
+    const tag = s.tage[ds];
+    if(tag && tag.rueck) break;
+    if(tag && tag.ok) strecke++;
+    d.setDate(d.getDate() - 1);
+  }
+  return strecke;
+}
+
+/* Gesamtzahl sauberer Tage und Rueckfaelle - fuer die Uebersicht. */
+function schwZahlen(s){
+  let ok = 0, rueck = 0;
+  Object.keys(s.tage||{}).forEach(k=>{
+    if(s.tage[k].rueck) rueck++;
+    else if(s.tage[k].ok) ok++;
+  });
+  return {ok, rueck, strecke: schwStrecke(s)};
+}
+
+/* Gilt heute eine Regel? Leere Tage-Liste heisst: jeden Tag. */
+function schwRegelHeute(r){
+  if(!Array.isArray(r.tage) || !r.tage.length) return true;
+  const wt = (new Date().getDay() + 6) % 7;
+  return r.tage.includes(wt);
+}
+
+function renderSchwaechen(c, z){
+  const liste = schwaechenListe();
+  const heute = isoToday();
+
+  c.innerHTML = `
+    <div class="head-row"><div>
+      <h1 class="zt">🛡️ Schwächen</h1>
+      <div class="head-meta">was du lassen willst${
+        liste.length ? ' · ' + liste.length + (liste.length===1?' Stück':' Stück') : ''}</div>
+    </div></div>
+    <button class="entry-back" id="schw-zurueck">← Zurück</button>
+    <div class="divider"></div>
+
+    <div class="frist-neu">
+      <input type="text" id="schw-text" placeholder="Was willst du nicht mehr machen?" maxlength="120">
+      <div class="frist-neu-zeile">
+        <input type="date" id="schw-frist" title="bis wann weg?">
+        <button class="ib-btn primary" id="schw-add">+ Eintragen</button>
+      </div>
+    </div>
+
+    <div id="schw-liste"></div>
+  `;
+
+  document.getElementById('schw-zurueck').addEventListener('click',()=>{
+    zielEbene = null; renderZiele(c);
+  });
+
+  const host = document.getElementById('schw-liste');
+  host.innerHTML = liste.map(s=>{
+    const zahl = schwZahlen(s);
+    const heutTag = s.tage[heute] || {};
+    const tageBis = s.frist ? daysUntil(s.frist) : null;
+    /* Die letzten 14 Tage als Streifen - Muster sieht man nur im Verlauf. */
+    const streifen = [];
+    const d = new Date(); d.setHours(12,0,0,0);
+    d.setDate(d.getDate() - 13);
+    for(let i = 0; i < 14; i++){
+      const ds = isoLocal(d);
+      const t = s.tage[ds] || {};
+      streifen.push({ds, zustand: t.rueck ? 'rueck' : (t.ok ? 'ok' : 'leer'),
+                     heute: ds === heute});
+      d.setDate(d.getDate() + 1);
+    }
+    const regelnHeute = s.regeln.filter(schwRegelHeute);
+
+    return `<section class="schw${s.zu?' zu':''}" data-sid="${s.id}">
+      <button class="schw-kopf" data-sklapp="${s.id}">
+        <span class="schw-pfeil">${s.zu?'▸':'▾'}</span>
+        <span class="schw-titel">${escapeHtml(s.text)}</span>
+        <span class="schw-strecke${zahl.strecke ? ' laeuft' : ''}">${
+          zahl.strecke ? zahl.strecke + ' Tg.' : '–'}</span>
+      </button>
+
+      <div class="schw-body">
+        ${s.warum ? `<div class="schw-warum">
+          <div class="schw-warum-label">Wofür</div>
+          ${escapeHtml(s.warum)}</div>` : ''}
+
+        <div class="schw-heute${heutTag.ok?' ok':''}${heutTag.rueck?' rueck':''}">
+          <div class="schw-heute-label">Heute</div>
+          ${heutTag.rueck ? `
+            <div class="schw-heute-text">Rückfall${
+              heutTag.ausloeser ? ' · ' + escapeHtml(heutTag.ausloeser) : ''}</div>
+            <button class="schw-btn zurueck" data-sreset="${s.id}">rückgängig</button>
+          ` : heutTag.ok ? `
+            <div class="schw-heute-text">Eingehalten ✓</div>
+            <button class="schw-btn zurueck" data-sreset="${s.id}">rückgängig</button>
+          ` : `
+            <div class="schw-heute-knoepfe">
+              <button class="schw-btn gut" data-sok="${s.id}">✓ Eingehalten</button>
+              <button class="schw-btn schlecht" data-srueck="${s.id}">Rückfall</button>
+            </div>
+          `}
+        </div>
+
+        <div class="schw-streifen">
+          ${streifen.map(t=>`<span class="schw-tag ${t.zustand}${t.heute?' jetzt':''}"
+            title="${fmtDate(t.ds)}"></span>`).join('')}
+        </div>
+        <div class="schw-zahlen">
+          <span><b>${zahl.strecke}</b> Tage am Stück</span>
+          <span><b>${zahl.ok}</b> sauber</span>
+          <span class="${zahl.rueck?'warn':''}"><b>${zahl.rueck}</b> Rückfälle</span>
+          ${tageBis !== null ? `<span class="${tageBis<0?'warn':''}">${
+            tageBis < 0 ? `Frist ${-tageBis} Tg. über` : `noch ${tageBis} Tg.`}</span>` : ''}
+        </div>
+
+        <div class="schw-teil">
+          <div class="schw-teil-kopf">Was ich mir sage
+            <span>${s.gegen.length}</span></div>
+          ${s.gegen.length ? s.gegen.map(g=>`
+            <div class="schw-gegen">
+              <span class="schw-gegen-text">${escapeHtml(g.text)}</span>
+              <button class="mini-del" data-sgdel="${s.id}|${g.id}" aria-label="Löschen">×</button>
+            </div>
+          `).join('') : `<div class="schw-leer">Noch nichts. Schreib auf, was du dir
+            im Moment der Versuchung sagen willst.</div>`}
+          <div class="schw-zeile">
+            <input type="text" class="schw-inp" data-sginp="${s.id}"
+              placeholder="Gegenargument" maxlength="200">
+            <button class="schw-plus" data-sgadd="${s.id}">+</button>
+          </div>
+        </div>
+
+        <div class="schw-teil">
+          <div class="schw-teil-kopf">Meine Regeln
+            <span>${regelnHeute.length ? regelnHeute.length + ' heute' : s.regeln.length}</span></div>
+          ${s.regeln.length ? s.regeln.map(r=>`
+            <div class="schw-regel${schwRegelHeute(r)?' heute':''}">
+              <div class="schw-regel-oben">
+                <span class="schw-regel-text">${escapeHtml(r.text)}</span>
+                <button class="mini-del" data-srdel="${s.id}|${r.id}" aria-label="Löschen">×</button>
+              </div>
+              <div class="schw-wochentage">
+                ${SCHW_WOCHENTAGE.map((w,i)=>`<button class="schw-wt${
+                  (!r.tage||!r.tage.length||r.tage.includes(i))?' an':''}"
+                  data-swt="${s.id}|${r.id}|${i}">${w}</button>`).join('')}
+              </div>
+            </div>
+          `).join('') : `<div class="schw-leer">Noch keine Regel. Zum Beispiel:
+            „Handy ab 22 Uhr aus dem Schlafzimmer."</div>`}
+          <div class="schw-zeile">
+            <input type="text" class="schw-inp" data-srinp="${s.id}"
+              placeholder="Regel, die ich einhalte" maxlength="200">
+            <button class="schw-plus" data-sradd="${s.id}">+</button>
+          </div>
+        </div>
+
+        <div class="schw-teil">
+          <div class="schw-zeile">
+            <input type="text" class="schw-inp" data-swarum="${s.id}"
+              placeholder="Wofür lässt du es? (kurz)" maxlength="200"
+              value="${escapeHtml(s.warum||'')}">
+            <input type="date" class="schw-datum" data-sfrist="${s.id}"
+              value="${s.frist||''}" title="bis wann weg?">
+          </div>
+          <button class="schw-loeschen" data-sdel="${s.id}">Schwäche löschen</button>
+        </div>
+      </div>
+    </section>`;
+  }).join('') || `<div class="leer-hinweis">Noch nichts eingetragen. Schreib oben rein,
+    was du nicht mehr machen willst.</div>`;
+
+  const finde = (id)=>liste.find(x=>x.id===id);
+
+  /* --- Anlegen --- */
+  function anlegen(){
+    const inp = document.getElementById('schw-text');
+    const text = inp.value.trim();
+    if(!text) return;
+    liste.push({id:uid(), text, warum:'',
+                frist: document.getElementById('schw-frist').value || '',
+                gegen:[], regeln:[], tage:{}, zu:false});
+    inp.value = '';
+    document.getElementById('schw-frist').value = '';
+    persist(); renderSchwaechen(c, z);
+  }
+  document.getElementById('schw-add').addEventListener('click', anlegen);
+  document.getElementById('schw-text').addEventListener('keydown', e=>{
+    if(e.key === 'Enter') anlegen();
+  });
+
+  /* --- Zuklappen --- */
+  host.querySelectorAll('[data-sklapp]').forEach(b=>b.addEventListener('click',()=>{
+    const s = finde(b.dataset.sklapp);
+    if(s){ s.zu = !s.zu; persist(); renderSchwaechen(c, z); }
+  }));
+
+  /* --- Heute bewerten --- */
+  host.querySelectorAll('[data-sok]').forEach(b=>b.addEventListener('click',()=>{
+    const s = finde(b.dataset.sok);
+    if(s){ s.tage[heute] = {ok:true}; persist(); renderSchwaechen(c, z); }
+  }));
+
+  host.querySelectorAll('[data-srueck]').forEach(b=>b.addEventListener('click',()=>{
+    const s = finde(b.dataset.srueck);
+    if(!s) return;
+    /* Der Ausloeser ist der eigentliche Wert eines Rueckfalls - ohne ihn
+       ist es nur eine Luecke, mit ihm ein Muster. Trotzdem freiwillig. */
+    const grund = prompt('Was war der Auslöser? (kann leer bleiben)');
+    s.tage[heute] = {rueck:true, ausloeser: (grund||'').trim()};
+    persist(); renderSchwaechen(c, z);
+  }));
+
+  host.querySelectorAll('[data-sreset]').forEach(b=>b.addEventListener('click',()=>{
+    const s = finde(b.dataset.sreset);
+    if(s){ delete s.tage[heute]; persist(); renderSchwaechen(c, z); }
+  }));
+
+  /* --- Gegenargumente --- */
+  const gegenAdd = (id)=>{
+    const s = finde(id);
+    const inp = host.querySelector(`[data-sginp="${id}"]`);
+    const t = inp.value.trim();
+    if(!s || !t) return;
+    s.gegen.push({id:uid(), text:t});
+    persist(); renderSchwaechen(c, z);
+  };
+  host.querySelectorAll('[data-sgadd]').forEach(b=>b.addEventListener('click',()=>gegenAdd(b.dataset.sgadd)));
+  host.querySelectorAll('[data-sginp]').forEach(i=>i.addEventListener('keydown',e=>{
+    if(e.key === 'Enter') gegenAdd(i.dataset.sginp);
+  }));
+  host.querySelectorAll('[data-sgdel]').forEach(b=>b.addEventListener('click',()=>{
+    const [sid, gid] = b.dataset.sgdel.split('|');
+    const s = finde(sid);
+    if(s){ s.gegen = s.gegen.filter(g=>g.id!==gid); persist(); renderSchwaechen(c, z); }
+  }));
+
+  /* --- Regeln --- */
+  const regelAdd = (id)=>{
+    const s = finde(id);
+    const inp = host.querySelector(`[data-srinp="${id}"]`);
+    const t = inp.value.trim();
+    if(!s || !t) return;
+    s.regeln.push({id:uid(), text:t, tage:[]});
+    persist(); renderSchwaechen(c, z);
+  };
+  host.querySelectorAll('[data-sradd]').forEach(b=>b.addEventListener('click',()=>regelAdd(b.dataset.sradd)));
+  host.querySelectorAll('[data-srinp]').forEach(i=>i.addEventListener('keydown',e=>{
+    if(e.key === 'Enter') regelAdd(i.dataset.srinp);
+  }));
+  host.querySelectorAll('[data-srdel]').forEach(b=>b.addEventListener('click',()=>{
+    const [sid, rid] = b.dataset.srdel.split('|');
+    const s = finde(sid);
+    if(s){ s.regeln = s.regeln.filter(r=>r.id!==rid); persist(); renderSchwaechen(c, z); }
+  }));
+
+  /* Wochentag an/aus. Leere Liste heisst "jeden Tag" - klickt man dort
+     einen Tag weg, muessen erst alle anderen gesetzt werden. */
+  host.querySelectorAll('[data-swt]').forEach(b=>b.addEventListener('click',()=>{
+    const [sid, rid, wt] = b.dataset.swt.split('|');
+    const s = finde(sid);
+    const r = s && s.regeln.find(x=>x.id===rid);
+    if(!r) return;
+    const i = Number(wt);
+    if(!Array.isArray(r.tage) || !r.tage.length){
+      r.tage = [0,1,2,3,4,5,6].filter(x=>x!==i);
+    } else if(r.tage.includes(i)){
+      r.tage = r.tage.filter(x=>x!==i);
+    } else {
+      r.tage.push(i); r.tage.sort();
+      if(r.tage.length === 7) r.tage = [];
+    }
+    persist(); renderSchwaechen(c, z);
+  }));
+
+  /* --- Wofuer und Frist --- */
+  host.querySelectorAll('[data-swarum]').forEach(i=>i.addEventListener('change',()=>{
+    const s = finde(i.dataset.swarum);
+    if(s){ s.warum = i.value.trim(); persist(); renderSchwaechen(c, z); }
+  }));
+  host.querySelectorAll('[data-sfrist]').forEach(i=>i.addEventListener('change',()=>{
+    const s = finde(i.dataset.sfrist);
+    if(s){ s.frist = i.value || ''; persist(); renderSchwaechen(c, z); }
+  }));
+
+  /* --- Loeschen, zwei Klicks --- */
+  host.querySelectorAll('[data-sdel]').forEach(b=>b.addEventListener('click',()=>{
+    if(b.dataset.confirm !== '1'){
+      b.dataset.confirm = '1'; b.textContent = 'Wirklich löschen?';
+      b.classList.add('confirm');
+      setTimeout(()=>{ if(b.dataset.confirm==='1'){
+        b.dataset.confirm=''; b.textContent='Schwäche löschen';
+        b.classList.remove('confirm'); } }, 3000);
+      return;
+    }
+    const i = liste.findIndex(x=>x.id===b.dataset.sdel);
+    if(i >= 0) liste.splice(i, 1);
+    persist(); renderSchwaechen(c, z);
+  }));
 }
 
 /* ---- Jahresziele: messbar, mit Zeitvergleich ---- */
@@ -10205,7 +10668,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 51;
+const APP_FASSUNG = 52;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
