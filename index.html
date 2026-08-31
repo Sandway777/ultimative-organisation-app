@@ -4573,11 +4573,15 @@ function renderKonten(c, def, node){
   const summe = kontenSumme(k);
   /* Der laufende Monat - was er kostet und was noch reinkommt. Damit
      wird aus dem Kontostand eine Vorschau statt einer Momentaufnahme. */
-  const heuteYm = isoToday().slice(0,7);
-  const laufend = node.months[heuteYm] || node.months[Object.keys(node.months||{}).sort().pop()];
-  const lSums = expenseSums(laufend);
-  const monatKosten = lSums.meins + (laufend ? moebelMonatMeins(node, heuteYm) : 0);
-  const monatEin = einnahmeSumme(laufend).alles;
+  /* Der naechste Monat, nicht der laufende: was schon gelaufen ist,
+     steckt im Kontostand bereits drin. */
+  const naechstYm = Object.keys(node.months||{}).sort()
+    .find(k => k > isoToday().slice(0,7));
+  const naechst = naechstYm ? node.months[naechstYm] : null;
+  const monatKosten = naechst
+    ? expenseSums(naechst).meins + moebelMonatMeins(node, naechstYm) : 0;
+  const monatEin = naechst ? einnahmeSumme(naechst).alles : 0;
+  const monatName = naechstYm ? fmtYm(naechstYm) : null;
   host.innerHTML = `
     ${k.liste.map(e=>`
       <div class="konto-zeile" data-kid="${e.id}">
@@ -4591,14 +4595,15 @@ function renderKonten(c, def, node){
       </div>
     `).join('')}
     <button class="konten-plus" id="konten-add">+ Konto</button>
-    ${summe ? `
+    ${summe && naechst ? `
     <div class="konten-rechnung">
-      <div class="sum-zeile"><span>auf allen Konten</span><b>${eur(summe)}</b></div>
-      <div class="sum-zeile minus"><span>− dieser Monat kostet dich</span><b>− ${eur(monatKosten)}</b></div>
+      <div class="sum-zeile"><span>auf allen Konten heute</span><b>${eur(summe)}</b></div>
+      <div class="sum-zeile minus"><span>− ${monatName} kostet dich</span><b>− ${eur(monatKosten)}</b></div>
       ${monatEin ? `<div class="sum-zeile plus"><span>+ kommt noch rein</span><b>+ ${eur(monatEin)}</b></div>` : ''}
-      <div class="sum-zeile summe"><span>bleibt nach dem Monat</span><b>${eur(summe - monatKosten + monatEin)}</b></div>
+      <div class="sum-zeile summe"><span>bleibt nach ${monatName}</span><b>${eur(summe - monatKosten + monatEin)}</b></div>
     </div>
-    <div class="konten-datum">${k.stand ? `Stand ${fmtDate(k.stand)}` : 'noch kein Stand eingetragen'}</div>` : ''}
+    <div class="konten-datum">${k.stand ? `Stand ${fmtDate(k.stand)}` : 'noch kein Stand eingetragen'}</div>`
+    : summe ? `<div class="konten-datum">${k.stand ? `Stand ${fmtDate(k.stand)}` : ''} · leg einen Monat an, dann wird gerechnet</div>` : ''}
   `;
 
   const neuZeichnen = ()=>{ persist(); renderMain(); };
@@ -7264,7 +7269,18 @@ function renderExpenses(c, def){
   /* Was nach dem laufenden Monat uebrig ist: was jetzt da liegt, minus
      was der Monat kostet, plus was noch reinkommt. Das ist die Zahl, mit
      der Leon in den naechsten Monat geht. */
-  const kontoNachher = kontoSumme - monatMeins + einSum.alles;
+  /* Der Kontostand ist der Stand von HEUTE - was bisher lief, ist darin
+     schon drin. Abziehen darf man nur, was noch KOMMT: der naechste
+     Monat, den es in den Daten schon gibt. Vorher zog die App den
+     laufenden Monat ab, den der Kontostand laengst enthielt. */
+  const naechsterYm = Object.keys(node.months||{}).sort()
+    .find(k => k > isoToday().slice(0,7));
+  const naechster = naechsterYm ? node.months[naechsterYm] : null;
+  const naechsterSums = naechster ? expenseSums(naechster) : null;
+  const naechsterKosten = naechster
+    ? naechsterSums.meins + moebelMonatMeins(node, naechsterYm) : 0;
+  const naechsterEin = naechster ? einnahmeSumme(naechster).alles : 0;
+  const kontoNachher = kontoSumme - naechsterKosten + naechsterEin;
   const gesperrt = !!(neuester && neuester.closed);
 
   c.innerHTML = renderNodeHead(def, `${alleYm.length} Monat(e) · ${jahre.length} Jahr(e)`) + `
@@ -7319,24 +7335,29 @@ function renderExpenses(c, def){
         </div>
       </div>
 
-      <!-- Der Kontostand ist die Wahrheit, nicht die Rechnung: was C24
-           anzeigt, liegt wirklich da. Davon geht ab, was der laufende
-           Monat noch kostet - so sieht Leon, womit er rausgeht. -->
+      <!-- Der Kontostand ist der Stand von heute: alles Gelaufene steckt
+           schon drin. Abgezogen wird darum nur, was noch kommt - der
+           naechste Monat. -->
       <div class="exp-sum-box aufklapp" data-rechnung="geld">
-        <div class="exp-sum-label">${kontoSumme ? 'Nach diesem Monat' : 'Mein Geld'} <span class="sum-pfeil">▾</span></div>
+        <div class="exp-sum-label">${!kontoSumme ? 'Mein Geld'
+          : naechster ? 'Nach ' + fmtYm(naechsterYm) : 'Auf deinen Konten'} <span class="sum-pfeil">▾</span></div>
         <div class="exp-sum-value sub">${eur(kontoSumme ? kontoNachher : verf.rest)}</div>
-        <div class="exp-sum-note">${kontoSumme
-          ? `jetzt ${eur(kontoSumme)} · ${eur(monatMeins)} kostet der Monat noch`
-          : `gerechnet aus ${gesperrt ? eur(verf.start) : `<input type="text" id="exp-start-input" class="mo-budget-input" inputmode="decimal" value="${String(verf.start).replace('.',',')}"> €`} Startgeld`}</div>
+        <div class="exp-sum-note">${!kontoSumme
+          ? `gerechnet aus ${gesperrt ? eur(verf.start) : `<input type="text" id="exp-start-input" class="mo-budget-input" inputmode="decimal" value="${String(verf.start).replace('.',',')}"> €`} Startgeld`
+          : naechster
+            ? `jetzt ${eur(kontoSumme)} · ${fmtYm(naechsterYm)} kostet ${eur(naechsterKosten)}`
+            : `Stand ${konten.stand ? fmtDate(konten.stand) : 'heute'} · kein Folgemonat angelegt`}</div>
         <div class="sum-rechnung" id="rechnung-geld">
           ${kontoSumme ? `
           ${konten.liste.filter(k=>Number(k.stand)).map(k=>
             `<div class="sum-zeile"><span>${k.icon || '🏦'} ${escapeHtml(k.name)}</span><b>${eur(k.stand)}</b></div>`
           ).join('')}
-          <div class="sum-zeile summe"><span>auf den Konten</span><b>${eur(kontoSumme)}</b></div>
-          <div class="sum-zeile minus"><span>− ${fmtYm(neuesterYm)} kostet dich</span><b>− ${eur(monatMeins)}</b></div>
-          ${einSum.alles ? `<div class="sum-zeile plus"><span>+ ${fmtYm(neuesterYm)} kommt rein</span><b>+ ${eur(einSum.alles)}</b></div>` : ''}
-          <div class="sum-zeile summe"><span>bleibt danach</span><b>${eur(kontoNachher)}</b></div>
+          <div class="sum-zeile summe"><span>auf den Konten heute</span><b>${eur(kontoSumme)}</b></div>
+          ${naechster ? `
+          <div class="sum-zeile minus"><span>− ${fmtYm(naechsterYm)} kostet dich</span><b>− ${eur(naechsterKosten)}</b></div>
+          ${naechsterEin ? `<div class="sum-zeile plus"><span>+ ${fmtYm(naechsterYm)} kommt rein</span><b>+ ${eur(naechsterEin)}</b></div>` : ''}
+          <div class="sum-zeile summe"><span>bleibt danach</span><b>${eur(kontoNachher)}</b></div>`
+          : `<div class="sum-zeile hinweis"><span><i>Leg einen Monat an, dann steht hier, was danach uebrig bleibt.</i></span><b></b></div>`}
           <div class="sum-zeile hinweis"><span><i>Die Kontostände trägst du unten ein – pass sie an, wenn sich etwas geändert hat.</i></span><b></b></div>` : `
           <div class="sum-zeile"><span>Startgeld</span><b>${eur(verf.start)}</b></div>
           ${verf.semesterVorab ? `<div class="sum-zeile plus"><span>+ vorab gezahlt <i>Uni</i></span><b>+ ${eur(verf.semesterVorab)}</b></div>` : ''}
@@ -7345,6 +7366,7 @@ function renderExpenses(c, def){
           ${verf.semester ? `<div class="sum-zeile minus"><span>− Semesterkosten</span><b>− ${eur(verf.semester)}</b></div>` : ''}
           <div class="sum-zeile summe"><span>bleibt</span><b>${eur(verf.rest)}</b></div>`}
         </div>
+      </div>
       </div>
       <div class="exp-sum-box aufklapp" data-rechnung="moebel">
         <div class="exp-sum-label">🛋️ Wohnungseinrichtung <span class="sum-pfeil">▾</span></div>
@@ -11464,7 +11486,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 60;
+const APP_FASSUNG = 61;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
