@@ -1395,6 +1395,48 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .kd-chip.bafoeg{background:var(--business-bg);color:var(--business);
   border:1px solid var(--business);}
 
+
+/* ---- Kontostaende ----
+   Unauffaellig gehalten: es ist die Gegenprobe, nicht der Arbeitsbereich.
+   Nur der Abgleich am Ende faellt auf, wenn etwas nicht stimmt. */
+/* Das entry-layout darueber hat height:100% und schrumpft im Flex-Container
+   auf 0, sobald etwas darunter Platz braucht - die Monatsliste ragt dann
+   heraus und ueberlappt. Beide bekommen darum feste Rollen: die Liste
+   nimmt den Platz, die Konten bleiben in ihrer Hoehe. */
+.content .entry-layout{flex:1 1 auto;min-height:340px;}
+.konten{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
+  flex:0 0 auto;}
+.konten-kopf{display:flex;justify-content:space-between;align-items:baseline;
+  margin-bottom:5px;}
+.konten-titel{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;
+  letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);}
+.konten-summe{font-family:'IBM Plex Mono',monospace;font-size:0.92rem;
+  font-weight:600;color:var(--ink);}
+.konten-hinweis{font-size:0.72rem;color:var(--ink-soft);line-height:1.45;
+  margin-bottom:11px;opacity:.8;}
+
+.konto-zeile{display:flex;align-items:center;gap:8px;padding:4px 0;}
+.konto-icon{font-size:0.95rem;flex-shrink:0;width:20px;text-align:center;}
+.konto-name{flex:1;min-width:0;padding:8px 10px;border-radius:8px;
+  border:1px solid var(--line);background:var(--field);color:var(--ink);
+  font-family:'IBM Plex Sans',sans-serif;font-size:0.82rem;}
+.konto-stand{width:100px;flex-shrink:0;padding:8px 10px;border-radius:8px;
+  border:1px solid var(--line);background:var(--field);color:var(--ink);
+  font-family:'IBM Plex Mono',monospace;font-size:0.82rem;text-align:right;}
+.konto-name:focus,.konto-stand:focus{outline:none;border-color:var(--privat);}
+.konten-plus{width:100%;margin-top:8px;padding:9px;border-radius:8px;
+  border:1px dashed var(--line);background:none;color:var(--ink-soft);
+  font-family:'IBM Plex Sans',sans-serif;font-size:0.78rem;cursor:pointer;}
+.konten-plus:hover{color:var(--privat);border-color:var(--privat);}
+
+/* Der Abgleich: nur auffaellig, wenn es nicht passt. */
+.konten-abgleich{margin-top:12px;padding:11px 13px;border-radius:10px;
+  background:var(--card);border:1px solid var(--idea);font-size:0.79rem;
+  color:var(--ink-soft);line-height:1.5;}
+.konten-abgleich b{color:var(--idea);font-weight:600;}
+.konten-abgleich.passt{border-color:var(--business);}
+.konten-abgleich.passt b{color:var(--business);}
+
 .exp-budget{margin:10px 0 2px;}
 .exp-budget-kopf{display:flex;justify-content:space-between;align-items:baseline;
   gap:8px;margin-bottom:5px;}
@@ -4337,6 +4379,7 @@ function migrateData(){
   einnahmenUebernehmen();
   fixkostenSeptember();
   bafoegUebernehmen();
+  kontenUebernehmen();
 
   /* Ganz zum Schluss, wenn auch die uebernommenen Kategorien stehen: alle
      Idee-Board-Karten einmal zuklappen. Weiter oben lief das ins Leere, weil
@@ -4472,6 +4515,125 @@ function emptyExpenseCats(){
 }
 /* Monatsdatensatz holen; legt ihn bei Bedarf an und uebernimmt feste Posten
    aus dem zuletzt abgeschlossenen Vormonat. */
+
+
+/* ---------------- KONTOSTAND ----------------
+   Was wirklich auf den Konten liegt - die Gegenprobe zur Rechnung der App.
+   Die rechnet "Startgeld minus Ausgaben" und ist damit eine Schaetzung;
+   hier steht, was C24 tatsaechlich anzeigt.
+
+   Beide Zahlen nebeneinander zu sehen ist der eigentliche Zweck: laufen
+   sie auseinander, fehlt in der App etwas. Deshalb wird die Differenz
+   ausgewiesen statt versteckt. */
+const KONTEN_VORGABE = [
+  {id:'giro',    name:'Girokonto',            bank:'Sparkasse', icon:'🏦'},
+  {id:'n26',     name:'N26 Hauptkonto',       bank:'N26',       icon:'💼'},
+  {id:'c24smart',name:'C24 Smartkonto',       bank:'C24',       icon:'💳'},
+  {id:'c24gem',  name:'C24 Gemeinschaftskonto', bank:'C24',     icon:'👥'},
+  {id:'paypal',  name:'PayPal',               bank:'PayPal',    icon:'🅿️'}
+];
+
+function kontenNode(){
+  const n = data.nodes['privat:ausgaben'];
+  if(!n) return null;
+  if(!n.konten || typeof n.konten !== 'object') n.konten = {};
+  if(!Array.isArray(n.konten.liste)) n.konten.liste = [];
+  return n.konten;
+}
+
+function kontenSumme(k){
+  return (k.liste||[]).reduce((s,e)=>s + (Number(e.stand)||0), 0);
+}
+
+/* Der Einrichtungstopf ist zweckgebunden - er liegt zwar auf einem Konto,
+   ist aber schon verplant. Fuer "was habe ich frei" muss er runter. */
+function kontenFrei(k, node){
+  const gesamt = kontenSumme(k);
+  const mo = moebelHaelften(node.moebel);
+  return gesamt - (mo.proKopf - mo.meins);
+}
+
+
+/* Die Kontoliste. Beim ersten Aufruf stehen Leons Konten schon da -
+   leer eingetragen, damit er nur noch die Zahlen setzen muss. */
+function renderKonten(c, def, node){
+  const host = document.getElementById('konten-liste');
+  if(!host) return;
+  const k = kontenNode();
+  if(!k) return;
+
+  /* Vorgabe einmalig anlegen: die Konten aus C24, ohne Betraege. */
+  if(!k.liste.length && !k.angelegt){
+    KONTEN_VORGABE.forEach(v=>{
+      k.liste.push({id:v.id, name:v.name, icon:v.icon, stand:0});
+    });
+    k.angelegt = true;
+    persist();
+  }
+
+  const summe = kontenSumme(k);
+  host.innerHTML = `
+    ${k.liste.map(e=>`
+      <div class="konto-zeile" data-kid="${e.id}">
+        <span class="konto-icon">${e.icon || '🏦'}</span>
+        <input type="text" class="konto-name" data-kname="${e.id}"
+          value="${escapeHtml(e.name||'')}" placeholder="Konto">
+        <input type="text" class="konto-stand" data-kstand="${e.id}"
+          inputmode="decimal" value="${e.stand ? String(e.stand).replace('.',',') : ''}"
+          placeholder="0,00">
+        <button class="mini-del" data-kdel="${e.id}" aria-label="Löschen">×</button>
+      </div>
+    `).join('')}
+    <button class="konten-plus" id="konten-add">+ Konto</button>
+    ${summe ? `
+    <div class="konten-abgleich${Math.abs(summe - verfuegbar(node, isoToday().slice(0,7)).rest) < 1 ? ' passt' : ''}">
+      ${(()=>{
+        const rest = verfuegbar(node, isoToday().slice(0,7)).rest;
+        const d = summe - rest;
+        if(Math.abs(d) < 1) return `<b>Passt.</b> Konten und Rechnung stimmen überein.`;
+        return d > 0
+          ? `Du hast <b>${eur(d)}</b> mehr, als die App gerechnet hat.
+             Vermutlich Einnahmen, die noch nicht eingetragen sind.`
+          : `Dir fehlen <b>${eur(-d)}</b> gegenüber der Rechnung.
+             Vermutlich Ausgaben, die noch nicht eingetragen sind.`;
+      })()}
+    </div>` : ''}
+  `;
+
+  const neuZeichnen = ()=>{ persist(); renderMain(); };
+
+  host.querySelectorAll('[data-kname]').forEach(inp=>inp.addEventListener('change',()=>{
+    const e = k.liste.find(x=>x.id===inp.dataset.kname);
+    if(e){ e.name = inp.value.trim(); persist(); }
+  }));
+
+  host.querySelectorAll('[data-kstand]').forEach(inp=>inp.addEventListener('change',()=>{
+    const e = k.liste.find(x=>x.id===inp.dataset.kstand);
+    if(!e) return;
+    const v = parseAmount(inp.value);
+    e.stand = v === null ? 0 : v;
+    /* Wann zuletzt eingetragen - sonst weiss man nach Wochen nicht mehr,
+       wie alt die Zahl ist. */
+    k.stand = isoToday();
+    neuZeichnen();
+  }));
+
+  host.querySelectorAll('[data-kdel]').forEach(b=>b.addEventListener('click',()=>{
+    if(b.dataset.confirm !== '1'){
+      b.dataset.confirm = '1'; b.textContent = '?';
+      setTimeout(()=>{ if(b.dataset.confirm==='1'){ b.dataset.confirm=''; b.textContent='×'; } }, 2500);
+      return;
+    }
+    k.liste = k.liste.filter(x=>x.id !== b.dataset.kdel);
+    neuZeichnen();
+  }));
+
+  const add = document.getElementById('konten-add');
+  if(add) add.addEventListener('click',()=>{
+    k.liste.push({id:uid(), name:'', icon:'🏦', stand:0});
+    neuZeichnen();
+  });
+}
 
 /* ---------------- EINNAHMEN ----------------
    Die Gegenseite zu den Ausgaben. Ohne sie rechnet die App nur, wie ein
@@ -7089,11 +7251,15 @@ function renderExpenses(c, def){
   const monatMeins = neuesterSums.meins + moebelMonat;
   const fixPrivat = EXPENSE_CATS.filter(c=>c.mode==='fixed' && !c.shared)
     .reduce((s,c)=>s + (neuesterSums.proKat[c.key]||0), 0);
+  /* Echte Kontostaende - die Gegenprobe zur Rechnung. */
+  const konten = kontenNode() || {liste:[]};
+  const kontoSumme = kontenSumme(konten);
   const einSum = einnahmeSumme(neuester);
   /* Die eigentliche Frage: bleibt am Monatsende etwas uebrig? Erst mit den
      Einnahmen wird aus der Ausgabenliste eine Rechnung. */
   const bleibt = einSum.alles - monatMeins;
   const verf = verfuegbar(node, neuesterYm || heute);
+  const kontoDiff = kontoSumme - verf.rest;
   const gesperrt = !!(neuester && neuester.closed);
 
   c.innerHTML = renderNodeHead(def, `${alleYm.length} Monat(e) · ${jahre.length} Jahr(e)`) + `
@@ -7148,23 +7314,33 @@ function renderExpenses(c, def){
         </div>
       </div>
 
+      <!-- Zwei Zahlen: was wirklich auf den Konten liegt und was die App
+           rechnet. Laufen sie auseinander, fehlt in der App etwas -
+           darum steht die Differenz da, statt versteckt zu werden. -->
       <div class="exp-sum-box aufklapp" data-rechnung="geld">
-        <div class="exp-sum-label">Mein Geld <span class="sum-pfeil">▾</span></div>
-        <div class="exp-sum-value sub">${eur(verf.rest)}</div>
-        <div class="exp-sum-note">von ${
-          gesperrt ? eur(verf.start) : `<input type="text" id="exp-start-input" class="mo-budget-input"
-            inputmode="decimal" value="${String(verf.start).replace('.',',')}"> €`
-        } Startgeld</div>
+        <div class="exp-sum-label">${kontoSumme ? 'Auf deinen Konten' : 'Mein Geld'} <span class="sum-pfeil">▾</span></div>
+        <div class="exp-sum-value sub">${eur(kontoSumme || verf.rest)}</div>
+        <div class="exp-sum-note">${kontoSumme
+          ? (Math.abs(kontoDiff) < 1
+              ? 'stimmt mit der Rechnung überein'
+              : `Rechnung sagt ${eur(verf.rest)} · ${kontoDiff > 0 ? '+' : '−'}${eur(Math.abs(kontoDiff))} Unterschied`)
+          : `gerechnet aus ${gesperrt ? eur(verf.start) : `<input type="text" id="exp-start-input" class="mo-budget-input" inputmode="decimal" value="${String(verf.start).replace('.',',')}"> €`} Startgeld`}</div>
         <div class="sum-rechnung" id="rechnung-geld">
+          ${kontoSumme ? `
+          <div class="sum-zeile hinweis"><span><i>Was wirklich da ist – eingetragen unter „Kontostände“ weiter unten.</i></span><b></b></div>
+          ${konten.liste.filter(k=>Number(k.stand)).map(k=>
+            `<div class="sum-zeile"><span>${k.icon || '🏦'} ${escapeHtml(k.name)}</span><b>${eur(k.stand)}</b></div>`
+          ).join('')}
+          <div class="sum-zeile summe"><span>zusammen</span><b>${eur(kontoSumme)}</b></div>
+          <div class="sum-zeile hinweis"><span><i>Die App rechnet daneben: Startgeld minus alles, was raus ist.</i></span><b></b></div>` : ''}
           <div class="sum-zeile"><span>Startgeld</span><b>${eur(verf.start)}</b></div>
           ${verf.semesterVorab ? `<div class="sum-zeile plus"><span>+ vorab gezahlt <i>Uni</i></span><b>+ ${eur(verf.semesterVorab)}</b></div>` : ''}
           <div class="sum-zeile minus"><span>− alle Monate <i>wirklich ausgegeben</i></span><b>− ${eur(verf.alleMonate)}</b></div>
           <div class="sum-zeile minus"><span>− Wohnungseinrichtung <i>deine Hälfte</i></span><b>− ${eur(verf.moebelMeins)}</b></div>
           ${verf.semester ? `<div class="sum-zeile minus"><span>− Semesterkosten</span><b>− ${eur(verf.semester)}</b></div>` : ''}
-          <div class="sum-zeile summe"><span>bleibt</span><b>${eur(verf.rest)}</b></div>
+          <div class="sum-zeile summe"><span>${kontoSumme ? 'Rechnung sagt' : 'bleibt'}</span><b>${eur(verf.rest)}</b></div>
         </div>
       </div>
-
       <div class="exp-sum-box aufklapp" data-rechnung="moebel">
         <div class="exp-sum-label">🛋️ Wohnungseinrichtung <span class="sum-pfeil">▾</span></div>
         <div class="exp-sum-value sub">${eur(moebelH.rest)} <span class="mod-ziel">/ ${eur(moebelH.budget)}</span></div>
@@ -7187,7 +7363,20 @@ function renderExpenses(c, def){
       </div>
       <div class="entry-detail" id="entry-detail"></div>
     </div>
+    <!-- Kontostaende ganz unten: es ist die Gegenprobe, nicht der
+         Arbeitsbereich. Man traegt sie alle paar Wochen einmal ein. -->
+    <section class="konten">
+      <div class="konten-kopf">
+        <span class="konten-titel">🏦 Kontostände</span>
+        <span class="konten-summe">${kontoSumme ? eur(kontoSumme) : '–'}</span>
+      </div>
+      <div class="konten-hinweis">Trag hier ab und zu ein, was wirklich auf den Konten liegt.
+        Die App vergleicht das mit ihrer eigenen Rechnung.</div>
+      <div id="konten-liste"></div>
+    </section>
+
   `;
+  renderKonten(c, def, node);
   /* Kachel antippen zeigt, aus welchen Zahlen ihr Betrag entsteht. */
   c.querySelectorAll('.exp-sum-box.aufklapp').forEach(box=>{
     box.addEventListener('click',(e)=>{
@@ -7697,6 +7886,29 @@ function einnahmenUebernehmen(){
    angekommen markiert. Leon hakt die weiteren ab, sobald sie da sind.
    Die Betraege stehen hier nur als Nachweis - im Kontostand steckt
    BAfoeG schon ueber die monatlichen Einnahmen. */
+/* Leons Kontostaende vom 26.08.2026, abgelesen in C24. Nur einmal
+   gesetzt - danach traegt er selbst ein, was aktuell ist. */
+const KONTEN_KEY = 'kontostaende-2026-08-26';
+function kontenUebernehmen(){
+  if(data.uebernommen && data.uebernommen[KONTEN_KEY]) return 0;
+  const k = kontenNode();
+  if(!k) return 0;
+  const werte = {giro:4420.42, n26:629.70, c24smart:228.80,
+                 c24gem:1.00, paypal:9.00};
+  if(!k.liste.length){
+    KONTEN_VORGABE.forEach(v=>{
+      k.liste.push({id:v.id, name:v.name, icon:v.icon, stand: werte[v.id] || 0});
+    });
+    k.angelegt = true;
+  } else {
+    k.liste.forEach(e=>{ if(!e.stand && werte[e.id]) e.stand = werte[e.id]; });
+  }
+  k.stand = '2026-08-26';
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[KONTEN_KEY] = true;
+  return 1;
+}
+
 const BAFOEG_KEY = 'bafoeg-semester-2026-08';
 function bafoegUebernehmen(){
   if(data.uebernommen && data.uebernommen[BAFOEG_KEY]) return 0;
@@ -11247,7 +11459,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 58;
+const APP_FASSUNG = 59;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
