@@ -1329,6 +1329,59 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .schw-loeschen.confirm{color:var(--danger);border-color:var(--danger);
   background:var(--privat-bg);}
 
+
+/* ---- Einnahmen ----
+   Gruen als Richtungsanzeige: was reinkommt. Bewusst schlichter als die
+   Ausgaben-Toepfe - es sind wenige Posten, da braucht es keine Balken. */
+.ein-block{margin:18px 0;}
+.ein-block.locked{opacity:.6;pointer-events:none;}
+.ein-kopf{display:flex;justify-content:space-between;align-items:baseline;
+  padding-bottom:7px;border-bottom:1px solid var(--business);margin-bottom:11px;}
+.ein-kopf-titel{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;
+  letter-spacing:.05em;text-transform:uppercase;color:var(--business);}
+.ein-kopf-summe{font-family:'IBM Plex Mono',monospace;font-size:0.9rem;
+  font-weight:600;color:var(--business);}
+
+.ein-art{background:var(--card);border:1px solid var(--line);
+  border-radius:11px;margin-bottom:9px;overflow:hidden;}
+.ein-art-kopf{display:flex;justify-content:space-between;align-items:baseline;
+  gap:10px;padding:11px 13px 8px;}
+.ein-art-titel{font-size:0.86rem;color:var(--ink);}
+.ein-art-titel i{font-style:normal;font-size:0.68rem;color:var(--ink-soft);
+  display:block;margin-top:1px;}
+.ein-art-summe{font-family:'IBM Plex Mono',monospace;font-size:0.82rem;
+  color:var(--business);font-weight:600;flex-shrink:0;}
+.ein-art-body{padding:0 13px 11px;}
+
+.ein-zeile{display:flex;align-items:center;gap:7px;padding:5px 0;}
+.ein-label{flex:1;min-width:0;padding:8px 10px;border-radius:8px;
+  border:1px solid var(--line);background:var(--field);color:var(--ink);
+  font-family:'IBM Plex Sans',sans-serif;font-size:0.83rem;}
+.ein-betrag{width:94px;flex-shrink:0;padding:8px 10px;border-radius:8px;
+  border:1px solid var(--line);background:var(--field);color:var(--ink);
+  font-family:'IBM Plex Mono',monospace;font-size:0.83rem;
+  text-align:right;}
+.ein-label:focus,.ein-betrag:focus{outline:none;border-color:var(--business);}
+.ein-plus{width:100%;margin-top:6px;padding:9px;border-radius:8px;
+  border:1px dashed var(--line);background:none;color:var(--ink-soft);
+  font-family:'IBM Plex Sans',sans-serif;font-size:0.78rem;cursor:pointer;}
+.ein-plus:hover{color:var(--business);border-color:var(--business);}
+
+/* Die Rechnung darunter: rein, raus, bleibt. */
+.ein-rechnung{background:var(--business-bg);border:1px solid var(--business);
+  border-radius:11px;padding:12px 14px;margin-top:11px;}
+.ein-rechnung.minus{background:var(--privat-bg);border-color:var(--danger);}
+.ein-rechnung .sum-zeile.summe b{font-size:1rem;color:var(--business);}
+.ein-rechnung.minus .sum-zeile.summe b{color:var(--danger);}
+
+/* Kachel oben: was bleibt. */
+.exp-sum-box.bleibt{border-color:var(--business);background:var(--business-bg);}
+.exp-sum-box.bleibt .exp-sum-label{color:var(--business);}
+.exp-sum-box.bleibt .exp-sum-value{color:var(--business);}
+.exp-sum-box.bleibt.minus{border-color:var(--danger);background:var(--privat-bg);}
+.exp-sum-box.bleibt.minus .exp-sum-label,
+.exp-sum-box.bleibt.minus .exp-sum-value{color:var(--danger);}
+
 .exp-budget{margin:10px 0 2px;}
 .exp-budget-kopf{display:flex;justify-content:space-between;align-items:baseline;
   gap:8px;margin-bottom:5px;}
@@ -3934,6 +3987,15 @@ function migrateData(){
         if(typeof n.startBudget!=='number') n.startBudget = 5000;
         if(!n.gruppeZu || typeof n.gruppeZu!=='object') n.gruppeZu = {};
         if(!n.katZu || typeof n.katZu!=='object') n.katZu = {};
+        /* Einnahmen: aeltere Staende haben sie noch nicht. Ohne diese
+           Absicherung faellt jede Monatsansicht auf die Nase. */
+        Object.keys(n.months).forEach(k=>{
+          const m = n.months[k];
+          if(!m.ein || typeof m.ein !== 'object') m.ein = leereEinnahmen();
+          EINNAHME_ARTEN.forEach(a=>{
+            if(!Array.isArray(m.ein[a.key])) m.ein[a.key] = [];
+          });
+        });
         /* Gruppen starten zugeklappt: erst der Ueberblick, dann bei Bedarf
            die Einzelposten. Einmaliger Schnitt, danach zaehlt die eigene
            Einstellung. */
@@ -4259,6 +4321,7 @@ function migrateData(){
   studiumUebernehmen();
   kundenUebernehmen();
   juliEndgueltigWeg();
+  einnahmenUebernehmen();
 
   /* Ganz zum Schluss, wenn auch die uebernommenen Kategorien stehen: alle
      Idee-Board-Karten einmal zuklappen. Weiter oben lief das ins Leere, weil
@@ -4394,6 +4457,40 @@ function emptyExpenseCats(){
 }
 /* Monatsdatensatz holen; legt ihn bei Bedarf an und uebernimmt feste Posten
    aus dem zuletzt abgeschlossenen Vormonat. */
+
+/* ---------------- EINNAHMEN ----------------
+   Die Gegenseite zu den Ausgaben. Ohne sie rechnet die App nur, wie ein
+   Topf leer wird - mit ihnen beantwortet sie die eigentliche Frage:
+   was bleibt am Monatsende uebrig.
+
+   Zwei Arten, wie bei den Ausgaben: feste Einnahmen laufen jeden Monat
+   gleich (BAfoeG, Kindergeld) und werden in den Folgemonat uebernommen.
+   Unregelmaessige (PETIVO-Auftraege) traegt man einzeln ein. */
+const EINNAHME_ARTEN = [
+  {key:'fest',   title:'Feste Einnahmen', icon:'💶', hint:'jeden Monat gleich'},
+  {key:'extra',  title:'Dazuverdient',    icon:'➕', hint:'Auftraege, Verkaeufe, Einmaliges'}
+];
+
+function leereEinnahmen(){
+  const raus = {};
+  EINNAHME_ARTEN.forEach(a=>{ raus[a.key] = []; });
+  return raus;
+}
+
+/* Summe eines Monats. Einnahmen sind immer voll deins - anders als bei
+   den Ausgaben gibt es hier nichts zu halbieren. */
+function einnahmeSumme(monat){
+  if(!monat || !monat.ein) return {fest:0, extra:0, alles:0};
+  const proArt = {};
+  let alles = 0;
+  EINNAHME_ARTEN.forEach(a=>{
+    const sum = (monat.ein[a.key]||[]).reduce((s,e)=>s + (Number(e.amount)||0), 0);
+    proArt[a.key] = sum;
+    alles += sum;
+  });
+  return Object.assign(proArt, {alles});
+}
+
 function getExpenseMonth(node, ym, autoCreate){
   if(node.months[ym]) return node.months[ym];
   if(!autoCreate) return null;
@@ -4405,7 +4502,14 @@ function getExpenseMonth(node, ym, autoCreate){
         .map(e=>({id:uid(), label:e.label, amount:e.amount}));
     });
   }
-  node.months[ym] = {cats, closed:false};
+  /* Feste Einnahmen laufen weiter wie die Fixkosten - BAfoeG und
+     Kindergeld kommen jeden Monat, die tippt man nicht neu. */
+  const ein = leereEinnahmen();
+  if(vorher && node.months[vorher].ein){
+    ein.fest = (node.months[vorher].ein.fest||[])
+      .map(e=>({id:uid(), label:e.label, amount:e.amount}));
+  }
+  node.months[ym] = {cats, ein, closed:false};
   return node.months[ym];
 }
 /* Summen eines Monatsdatensatzes.
@@ -6881,7 +6985,13 @@ function renderExpenses(c, def){
 
   /* Gesamtueberblick oben, ohne erst in einen Monat klicken zu muessen:
      aktuelle Fixkosten, Durchschnitt der variablen Kosten, Moebel-Rest. */
-  const neuesterYm = node.months[heute] ? heute : alleYm[0];
+  /* Die Kacheln oben zeigen den Monat, den man gerade ansieht - nicht
+     stur den neuesten. Sonst steht oben August, waehrend unten September
+     offen ist, und die Zahlen widersprechen sich scheinbar. */
+  const gewaehlt = selectedEntry[def.nodeId];
+  const neuesterYm = (gewaehlt && !String(gewaehlt).startsWith('jahr:') && node.months[gewaehlt])
+    ? gewaehlt
+    : (node.months[heute] ? heute : alleYm[0]);
   const neuester = neuesterYm ? node.months[neuesterYm] : null;
   /* Nur die geteilten Fixkosten - die privaten kommen separat dazu, weil sie
      ganz auf Leon entfallen statt zur Haelfte. */
@@ -6915,6 +7025,10 @@ function renderExpenses(c, def){
   const monatMeins = neuesterSums.meins + moebelMonat;
   const fixPrivat = EXPENSE_CATS.filter(c=>c.mode==='fixed' && !c.shared)
     .reduce((s,c)=>s + (neuesterSums.proKat[c.key]||0), 0);
+  const einSum = einnahmeSumme(neuester);
+  /* Die eigentliche Frage: bleibt am Monatsende etwas uebrig? Erst mit den
+     Einnahmen wird aus der Ausgabenliste eine Rechnung. */
+  const bleibt = einSum.alles - monatMeins;
   const verf = verfuegbar(node, neuesterYm || heute);
   const gesperrt = !!(neuester && neuester.closed);
 
@@ -6924,6 +7038,25 @@ function renderExpenses(c, def){
            Zahlen sie entsteht. Ohne das muss man raten, was mitgerechnet
            wurde - und bei drei Kacheln mit aehnlichen Betraegen widersprechen
            sie sich scheinbar. -->
+      <!-- Erste Kachel: bleibt am Monatsende etwas uebrig. Das ist die
+           Frage, mit der man diesen Bildschirm aufmacht - alles andere
+           erklaert nur, wie die Zahl zustande kommt. -->
+      <div class="exp-sum-box bleibt aufklapp${bleibt < 0 ? ' minus' : ''}" data-rechnung="bleibt">
+        <div class="exp-sum-label">${bleibt < 0 ? 'Dir fehlen' : 'Bleibt dir'} <span class="sum-pfeil">▾</span></div>
+        <div class="exp-sum-value">${bleibt < 0 ? '− ' : '+ '}${eur(Math.abs(bleibt))}</div>
+        <div class="exp-sum-note">${einSum.alles ? eur(einSum.alles) + ' rein, ' + eur(monatMeins) + ' raus' : 'noch keine Einnahmen eingetragen'}</div>
+        <div class="sum-rechnung" id="rechnung-bleibt">
+          ${EINNAHME_ARTEN.map(art=>{
+            const sum = einSum[art.key] || 0;
+            if(!sum) return '';
+            return `<div class="sum-zeile plus"><span>${art.icon} ${art.title}</span><b>+ ${eur(sum)}</b></div>`;
+          }).join('')}
+          ${!einSum.alles ? `<div class="sum-zeile hinweis"><span><i>Trag unten im Monat ein, was reinkommt – dann steht hier, was uebrig bleibt.</i></span><b></b></div>` : ''}
+          <div class="sum-zeile minus"><span>− was dich der Monat kostet</span><b>− ${eur(monatMeins)}</b></div>
+          <div class="sum-zeile summe"><span>${bleibt < 0 ? 'fehlt' : 'bleibt'}</span><b>${bleibt < 0 ? '− ' : '+ '}${eur(Math.abs(bleibt))}</b></div>
+        </div>
+      </div>
+
       <div class="exp-sum-box main aufklapp" data-rechnung="monat">
         <div class="exp-sum-label">Dieser Monat kostet dich <span class="sum-pfeil">▾</span></div>
         <div class="exp-sum-value">${eur(monatMeins)}</div>
@@ -7168,6 +7301,9 @@ function renderExpenseMonth(host, c, def, node, ym){
         <div class="sum-zeile summe"><span>kostet dich</span><b>${eur(meinsGesamt)}</b></div>
       </div>
     </div>
+    <!-- Einnahmen stehen ueber den Ausgaben: erst was reinkommt, dann was
+         rausgeht. Gruen abgesetzt, damit man die Richtung sofort sieht. -->
+    <div class="ein-block${zu?' locked':''}" id="ein-block"></div>
     <div class="exp-cats${zu?' locked':''}" id="exp-cats"></div>
   `;
   /* Auch die Monatszeile zeigt ihre Rechnung auf Klick. */
@@ -7193,6 +7329,7 @@ function renderExpenseMonth(host, c, def, node, ym){
       setTimeout(()=>{ if(delBtn.dataset.confirm==='1'){ delBtn.dataset.confirm=''; delBtn.textContent='🗑'; } },3000);
     }
   });
+  renderEinnahmen(c, def, node, monat, zu, ym);
   renderExpenseCats(c, def, node, monat, zu, ym, vs);
 }
 
@@ -7366,6 +7503,123 @@ function renderExpenseCats(c, def, node, monat, gesperrt, ym, vs){
   });
   /* Der Moebeltopf gehoert zum Gemeinsamen - er wird geteilt bezahlt. */
   renderMoebelTile(gruppenWrap['gemeinsam'] || wrap, c, def, node, ym, gesperrt);
+}
+
+
+/* Einnahmen eines Monats: zwei Bloecke, feste und dazuverdiente.
+   Aufbau bewusst schlichter als bei den Ausgaben - Einnahmen sind wenige
+   Posten, da braucht es keine Budgets und keine Halbierung. */
+function renderEinnahmen(c, def, node, monat, zu, ym){
+  const host = document.getElementById('ein-block');
+  if(!host) return;
+  if(!monat.ein) monat.ein = leereEinnahmen();
+  EINNAHME_ARTEN.forEach(a=>{ if(!Array.isArray(monat.ein[a.key])) monat.ein[a.key] = []; });
+
+  const sum = einnahmeSumme(monat);
+  const s = expenseSums(monat);
+  const moMonat = moebelMonatMeins(node, ym);
+  const raus = s.meins + moMonat;
+  const bleibt = sum.alles - raus;
+
+  host.innerHTML = `
+    <div class="ein-kopf">
+      <span class="ein-kopf-titel">💰 Einnahmen</span>
+      <span class="ein-kopf-summe">${sum.alles ? '+ ' + eur(sum.alles) : '–'}</span>
+    </div>
+    ${EINNAHME_ARTEN.map(art=>{
+      const liste = monat.ein[art.key] || [];
+      const artSum = sum[art.key] || 0;
+      return `<section class="ein-art" data-art="${art.key}">
+        <div class="ein-art-kopf">
+          <span class="ein-art-titel">${art.icon} ${art.title}
+            <i>${art.hint}</i></span>
+          <span class="ein-art-summe">${artSum ? eur(artSum) : '–'}</span>
+        </div>
+        <div class="ein-art-body">
+          ${liste.map(e=>`
+            <div class="ein-zeile" data-eid="${e.id}">
+              <input type="text" class="ein-label" data-elabel="${art.key}|${e.id}"
+                value="${escapeHtml(e.label||'')}" placeholder="Wofür?"
+                ${zu?'disabled':''}>
+              <input type="text" class="ein-betrag" data-ebetrag="${art.key}|${e.id}"
+                inputmode="decimal" value="${String(e.amount ?? '').replace('.',',')}"
+                placeholder="0,00" ${zu?'disabled':''}>
+              ${zu?'':`<button class="mini-del" data-edel="${art.key}|${e.id}"
+                aria-label="Löschen">×</button>`}
+            </div>
+          `).join('')}
+          ${zu?'':`<button class="ein-plus" data-eadd="${art.key}">+ ${art.title.toLowerCase()}</button>`}
+        </div>
+      </section>`;
+    }).join('')}
+
+    <div class="ein-rechnung${bleibt < 0 ? ' minus' : ''}">
+      <div class="sum-zeile plus"><span>Einnahmen</span><b>+ ${eur(sum.alles)}</b></div>
+      <div class="sum-zeile minus"><span>− kostet dich</span><b>− ${eur(raus)}</b></div>
+      <div class="sum-zeile summe"><span>${bleibt < 0 ? 'fehlt' : 'bleibt übrig'}</span>
+        <b>${bleibt < 0 ? '− ' : '+ '}${eur(Math.abs(bleibt))}</b></div>
+    </div>
+  `;
+
+  if(zu) return;
+
+  const neuZeichnen = ()=>{ persist(); renderExpenseMonth(
+    document.getElementById('entry-detail'), c, def, node, ym); };
+
+  host.querySelectorAll('[data-eadd]').forEach(b=>b.addEventListener('click',()=>{
+    monat.ein[b.dataset.eadd].push({id:uid(), label:'', amount:0});
+    neuZeichnen();
+    /* Gleich ins neue Feld springen - sonst muss man extra tippen. */
+    const felder = document.querySelectorAll(`[data-elabel^="${b.dataset.eadd}|"]`);
+    const letztes = felder[felder.length-1];
+    if(letztes) letztes.focus();
+  }));
+
+  host.querySelectorAll('[data-elabel]').forEach(inp=>inp.addEventListener('change',()=>{
+    const [art, id] = inp.dataset.elabel.split('|');
+    const e = monat.ein[art].find(x=>x.id===id);
+    if(e){ e.label = inp.value.trim(); persist(); }
+  }));
+
+  host.querySelectorAll('[data-ebetrag]').forEach(inp=>inp.addEventListener('change',()=>{
+    const [art, id] = inp.dataset.ebetrag.split('|');
+    const e = monat.ein[art].find(x=>x.id===id);
+    if(e){ e.amount = parseAmount(inp.value); neuZeichnen(); }
+  }));
+
+  host.querySelectorAll('[data-edel]').forEach(b=>b.addEventListener('click',()=>{
+    const [art, id] = b.dataset.edel.split('|');
+    monat.ein[art] = monat.ein[art].filter(x=>x.id!==id);
+    neuZeichnen();
+  }));
+}
+
+
+/* Leons Einnahmen, Stand 26.08.2026: BAfoeG 855 und Kindergeld 259,
+   zusammen 1114 EUR. Steht ab dem laufenden Monat und laeuft von dort
+   in die Folgemonate weiter, weil feste Einnahmen uebernommen werden. */
+const EINNAHMEN_KEY = 'einnahmen-bafoeg-kindergeld-2026-08';
+function einnahmenUebernehmen(){
+  if(data.uebernommen && data.uebernommen[EINNAHMEN_KEY]) return 0;
+  const n = data.nodes['privat:ausgaben'];
+  if(!n || !n.months) return 0;
+  /* In den neuesten erfassten Monat - dort schaut Leon hin. */
+  const ym = Object.keys(n.months).sort().pop();
+  if(!ym) return 0;
+  const m = n.months[ym];
+  if(!m.ein) m.ein = leereEinnahmen();
+  if(!Array.isArray(m.ein.fest)) m.ein.fest = [];
+  const da = new Set(m.ein.fest.map(e=>(e.label||'').toLowerCase()));
+  let dazu = 0;
+  [{label:'BAföG', amount:855}, {label:'Kindergeld', amount:259}]
+    .forEach(e=>{
+      if(da.has(e.label.toLowerCase())) return;
+      m.ein.fest.push({id:uid(), label:e.label, amount:e.amount});
+      dazu++;
+    });
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[EINNAHMEN_KEY] = true;
+  return dazu;
 }
 
 /* Akzeptiert "12,50" und "12.50" */
@@ -10849,7 +11103,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 55;
+const APP_FASSUNG = 56;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
