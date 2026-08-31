@@ -1262,6 +1262,12 @@ tr.row-off .tt-num{text-decoration:line-through;}
    Feld welches ist. */
 /* Beim Anlegen dieselbe Beschriftung wie beim Bearbeiten - zweimal
    "tt.mm.jjjj" nebeneinander sagt nicht, welches Feld welches ist. */
+/* Zeichenzaehler unter dem Schluesselfeld. */
+.cloud-laenge{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;
+  color:var(--ink-soft);margin-top:6px;min-height:1em;}
+.cloud-laenge.ok{color:var(--business);}
+.cloud-laenge.fehlt{color:var(--danger);}
+
 .schw-neu-zeit{display:flex;gap:8px;margin:8px 0;}
 .schw-neu-zeit label{flex:1;min-width:0;display:flex;align-items:center;gap:6px;
   font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--ink-soft);}
@@ -2197,6 +2203,10 @@ tr.row-off .tt-num{text-decoration:line-through;}
              inputmode="text">
       <label class="cloud-check"><input type="checkbox" id="cloud-token-zeigen">
         <span>Schlüssel anzeigen</span></label>
+      <!-- Zaehlt beim Einfuegen mit. Ein abgeschnittener Schluessel ist der
+           haeufigste Grund fuers Scheitern und im Feld nicht zu sehen -
+           die Anzeige wird abgeschnitten, das Ende fehlt unbemerkt. -->
+      <div class="cloud-laenge" id="cloud-laenge"></div>
     </div>
 
     <div class="cloud-schritt" id="cloud-schritt3">
@@ -2348,6 +2358,16 @@ async function cloudTokenPruefen(token){
   /* Form pruefen, bevor GitHub gefragt wird - spart einen Fehlversuch. */
   if(/\s/.test(token)){
     throw new Error('Im Schlüssel steht ein Leerzeichen oder Zeilenumbruch. Beim Kopieren ist etwas mitgerutscht – kopier ihn nochmal.');
+  }
+  /* Ein classic-Token ist genau 40 Zeichen lang (ghp_ + 36). Beim Kopieren
+     am Handy fehlt regelmaessig das Ende, weil die Markierung nicht bis
+     dahin reicht - das Feld schneidet die Anzeige ab, man sieht es nicht.
+     Darum die Laenge nennen statt nur "zu kurz". */
+  if(token.startsWith('ghp_') && token.length !== 40){
+    throw new Error('Der Schlüssel hat ' + token.length + ' Zeichen, richtig wären 40. '
+      + (token.length < 40
+         ? 'Es fehlen ' + (40 - token.length) + ' Zeichen am Ende – beim Kopieren war nicht alles markiert. Nimm den Copy-Knopf neben dem Schlüssel.'
+         : 'Da ist beim Kopieren etwas mitgerutscht.'));
   }
   if(token.length < 20){
     throw new Error('Der Schlüssel ist zu kurz – da fehlt ein Stück. Kopier ihn nochmal ganz.');
@@ -10708,6 +10728,28 @@ document.getElementById('cloud-modal').addEventListener('click',(e)=>{
 document.getElementById('cloud-token-zeigen').addEventListener('change',(e)=>{
   document.getElementById('cloud-token').type = e.target.checked ? 'text' : 'password';
 });
+/* Laenge live anzeigen - gruen bei 40, rot wenn etwas fehlt. */
+document.getElementById('cloud-token').addEventListener('input',()=>{
+  const feld = document.getElementById('cloud-token');
+  const el = document.getElementById('cloud-laenge');
+  const t = tokenSaeubern(feld.value);
+  if(!t){ el.textContent = ''; el.className = 'cloud-laenge'; return; }
+  if(t.startsWith('ghp_')){
+    if(t.length === 40){
+      el.textContent = '40 Zeichen – vollständig ✓';
+      el.className = 'cloud-laenge ok';
+    } else if(t.length < 40){
+      el.textContent = t.length + ' Zeichen – es fehlen ' + (40 - t.length) + ' am Ende';
+      el.className = 'cloud-laenge fehlt';
+    } else {
+      el.textContent = t.length + ' Zeichen – ' + (t.length - 40) + ' zu viel';
+      el.className = 'cloud-laenge fehlt';
+    }
+  } else {
+    el.textContent = t.length + ' Zeichen · fängt nicht mit ghp_ an';
+    el.className = 'cloud-laenge fehlt';
+  }
+});
 /* Was beim Kopieren am Handy mitkommt und den Schluessel unbrauchbar macht:
    Leerzeichen aussen, Zeilenumbrueche, geschweifte Anfuehrungszeichen um den
    Text herum, und das unsichtbare Zero-Width-Space aus manchen Webseiten. */
@@ -10807,7 +10849,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 54;
+const APP_FASSUNG = 55;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
