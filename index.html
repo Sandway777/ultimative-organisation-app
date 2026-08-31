@@ -4406,6 +4406,8 @@ function migrateData(){
   bafoegUebernehmen();
   kontenUebernehmen();
   bafoegAugustRaus();
+  kontenAugustEnde();
+  essenSeptember();
 
   /* Ganz zum Schluss, wenn auch die uebernommenen Kategorien stehen: alle
      Idee-Board-Karten einmal zuklappen. Weiter oben lief das ins Leere, weil
@@ -4554,6 +4556,9 @@ function emptyExpenseCats(){
 const KONTEN_VORGABE = [
   {id:'giro',    name:'Girokonto',            bank:'Sparkasse', icon:'🏦'},
   {id:'n26',     name:'N26 Hauptkonto',       bank:'N26',       icon:'💼'},
+  /* Pocket ist Leons Essensgeld - er laedt es auf und zahlt davon
+     Lidl und REWE. Deshalb eigenes Konto, nicht Teil des Smartkontos. */
+  {id:'c24pocket',name:'C24 Pocket',           bank:'C24',       icon:'🛒'},
   {id:'c24smart',name:'C24 Smartkonto',       bank:'C24',       icon:'💳'},
   {id:'c24gem',  name:'C24 Gemeinschaftskonto', bank:'C24',     icon:'👥'},
   {id:'paypal',  name:'PayPal',               bank:'PayPal',    icon:'🅿️'}
@@ -7290,7 +7295,11 @@ function renderExpenses(c, def){
   const einSum = einnahmeSumme(neuester);
   /* Die eigentliche Frage: bleibt am Monatsende etwas uebrig? Erst mit den
      Einnahmen wird aus der Ausgabenliste eine Rechnung. */
-  const bleibt = einSum.alles - monatMeins;
+  /* Ohne den Moebeltopf: er laeuft ueber Jahre und wird aus dem
+     Ersparten bezahlt, nicht aus dem Monatseinkommen. Rechnete man ihn
+     mit, saehe jeder Monat mit Moebelkauf nach Katastrophe aus, obwohl
+     das Geld dafuer laengst zurueckgelegt ist. */
+  const bleibt = einSum.alles - neuesterSums.meins;
   const verf = verfuegbar(node, neuesterYm || heute);
   const kontoDiff = kontoSumme - verf.rest;
   /* Was nach dem laufenden Monat uebrig ist: was jetzt da liegt, minus
@@ -7342,7 +7351,7 @@ function renderExpenses(c, def){
       <div class="exp-sum-box bleibt aufklapp${bleibt < 0 ? ' minus' : ''}" data-rechnung="bleibt">
         <div class="exp-sum-label">${bleibt < 0 ? 'Dir fehlen' : 'Bleibt dir'} <span class="sum-pfeil">▾</span></div>
         <div class="exp-sum-value">${bleibt < 0 ? '− ' : '+ '}${eur(Math.abs(bleibt))}</div>
-        <div class="exp-sum-note">${einSum.alles ? eur(einSum.alles) + ' rein, ' + eur(monatMeins) + ' raus' : 'noch keine Einnahmen eingetragen'}</div>
+        <div class="exp-sum-note">${einSum.alles ? eur(einSum.alles) + ' rein, ' + eur(neuesterSums.meins) + ' raus' : 'noch keine Einnahmen eingetragen'}</div>
         <div class="sum-rechnung" id="rechnung-bleibt">
           ${EINNAHME_ARTEN.map(art=>{
             const sum = einSum[art.key] || 0;
@@ -7350,7 +7359,7 @@ function renderExpenses(c, def){
             return `<div class="sum-zeile plus"><span>${art.icon} ${art.title}</span><b>+ ${eur(sum)}</b></div>`;
           }).join('')}
           ${!einSum.alles ? `<div class="sum-zeile hinweis"><span><i>Trag unten im Monat ein, was reinkommt – dann steht hier, was uebrig bleibt.</i></span><b></b></div>` : ''}
-          <div class="sum-zeile minus"><span>− was dich der Monat kostet</span><b>− ${eur(monatMeins)}</b></div>
+          <div class="sum-zeile minus"><span>− laufende Kosten</span><b>− ${eur(neuesterSums.meins)}</b></div>
           <div class="sum-zeile summe"><span>${bleibt < 0 ? 'fehlt' : 'bleibt'}</span><b>${bleibt < 0 ? '− ' : '+ '}${eur(Math.abs(bleibt))}</b></div>
         </div>
       </div>
@@ -7931,6 +7940,52 @@ function einnahmenUebernehmen(){
    Die erste Uebernahme setzte es pauschal in den neuesten Monat, das
    war der August. Hier wird es dort wieder entfernt; September hat es
    ueber fixkostenSeptember() ohnehin. */
+/* Stand 31.08.2026, abgelesen in C24: der August ist durch, alles
+   Laufende ist abgebucht. C24 Pocket kam dazu - dort laedt Leon sein
+   Essensgeld auf. Ueberschreibt die alten Werte, weil sie ueberholt sind. */
+const KONTEN_AUG_KEY = 'kontostaende-2026-08-31';
+function kontenAugustEnde(){
+  if(data.uebernommen && data.uebernommen[KONTEN_AUG_KEY]) return 0;
+  const k = kontenNode();
+  if(!k) return 0;
+  const werte = {giro:4420.42, n26:629.70, c24pocket:281.49,
+                 c24smart:63.80, c24gem:0, paypal:9.00};
+  /* Pocket fehlt in aelteren Staenden - dann anlegen. */
+  if(!k.liste.some(e=>e.id === 'c24pocket')){
+    const idx = k.liste.findIndex(e=>e.id === 'c24smart');
+    const neu = {id:'c24pocket', name:'C24 Pocket', icon:'🛒', stand:0};
+    if(idx >= 0) k.liste.splice(idx, 0, neu); else k.liste.push(neu);
+  }
+  k.liste.forEach(e=>{
+    if(werte[e.id] !== undefined) e.stand = werte[e.id];
+  });
+  k.stand = '2026-08-31';
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[KONTEN_AUG_KEY] = true;
+  return 1;
+}
+
+/* Leons erste Septembereinkaeufe, bezahlt vom Pocket-Konto. */
+const SEP_ESSEN_KEY = 'essen-september-2026-start';
+function essenSeptember(){
+  if(data.uebernommen && data.uebernommen[SEP_ESSEN_KEY]) return 0;
+  const n = data.nodes['privat:ausgaben'];
+  const m = n && n.months && n.months['2026-09'];
+  if(!m) return 0;
+  if(!Array.isArray(m.cats.essen)) m.cats.essen = [];
+  const da = new Set(m.cats.essen.map(e=>(e.label||'').toLowerCase()));
+  let dazu = 0;
+  [{label:'Lidl', amount:64.70}, {label:'REWE', amount:6.59}]
+    .forEach(e=>{
+      if(da.has(e.label.toLowerCase())) return;
+      m.cats.essen.push({id:uid(), label:e.label, amount:e.amount, date:'2026-09-01'});
+      dazu++;
+    });
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[SEP_ESSEN_KEY] = true;
+  return dazu;
+}
+
 const BAFOEG_AUG_KEY = 'bafoeg-august-raus-2026';
 function bafoegAugustRaus(){
   if(data.uebernommen && data.uebernommen[BAFOEG_AUG_KEY]) return 0;
@@ -11519,7 +11574,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 62;
+const APP_FASSUNG = 63;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
