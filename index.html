@@ -1382,6 +1382,19 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .exp-sum-box.bleibt.minus .exp-sum-label,
 .exp-sum-box.bleibt.minus .exp-sum-value{color:var(--danger);}
 
+
+/* ---- BAfoeG im Uni-Bereich ----
+   Gruen statt neutral: es bringt Geld, statt zu kosten. Eigener Block
+   unter den Kosten, damit sich Zahlen nicht vermischen. */
+.uk-bafoeg{margin-top:12px;padding-top:11px;border-top:1px solid var(--line-soft);}
+.uk-zeile.ein .uk-text{color:var(--ink);}
+.uk-zeile.ein.geplant{opacity:.62;}
+.uk-betrag.ein{color:var(--business);font-weight:600;}
+.uk-status.ein{color:var(--business);border-color:var(--business);
+  background:var(--business-bg);}
+.kd-chip.bafoeg{background:var(--business-bg);color:var(--business);
+  border:1px solid var(--business);}
+
 .exp-budget{margin:10px 0 2px;}
 .exp-budget-kopf{display:flex;justify-content:space-between;align-items:baseline;
   gap:8px;margin-bottom:5px;}
@@ -4323,6 +4336,7 @@ function migrateData(){
   juliEndgueltigWeg();
   einnahmenUebernehmen();
   fixkostenSeptember();
+  bafoegUebernehmen();
 
   /* Ganz zum Schluss, wenn auch die uebernommenen Kategorien stehen: alle
      Idee-Board-Karten einmal zuklappen. Weiter oben lief das ins Leere, weil
@@ -4578,12 +4592,16 @@ function verfuegbar(node, ym){
      bleibt es gleich, aber die Rechnung zeigt ehrlich, was insgesamt da war.
      Geplantes (nicht bezahlt) zaehlt gar nicht mit. */
   const uni = data.nodes['uni:kosten'];
-  let semester = 0, semesterVorab = 0;
+  let semester = 0, semesterVorab = 0, semesterEin = 0;
   if(uni && Array.isArray(uni.semester)){
     uni.semester.forEach(sem=>{
       (sem.posten||[]).forEach(p=>{
         if(!p.bezahlt) return;
         const b = Number(p.betrag)||0;
+        /* Ein Posten kann auch Geld bringen statt kosten - BAfoeG je
+           Semester. Beim Abhaken kommt es zum verfuegbaren Geld dazu,
+           statt davon abzugehen. */
+        if(p.einnahme){ semesterEin += b; return; }
         semester += b;
         if(p.vorab) semesterVorab += b;
       });
@@ -4607,6 +4625,10 @@ function verfuegbar(node, ym){
     alleMonate,                 /* alle Monate zusammen, tatsaechlich */
     moebelMeins: mo.meins,
     semester, semesterVorab,
+    /* Was ueber die Semester schon an BAfoeG kam. Nur zur Anzeige - es
+       steckt bereits in den monatlichen Einnahmen und darf nicht noch
+       einmal auf den Kontostand kommen, sonst zaehlt es doppelt. */
+    semesterEin,
     rest: start + semesterVorab - alleMonate - mo.meins - semester
   };
 }
@@ -5232,8 +5254,12 @@ function renderUniKosten(c, def){
 }
 
 function ukSemesterKarte(sem, z, c, def){
-  const summe  = sem.posten.filter(p=>p.bezahlt).reduce((s,p)=>s+(Number(p.betrag)||0),0);
-  const offen  = sem.posten.filter(p=>!p.bezahlt).reduce((s,p)=>s+(Number(p.betrag)||0),0);
+  /* Einnahmen (BAfoeG) zaehlen nicht als Kosten - sie stehen eigens. */
+  const kosten = sem.posten.filter(p=>!p.einnahme);
+  const ein    = sem.posten.filter(p=>p.einnahme);
+  const summe  = kosten.filter(p=>p.bezahlt).reduce((s,p)=>s+(Number(p.betrag)||0),0);
+  const offen  = kosten.filter(p=>!p.bezahlt).reduce((s,p)=>s+(Number(p.betrag)||0),0);
+  const einSum = ein.filter(p=>p.bezahlt).reduce((s,p)=>s+(Number(p.betrag)||0),0);
   const zu = !!sem.zu;
 
   const karte = document.createElement('section');
@@ -5243,7 +5269,7 @@ function ukSemesterKarte(sem, z, c, def){
       <span class="kd-klapp">${zu?'▸':'▾'}</span>
       <span class="kd-jahr-titel">${escapeHtml(sem.name)}</span>
       <span class="kd-jahr-zahl">${eur(summe)}</span>
-      <span class="kd-jahr-meta">${offen>0?`<span class="kd-chip laptop">offen ${eur(offen)}</span>`:''}</span>
+      <span class="kd-jahr-meta">${einSum?`<span class="kd-chip bafoeg">+ ${eur(einSum)}</span>`:''}${offen>0?`<span class="kd-chip laptop">offen ${eur(offen)}</span>`:''}</span>
       <span class="del-btn kd-jahr-del" role="button" aria-label="Semester löschen">🗑</span>
     </button>
     <div class="kd-body">
@@ -5273,11 +5299,33 @@ function ukSemesterKarte(sem, z, c, def){
         <button class="mini-del" data-pdel="${p.id}" aria-label="Löschen">×</button>
       </div>`;
 
-  const pflicht = sem.posten.filter(p=>!p.freiwillig);
-  const module  = sem.posten.filter(p=>p.freiwillig);
+  const pflicht = sem.posten.filter(p=>!p.freiwillig && !p.einnahme);
+  const module  = sem.posten.filter(p=>p.freiwillig && !p.einnahme);
+  /* BAfoeG-Zeile: gruen und mit Plus, weil es Geld bringt statt kostet.
+     Der Haken heisst hier nicht bezahlt sondern angekommen. */
+  const einZeile = (p)=>`
+      <div class="uk-zeile ein${p.bezahlt?'':' geplant'}" data-pid="${p.id}">
+        <button class="uk-status${p.bezahlt?' ein':''}" data-status="${p.id}"
+                title="${p.bezahlt?'angekommen':'noch nicht da'} – tippen zum Wechseln">${
+          p.bezahlt ? '✓' : '○'}</button>
+        <span class="uk-text">${escapeHtml(p.text)}</span>
+        <span class="uk-betrag ein">+ ${eur(p.betrag)}</span>
+        <button class="mini-del" data-pdel="${p.id}" aria-label="Löschen">×</button>
+      </div>`;
+
   liste.innerHTML =
     (pflicht.length ? pflicht.map(zeile).join('')
                     : '<div class="empty-mini">Noch kein Posten.</div>') +
+    `<div class="uk-bafoeg">
+       <div class="uk-module-kopf">BAföG <i>was in diesem Semester kommt</i></div>
+       ${ein.length ? ein.map(einZeile).join('')
+         : '<div class="empty-mini">Noch nichts eingetragen.</div>'}
+       <div class="kd-add">
+         <input type="text" class="uk-b-name" placeholder="z. B. BAföG Sommersemester" maxlength="60">
+         <input type="text" class="uk-b-betrag" inputmode="decimal" placeholder="Betrag" maxlength="12">
+         <button class="ib-btn primary uk-b-add">+ BAföG</button>
+       </div>
+     </div>` +
     `<div class="uk-module">
        <div class="uk-module-kopf">Online-Module <i>freiwillig, je 70 €</i></div>
        ${module.length ? module.map(zeile).join('')
@@ -5352,6 +5400,21 @@ function ukSemesterKarte(sem, z, c, def){
   };
   karte.querySelector('.uk-p-add').addEventListener('click', neu);
   [textInp, betragInp].forEach(i=>i.addEventListener('keydown',(e)=>{ if(e.key==='Enter') neu(); }));
+
+  /* BAfoeG anlegen - startet als noch nicht angekommen, Leon hakt ab
+     wenn das Geld da ist. */
+  const bName = karte.querySelector('.uk-b-name');
+  const bBetrag = karte.querySelector('.uk-b-betrag');
+  const bafoegNeu = ()=>{
+    const t = (bName.value||'').trim();
+    if(!t){ bName.focus(); return; }
+    const b = parseAmount(bBetrag.value);
+    if(b===null){ bBetrag.focus(); return; }
+    sem.posten.push({id:uid(), text:t, betrag:b, bezahlt:false, einnahme:true});
+    bName.value=''; bBetrag.value=''; refresh();
+  };
+  karte.querySelector('.uk-b-add').addEventListener('click', bafoegNeu);
+  [bName, bBetrag].forEach(i=>i.addEventListener('keydown',(e)=>{ if(e.key==='Enter') bafoegNeu(); }));
 
   return karte;
 }
@@ -7629,6 +7692,45 @@ function einnahmenUebernehmen(){
    Gerichtskosten 50, Claude AI 21,42, Handy 16,49, Essen 175 (Budget).
    Die Sparkasse faellt weg - stand im August noch mit 9,45 drin.
    Zusammen 705,41 gegen 1114 Einnahmen: 408,59 bleiben. */
+/* BAfoeG je Semester: 855 im Monat, sechs Monate je Semester = 5130.
+   Alle sechs Semester des Studiums als Platzhalter, das erste als
+   angekommen markiert. Leon hakt die weiteren ab, sobald sie da sind.
+   Die Betraege stehen hier nur als Nachweis - im Kontostand steckt
+   BAfoeG schon ueber die monatlichen Einnahmen. */
+const BAFOEG_KEY = 'bafoeg-semester-2026-08';
+function bafoegUebernehmen(){
+  if(data.uebernommen && data.uebernommen[BAFOEG_KEY]) return 0;
+  const z = data.nodes['uni:kosten'];
+  if(!z || !Array.isArray(z.semester)) return 0;
+  const namen = ['1. Semester','2. Semester','3. Semester',
+                 '4. Semester','5. Semester','6. Semester'];
+  const PRO_SEM = 5130;   /* 855 x 6 Monate */
+  let dazu = 0;
+  namen.forEach((name, i)=>{
+    /* Vorhandene Semester wiedererkennen: Leon hat sie teils mit Zusatz
+       benannt ("1. Semester · WS 2026/27"). Nach dem Anfang suchen,
+       sonst steht das Semester zweimal da. */
+    let sem = z.semester.find(x=>String(x.name).trim().indexOf(name) === 0);
+    if(!sem){
+      sem = {id:uid(), name, posten:[], zu: i > 0};
+      z.semester.push(sem);
+    }
+    /* Nicht doppelt anlegen, falls schon ein BAfoeG-Posten drin ist. */
+    if(sem.posten.some(p=>p.einnahme)) return;
+    sem.posten.push({id:uid(), text:'BAföG', betrag:PRO_SEM,
+                     bezahlt: i === 0, einnahme:true});
+    dazu++;
+  });
+  /* Aeltestes oben: die Liste haelt es andersherum, also umdrehen. */
+  /* Nach Semesternummer sortieren, neueste oben - alphabetisch stuenden
+     die zweistelligen falsch. */
+  const nr = (x)=>{ const m = String(x.name).match(/^(d+)/); return m ? Number(m[1]) : 99; };
+  z.semester.sort((a,b)=>nr(b) - nr(a));
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[BAFOEG_KEY] = true;
+  return dazu;
+}
+
 const FIX_SEP_KEY = 'fixkosten-september-2026';
 function fixkostenSeptember(){
   if(data.uebernommen && data.uebernommen[FIX_SEP_KEY]) return 0;
@@ -11145,7 +11247,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 57;
+const APP_FASSUNG = 58;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
