@@ -1396,6 +1396,104 @@ tr.row-off .tt-num{text-decoration:line-through;}
   border:1px solid var(--business);}
 
 
+
+/* ---- Geld, neu ----
+   Eine grosse Zahl oben, darunter ruhige Zeilen. Jede Zeile klappt auf,
+   wenn man sie braucht - zugeklappt zeigt sie nur Name und Betrag. */
+.gm-kopf{display:flex;align-items:center;gap:10px;margin:20px 0 10px;
+  position:relative;}
+.gm-monat{font-family:'Fraunces',serif;font-size:1.15rem;font-weight:600;
+  color:var(--ink);background:none;border:none;cursor:pointer;padding:0;}
+.gm-zu{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;
+  padding:3px 8px;border-radius:999px;background:var(--card);
+  color:var(--ink-soft);border:1px solid var(--line);}
+
+.gm-monatsliste{position:absolute;top:100%;left:0;z-index:20;
+  background:var(--card);border:1px solid var(--line);border-radius:11px;
+  padding:5px;min-width:220px;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.gm-monat-eintrag{display:flex;justify-content:space-between;align-items:center;
+  gap:14px;width:100%;padding:9px 11px;border-radius:8px;border:none;
+  background:none;color:var(--ink);cursor:pointer;font-family:inherit;
+  font-size:0.85rem;text-align:left;}
+.gm-monat-eintrag:hover{background:var(--card-2);}
+.gm-monat-eintrag.aktiv{background:var(--privat-bg);color:var(--privat);}
+.gm-monat-eintrag b{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;}
+.gm-monat-eintrag b.plus{color:var(--business);}
+.gm-monat-eintrag b.minus{color:var(--danger);}
+
+/* Eine Zeile je Topf. Zugeklappt: Name links, Betrag rechts. Mehr nicht. */
+.gm-liste{display:flex;flex-direction:column;gap:2px;flex:0 0 auto;}
+.gm-topf-zeile{background:var(--card);border:1px solid var(--line);
+  border-radius:10px;overflow:hidden;}
+.gm-zeile-kopf{display:flex;justify-content:space-between;align-items:center;
+  gap:12px;padding:13px 15px;cursor:pointer;}
+.gm-zeile-kopf:hover{background:rgba(255,255,255,.02);}
+.gm-zeile-titel{font-size:0.88rem;color:var(--ink);}
+.gm-zeile-titel i{font-style:normal;font-size:0.66rem;color:var(--ink-soft);
+  margin-left:5px;}
+.gm-zeile-wert{font-family:'IBM Plex Mono',monospace;font-size:0.9rem;
+  color:var(--ink);flex-shrink:0;}
+.gm-zeile-wert.plus{color:var(--business);}
+.gm-zeile-body{display:none;padding:0 15px 13px;}
+.gm-topf-zeile.offen .gm-zeile-body{display:block;}
+.gm-topf-zeile.ein{border-color:var(--business);}
+.gm-topf-zeile.uni{border-color:var(--uni);}
+
+.gm-posten{display:flex;align-items:center;gap:7px;padding:4px 0;}
+.gm-label{flex:1;min-width:0;padding:8px 10px;border-radius:8px;
+  border:1px solid var(--line);background:var(--field);color:var(--ink);
+  font-family:'IBM Plex Sans',sans-serif;font-size:0.82rem;}
+.gm-betrag{width:92px;flex-shrink:0;padding:8px 10px;border-radius:8px;
+  border:1px solid var(--line);background:var(--field);color:var(--ink);
+  font-family:'IBM Plex Mono',monospace;font-size:0.82rem;text-align:right;}
+.gm-label:focus,.gm-betrag:focus{outline:none;border-color:var(--privat);}
+.gm-plus{width:100%;margin-top:7px;padding:9px;border-radius:8px;
+  border:1px dashed var(--line);background:none;color:var(--ink-soft);
+  font-family:'IBM Plex Sans',sans-serif;font-size:0.76rem;cursor:pointer;}
+.gm-plus:hover{color:var(--privat);border-color:var(--privat);}
+.gm-leer{font-size:0.74rem;color:var(--ink-soft);line-height:1.45;
+  padding:5px 0;opacity:.75;}
+.gm-halb{font-family:'IBM Plex Mono',monospace;font-size:0.63rem;
+  color:var(--ink-soft);margin-top:8px;padding-top:7px;
+  border-top:1px solid var(--line-soft);}
+.gm-uni-posten{display:flex;justify-content:space-between;align-items:baseline;
+  gap:10px;padding:5px 0;font-size:0.83rem;color:var(--ink);}
+.gm-uni-posten b{font-family:'IBM Plex Mono',monospace;font-size:0.8rem;}
+
+.gm-budget{margin-bottom:9px;}
+.gm-budget-text{font-family:'IBM Plex Mono',monospace;font-size:0.63rem;
+  color:var(--ink-soft);margin-top:5px;}
+
+/* Der Schluss: drei Zeilen, die letzte gross. */
+.gm-schluss{background:var(--card);border:1px solid var(--business);
+  border-radius:11px;padding:14px 16px;margin-top:14px;flex:0 0 auto;}
+.gm-schluss.minus{border-color:var(--danger);}
+.gm-schluss-zeile{display:flex;justify-content:space-between;align-items:baseline;
+  gap:12px;padding:4px 0;font-size:0.82rem;color:var(--ink-soft);}
+.gm-schluss-zeile b{font-family:'IBM Plex Mono',monospace;font-size:0.85rem;
+  color:var(--ink);}
+.gm-schluss-zeile b.plus{color:var(--business);}
+.gm-schluss-zeile b.minus{color:var(--danger);}
+.gm-schluss-zeile.gross{border-top:1px solid var(--line);margin-top:6px;
+  padding-top:11px;color:var(--ink);font-size:0.9rem;}
+.gm-schluss-zeile.gross b{font-family:'Fraunces',serif;font-size:1.35rem;
+  font-weight:600;color:var(--business);}
+.gm-schluss.minus .gm-schluss-zeile.gross b{color:var(--danger);}
+
+.gm-fuss{margin-top:18px;display:flex;flex-direction:column;gap:9px;
+  flex:0 0 auto;}
+.gm-neu{padding:11px;border-radius:9px;border:1px dashed var(--line);
+  background:none;color:var(--ink-soft);font-family:'IBM Plex Sans',sans-serif;
+  font-size:0.82rem;cursor:pointer;}
+.gm-neu:hover{color:var(--privat);border-color:var(--privat);}
+.gm-topf{display:block;width:100%;text-align:left;padding:13px 15px;
+  border-radius:10px;border:1px solid var(--line);background:var(--card);
+  color:inherit;cursor:pointer;font-family:inherit;}
+.gm-topf-titel{font-size:0.85rem;color:var(--ink-soft);}
+.gm-topf-wert{float:right;font-family:'IBM Plex Mono',monospace;
+  font-size:0.85rem;color:var(--ink);}
+.gm-topf-wert i{font-style:normal;font-size:0.65rem;color:var(--ink-soft);}
+
 /* ---- Geld-Zeilen ----
    Statt gleich grosser Kacheln, die sich zu widersprechen scheinen:
    eine Zeile je Sache, aufklappbar. Nur der Kontostand oben ist gross,
@@ -2682,22 +2780,24 @@ const EXPENSE_GRUPPEN = [
    hint:'trägst du allein'}
 ];
 
+/* Vier Toepfe statt sechs. Die Frage bei jedem: muss ich das getrennt
+   sehen, um eine Entscheidung zu treffen? Bei Wohnen und Essen ja - das
+   sind die grossen Posten und sie werden geteilt. Bei allem anderen
+   reicht "fest" gegen "variabel". Gadgets und Sonstiges-gemeinsam sind
+   in Sonstiges aufgegangen, sie kamen zu selten vor. */
 const EXPENSE_CATS = [
-  /* --- Gemeinsam --- */
-  {key:'wohnen',    gruppe:'gemeinsam', title:'Wohnen', icon:'🏠', shared:true, mode:'fixed',
-   hint:'Miete, Nebenkosten, Strom, Internet'},
-  {key:'essen',     gruppe:'gemeinsam', title:'Essen',  icon:'🍽️', shared:true, mode:'receipts',
-   budget:350, hint:'Monatsbudget, 175 € pro Person'},
-  {key:'gemeinsam', gruppe:'gemeinsam', title:'Sonstiges gemeinsam', icon:'💞', shared:true, mode:'receipts',
-   hint:'Kur, Urlaub, gemeinsame Anschaffungen'},
-  /* --- Privat, nur Leon --- */
-  {key:'sonstiges', gruppe:'privat', title:'Fixkosten', icon:'📋', shared:false, mode:'fixed',
-   hint:'Kredit, Handy, Abos, Versicherungen'},
-  {key:'privatvar', gruppe:'privat', title:'Sonstige Ausgaben', icon:'🥤', shared:false, mode:'receipts',
-   hint:'Essen unterwegs, Kleinkram, alles Übrige'},
-  {key:'gadgets',   gruppe:'privat', title:'Gadgets & Ausrüstung', icon:'🎧', shared:false, mode:'receipts',
-   hint:'Technik, Zubehör, Sportausrüstung'}
+  {key:'wohnen', gruppe:'gemeinsam', title:'Wohnen', icon:'🏠',
+   shared:true, mode:'fixed', hint:'Miete, Nebenkosten, Strom, Internet'},
+  {key:'essen', gruppe:'gemeinsam', title:'Essen', icon:'🍽️',
+   shared:true, mode:'receipts', budget:350, hint:'Monatsbudget, 175 € pro Person'},
+  {key:'sonstiges', gruppe:'privat', title:'Meine Fixkosten', icon:'📋',
+   shared:false, mode:'fixed', hint:'Kredit, Handy, Abos - jeden Monat gleich'},
+  {key:'privatvar', gruppe:'privat', title:'Sonstiges', icon:'🛒',
+   shared:false, mode:'receipts', hint:'alles Übrige, was du allein zahlst'}
 ];
+
+/* Alte Toepfe, deren Inhalte in einen der vier wandern. */
+const EXPENSE_ALT = {gemeinsam: 'essen', gadgets: 'privatvar'};
 function catsDerGruppe(g){ return EXPENSE_CATS.filter(c=>c.gruppe===g); }
 
 /* ---- Marge: Plattformen ----
@@ -3530,10 +3630,16 @@ function ausgabenAugustUebernehmen(){
 
   let dazu = 0;
   const rein = (katKey, posten)=>{
-    const da = new Set(cats[katKey].map(e=>(e.label||'').toLowerCase().trim()));
+    /* Alte Uebernahmen kennen Toepfe, die es nach dem Umbau auf vier
+       nicht mehr gibt - dann in den Nachfolger, sonst faellt der Start
+       auf die Nase. */
+    const ziel = EXPENSE_CATS.some(c=>c.key === katKey)
+      ? katKey : (EXPENSE_ALT[katKey] || katKey);
+    if(!Array.isArray(cats[ziel])) cats[ziel] = [];
+    const da = new Set(cats[ziel].map(e=>(e.label||'').toLowerCase().trim()));
     posten.forEach(p=>{
       if(da.has(p.label.toLowerCase().trim())) return;
-      cats[katKey].push({id:uid(), ...p});
+      cats[ziel].push({id:uid(), ...p});
       dazu++;
     });
   };
@@ -4447,6 +4553,7 @@ function migrateData(){
   bafoegAugustRaus();
   kontenAugustEnde();
   essenSeptember();
+  toepfeZusammenlegen();
 
   /* Ganz zum Schluss, wenn auch die uebernommenen Kategorien stehen: alle
      Idee-Board-Karten einmal zuklappen. Weiter oben lief das ins Leere, weil
@@ -4733,6 +4840,30 @@ function leereEinnahmen(){
 
 /* Summe eines Monats. Einnahmen sind immer voll deins - anders als bei
    den Ausgaben gibt es hier nichts zu halbieren. */
+/* Was aus dem Uni-Bereich in einen Monat faellt: bezahlte Semesterkosten
+   mit passendem Datum. Leon hakt sie dort ab, sie erscheinen hier - so
+   steht der Beitrag in dem Monat, in dem er wirklich abging, ohne dass
+   er ihn zweimal eintragen muesste. */
+function uniKostenImMonat(ym){
+  const uni = data.nodes['uni:kosten'];
+  if(!uni || !Array.isArray(uni.semester)) return [];
+  const raus = [];
+  uni.semester.forEach(sem=>{
+    (sem.posten||[]).forEach(p=>{
+      if(!p.bezahlt || p.einnahme) return;
+      /* Ohne Datum zaehlt der Posten zum Semesterstart-Monat, sonst
+         wuesste die App nicht, wohin damit. */
+      const wann = p.datum || sem.von || null;
+      if(!wann || wann.slice(0,7) !== ym) return;
+      raus.push({text: p.text, betrag: Number(p.betrag)||0, semester: sem.name});
+    });
+  });
+  return raus;
+}
+function uniKostenSumme(ym){
+  return uniKostenImMonat(ym).reduce((s,p)=>s + p.betrag, 0);
+}
+
 function einnahmeSumme(monat){
   if(!monat || !monat.ein) return {fest:0, extra:0, alles:0};
   const proArt = {};
@@ -4775,7 +4906,7 @@ function expenseSums(monat){
   const proKatPlan = {};  /* was eingeplant ist - bei Budget-Toepfen das Budget */
   let gemeinsam = 0, eigene = 0;
   EXPENSE_CATS.forEach(cat=>{
-    const sum = (monat && monat.cats[cat.key] ? monat.cats[cat.key] : [])
+    const sum = (monat && monat.cats && Array.isArray(monat.cats[cat.key]) ? monat.cats[cat.key] : [])
       .reduce((s,e)=>s + (Number(e.amount)||0), 0);
     proKat[cat.key] = sum;
     /* Bei einem Budget-Topf (Essen) zaehlt das volle Budget als eingeplant,
@@ -7277,261 +7408,326 @@ function renderHeute(c){
    Wohnen/Sonstiges: feste Monatsposten (werden in den Folgemonat uebernommen).
    Essen: Belege mit Datum und Betrag.
    Abgeschlossene Monate sind gesperrt und fliessen in den Jahresueberblick. */
+/* ---------------- GELD ----------------
+   Drei Fragen, in dieser Reihenfolge:
+     1. Wie viel habe ich?          -> Kontostand, gross oben
+     2. Was kostet dieser Monat?    -> eine Zeile je Topf
+     3. Was bleibt danach?          -> eine Zahl unten
+
+   Alles andere ist weggefallen. Vorher standen hier vier gleich grosse
+   Kacheln, die vier verschiedene Fragen beantworteten und sich dadurch
+   zu widersprechen schienen. */
 function renderExpenses(c, def){
   const node = data.nodes[def.nodeId];
-  const alleYm = Object.keys(node.months).sort().reverse();
-  const jahre  = [...new Set(alleYm.map(k=>k.slice(0,4)))].sort().reverse();
-  const heute  = new Date().toISOString().slice(0,7);
+  const heute = isoToday().slice(0,7);
 
-  /* Auswahl kann ein Monat ("2026-07") oder ein Jahr ("jahr:2026") sein */
-  let sel = selectedEntry[def.nodeId];
-  const gueltig = sel && (node.months[sel] || (sel.startsWith('jahr:') && jahre.includes(sel.slice(5))));
-  if(!gueltig) sel = node.months[heute] ? heute : (alleYm[0] || null);
-  selectedEntry[def.nodeId] = sel;
-
-  /* Gesamtueberblick oben, ohne erst in einen Monat klicken zu muessen:
-     aktuelle Fixkosten, Durchschnitt der variablen Kosten, Moebel-Rest. */
-  /* Die Kacheln oben zeigen den Monat, den man gerade ansieht - nicht
-     stur den neuesten. Sonst steht oben August, waehrend unten September
-     offen ist, und die Zahlen widersprechen sich scheinbar. */
+  /* Der Monat, den man gerade ansieht - sonst der laufende. */
+  const alleYm = Object.keys(node.months||{}).sort().reverse();
   const gewaehlt = selectedEntry[def.nodeId];
-  const neuesterYm = (gewaehlt && !String(gewaehlt).startsWith('jahr:') && node.months[gewaehlt])
-    ? gewaehlt
-    : (node.months[heute] ? heute : alleYm[0]);
-  const neuester = neuesterYm ? node.months[neuesterYm] : null;
-  /* Nur die geteilten Fixkosten - die privaten kommen separat dazu, weil sie
-     ganz auf Leon entfallen statt zur Haelfte. */
-  const fixSumme = neuester
-    ? EXPENSE_CATS.filter(cat=>cat.mode==='fixed' && cat.shared)
-        .reduce((s,cat)=>s + expenseSums(neuester).proKat[cat.key], 0)
-    : 0;
-  const varCats = EXPENSE_CATS.filter(cat=>cat.mode==='receipts');
-  const varWerte = alleYm.map(k=>{
-    const s = expenseSums(node.months[k]);
-    return varCats.reduce((sum,cat)=>sum + s.proKat[cat.key], 0);
-  });
-  const varDurchschnitt = varWerte.length ? varWerte.reduce((a,b)=>a+b,0)/varWerte.length : 0;
-  const moebelRest = node.moebel.budget - moebelSumme(node.moebel);
-  const moebelH = moebelHaelften(node.moebel);
-  /* Was der laufende Monat Leon kostet, und was davon fest ist. Fixkosten
-     getrennt nach geteilt und privat, weil nur die Haelfte des Geteilten
-     auf ihn entfaellt. */
-  const neuesterSums = neuester ? expenseSums(neuester) : {meins:0, proKat:{}};
-  /* Was in diesem Monat aus dem Moebeltopf ging, zaehlt mit - es ist Geld,
-     das in dem Monat abgeflossen ist. Geteilte Kaeufe zur Haelfte, eigene
-     ganz. Der Topf laeuft zwar ueber Monate, aber die Frage "was kostet mich
-     dieser Monat" schliesst ihn ein. */
-  const moebelMonat = (node.moebel.items||[])
-    .filter(e=>e.ym===neuesterYm)
-    .reduce((s,e)=>{
-      const b = Number(e.amount)||0;
-      if(e.wer==='sie') return s;
-      return s + (e.wer==='ich' ? b : b/2);
-    }, 0);
-  const monatMeins = neuesterSums.meins + moebelMonat;
-  const fixPrivat = EXPENSE_CATS.filter(c=>c.mode==='fixed' && !c.shared)
-    .reduce((s,c)=>s + (neuesterSums.proKat[c.key]||0), 0);
-  /* Echte Kontostaende - die Gegenprobe zur Rechnung. */
+  const ym = (gewaehlt && node.months[gewaehlt]) ? gewaehlt
+           : (node.months[heute] ? heute : alleYm[0]);
+  const monat = ym ? node.months[ym] : null;
+
   const konten = kontenNode() || {liste:[]};
   const kontoSumme = kontenSumme(konten);
-  const einSum = einnahmeSumme(neuester);
-  /* Die eigentliche Frage: bleibt am Monatsende etwas uebrig? Erst mit den
-     Einnahmen wird aus der Ausgabenliste eine Rechnung. */
-  /* Ohne den Moebeltopf: er laeuft ueber Jahre und wird aus dem
-     Ersparten bezahlt, nicht aus dem Monatseinkommen. Rechnete man ihn
-     mit, saehe jeder Monat mit Moebelkauf nach Katastrophe aus, obwohl
-     das Geld dafuer laengst zurueckgelegt ist. */
-  const bleibt = einSum.alles - neuesterSums.meins;
-  const verf = verfuegbar(node, neuesterYm || heute);
-  const kontoDiff = kontoSumme - verf.rest;
-  /* Was nach dem laufenden Monat uebrig ist: was jetzt da liegt, minus
-     was der Monat kostet, plus was noch reinkommt. Das ist die Zahl, mit
-     der Leon in den naechsten Monat geht. */
-  /* Der Kontostand ist der Stand von HEUTE - was bisher lief, ist darin
-     schon drin. Abziehen darf man nur, was noch KOMMT: der naechste
-     Monat, den es in den Daten schon gibt. Vorher zog die App den
-     laufenden Monat ab, den der Kontostand laengst enthielt. */
-  const naechsterYm = Object.keys(node.months||{}).sort()
-    .find(k => k > isoToday().slice(0,7));
-  const naechster = naechsterYm ? node.months[naechsterYm] : null;
-  const naechsterSums = naechster ? expenseSums(naechster) : null;
-  const naechsterKosten = naechster
-    ? naechsterSums.meins + moebelMonatMeins(node, naechsterYm) : 0;
-  const naechsterEin = naechster ? einnahmeSumme(naechster).alles : 0;
-  const kontoNachher = kontoSumme - naechsterKosten + naechsterEin;
-  const gesperrt = !!(neuester && neuester.closed);
 
-  c.innerHTML = renderNodeHead(def, `${alleYm.length} Monat(e) · ${jahre.length} Jahr(e)`) + `
-    <!-- Ganz oben die eine Zahl, die zaehlt: was wirklich da ist. Die
-         einzelnen Konten stehen darunter zum Aufklappen - man will sie
-         sehen, wenn man sie pflegt, sonst nicht. -->
+  const s = monat ? expenseSums(monat) : null;
+  const ein = monat ? einnahmeSumme(monat) : {alles:0};
+  const uniKosten = ym ? uniKostenSumme(ym) : 0;
+  const moebelMonat = ym ? moebelMonatMeins(node, ym) : 0;
+
+  /* Was der Monat laufend kostet - ohne Moebel, der Topf laeuft ueber
+     Jahre und wird aus dem Ersparten bezahlt. Uni-Kosten zaehlen mit,
+     sie gehen im selben Monat vom selben Konto ab. */
+  const kostet = (s ? s.meins : 0) + uniKosten;
+  const bleibt = ein.alles - kostet;
+  const moebelH = moebelHaelften(node.moebel);
+
+  c.innerHTML = renderNodeHead(def, ym ? fmtYm(ym) : 'noch kein Monat') + `
+    <!-- 1. Wie viel habe ich? Die einzige grosse Zahl der Seite. -->
     <section class="kontostand${konten.zu === false ? ' offen' : ''}">
       <button class="kontostand-kopf" id="konten-klapp">
         <div class="kontostand-links">
           <div class="kontostand-label">Auf deinen Konten</div>
           <div class="kontostand-wert">${eur(kontoSumme)}</div>
           <div class="kontostand-note">${konten.stand
-            ? `Stand ${fmtDate(konten.stand)} · ${konten.liste.filter(k=>Number(k.stand)).length} Konten`
-            : 'noch nichts eingetragen'}</div>
+            ? `Stand ${fmtDate(konten.stand)}` : 'noch nichts eingetragen'}</div>
         </div>
         <span class="kontostand-pfeil">${konten.zu === false ? '▾' : '▸'}</span>
       </button>
       <div class="kontostand-body">
-        <div class="konten-hinweis">Trag hier ein, was auf den Konten liegt –
-          am besten am Monatsanfang, wenn du in der Bank nachschaust.</div>
+        <div class="konten-hinweis">Was wirklich auf den Konten liegt –
+          am besten am Monatsanfang nachtragen.</div>
         <div id="konten-liste"></div>
       </div>
     </section>
-    <!-- Eine Zeile statt drei Kacheln: der laufende Monat und was danach
-         bleibt. Der Moebeltopf steht getrennt darunter, er laeuft ueber
-         Jahre und hat mit dem Monat nichts zu tun. -->
-    <div class="geld-zeile aufklapp" data-rechnung="monat">
-      <div class="geld-zeile-kopf">
-        <span class="geld-zeile-label">${neuesterYm ? fmtYm(neuesterYm) : 'Kein Monat'} <span class="sum-pfeil">▾</span></span>
-        <span class="geld-zeile-wert${bleibt < 0 ? ' minus' : ''}">${bleibt < 0 ? '− ' : '+ '}${eur(Math.abs(bleibt))}</span>
-      </div>
-      <div class="geld-zeile-sub">${eur(einSum.alles)} rein · ${eur(neuesterSums.meins)} raus</div>
-      <div class="sum-rechnung" id="rechnung-monat">
-        ${EINNAHME_ARTEN.map(art=>{
-          const sum = einSum[art.key] || 0;
-          if(!sum) return '';
-          return `<div class="sum-zeile plus"><span>${art.icon} ${art.title}</span><b>+ ${eur(sum)}</b></div>`;
-        }).join('')}
-        ${EXPENSE_CATS.map(cat=>{
-          const roh = neuesterSums.proKatPlan[cat.key]||0;
-          const aus = neuesterSums.proKat[cat.key]||0;
-          if(!roh) return '';
-          const anteil = cat.shared ? roh/2 : roh;
-          const hinweis = cat.budget ? ` <i>Budget · ${eur(aus)} weg</i>`
-            : (cat.shared ? ` <i>½ von ${eur(roh)}</i>` : '');
-          return `<div class="sum-zeile minus"><span>${cat.icon} ${cat.title}${hinweis}</span><b>− ${eur(anteil)}</b></div>`;
-        }).join('')}
-        <div class="sum-zeile summe"><span>${bleibt < 0 ? 'fehlt' : 'bleibt'}</span><b>${bleibt < 0 ? '− ' : '+ '}${eur(Math.abs(bleibt))}</b></div>
-      </div>
+
+    ${monat ? `
+    <!-- 2. Was kostet der Monat? Eine Zeile je Topf, kein Beiwerk. -->
+    <div class="gm-kopf">
+      <button class="gm-monat" id="gm-monat-waehlen">${fmtYm(ym)} ▾</button>
+      ${monat.closed ? '<span class="gm-zu">abgeschlossen</span>' : ''}
     </div>
 
-    <!-- Der Einrichtungstopf: laeuft ueber Jahre, aus dem Ersparten
-         bezahlt. Steht darum getrennt und nicht im Monat. -->
-    <div class="geld-zeile aufklapp topf" data-rechnung="moebel">
-      <div class="geld-zeile-kopf">
-        <span class="geld-zeile-label">🛋️ Wohnungseinrichtung <span class="sum-pfeil">▾</span></span>
-        <span class="geld-zeile-wert ruhig">${eur(moebelH.restMeins)}</span>
+    <div class="gm-liste" id="gm-liste"></div>
+
+    <!-- 3. Was bleibt? -->
+    <div class="gm-schluss${bleibt < 0 ? ' minus' : ''}">
+      <div class="gm-schluss-zeile">
+        <span>Einnahmen</span><b class="plus">+ ${eur(ein.alles)}</b>
       </div>
-      <div class="geld-zeile-sub">von deinen ${eur(moebelH.proKopf)} · zusammen ${eur(moebelH.rest)} übrig</div>
-      <div class="sum-rechnung" id="rechnung-moebel">
-        <div class="sum-zeile"><span>deine Hälfte</span><b>${eur(moebelH.proKopf)}</b></div>
-        <div class="sum-zeile minus"><span>− du ausgegeben</span><b>− ${eur(moebelH.meins)}</b></div>
-        <div class="sum-zeile summe"><span>dir bleibt</span><b>${eur(moebelH.restMeins)}</b></div>
-        <div class="sum-zeile hinweis"><span><i>Sie hat ${eur(moebelH.ihrs)} ausgegeben, ihr bleiben ${eur(moebelH.restIhrs)}.</i></span><b></b></div>
+      <div class="gm-schluss-zeile">
+        <span>Ausgaben</span><b class="minus">− ${eur(kostet)}</b>
+      </div>
+      <div class="gm-schluss-zeile gross">
+        <span>${bleibt < 0 ? 'Dir fehlen' : 'Bleibt dir'}</span>
+        <b>${bleibt < 0 ? '− ' : '+ '}${eur(Math.abs(bleibt))}</b>
       </div>
     </div>
-    <div class="entry-layout${showDetailMobile?' show-detail':''}" id="entry-layout">
-      <div class="entry-list">
-        <div class="entry-list-head"><span class="entry-list-title">Jahre &amp; Monate</span></div>
-        <div class="entry-list-body" id="entry-list-body"></div>
-        <div class="entry-list-foot">
-          <button class="entry-add-btn" id="entry-add">+ Neuer Monat</button>
+    ` : `
+    <div class="leer-hinweis">Noch kein Monat angelegt.</div>
+    `}
+
+    <div class="gm-fuss">
+      <button class="gm-neu" id="gm-neu">+ Neuer Monat</button>
+      ${moebelH.meins || moebelH.ihrs ? `
+      <button class="gm-topf aufklapp" data-rechnung="moebel">
+        <span class="gm-topf-titel">🛋️ Wohnungseinrichtung</span>
+        <span class="gm-topf-wert">${eur(moebelH.restMeins)} <i>übrig</i></span>
+        <div class="sum-rechnung" id="rechnung-moebel">
+          <div class="sum-zeile"><span>deine Hälfte</span><b>${eur(moebelH.proKopf)}</b></div>
+          <div class="sum-zeile minus"><span>− ausgegeben</span><b>− ${eur(moebelH.meins)}</b></div>
+          <div class="sum-zeile summe"><span>bleibt</span><b>${eur(moebelH.restMeins)}</b></div>
+          <div class="sum-zeile hinweis"><span><i>Läuft über Jahre, kommt aus
+            dem Ersparten – zählt darum nicht zum Monat.</i></span><b></b></div>
         </div>
-      </div>
-      <div class="entry-detail" id="entry-detail"></div>
+      </button>` : ''}
     </div>
-
   `;
+
   renderKonten(c, def, node);
-  /* Die Kontoliste startet zugeklappt: die Summe reicht meistens, die
-     einzelnen Konten braucht man nur beim Pflegen. */
   const kKlapp = document.getElementById('konten-klapp');
   if(kKlapp) kKlapp.addEventListener('click',()=>{
     const k = kontenNode();
     k.zu = k.zu === false;
     persist(); renderMain();
   });
-  /* Kachel antippen zeigt, aus welchen Zahlen ihr Betrag entsteht. */
-  c.querySelectorAll('.exp-sum-box.aufklapp, .geld-zeile.aufklapp').forEach(box=>{
+
+  if(monat) renderGeldMonat(c, def, node, monat, ym);
+
+  /* Monat wechseln - eine Liste statt eines eigenen Bereichs. */
+  const mw = document.getElementById('gm-monat-waehlen');
+  if(mw) mw.addEventListener('click',()=>{
+    const wahl = document.getElementById('gm-monatsliste');
+    if(wahl){ wahl.remove(); return; }
+    const box = document.createElement('div');
+    box.id = 'gm-monatsliste';
+    box.className = 'gm-monatsliste';
+    box.innerHTML = alleYm.map(k=>{
+      const ms = expenseSums(node.months[k]);
+      const me = einnahmeSumme(node.months[k]).alles;
+      const kos = ms.meins + uniKostenSumme(k);
+      const bl = me - kos;
+      return `<button class="gm-monat-eintrag${k===ym?' aktiv':''}" data-gmym="${k}">
+        <span>${fmtYm(k)}</span>
+        <b class="${bl < 0 ? 'minus' : 'plus'}">${bl < 0 ? '−' : '+'} ${eur(Math.abs(bl))}</b>
+      </button>`;
+    }).join('');
+    mw.parentElement.appendChild(box);
+    box.querySelectorAll('[data-gmym]').forEach(b=>b.addEventListener('click',()=>{
+      selectedEntry[def.nodeId] = b.dataset.gmym;
+      persist(); renderMain();
+    }));
+  });
+
+  const neu = document.getElementById('gm-neu');
+  if(neu) neu.addEventListener('click',()=>{
+    /* Naechster Monat nach dem letzten, sonst der laufende. */
+    const letzter = alleYm[0];
+    let ziel = heute;
+    if(letzter && letzter >= heute){
+      const d = new Date(letzter + '-01T12:00:00');
+      d.setMonth(d.getMonth() + 1);
+      ziel = isoLocal(d).slice(0,7);
+    }
+    getExpenseMonth(node, ziel, true);
+    selectedEntry[def.nodeId] = ziel;
+    persist(); renderMain();
+  });
+
+  c.querySelectorAll('.aufklapp').forEach(box=>{
     box.addEventListener('click',(e)=>{
-      if(e.target.closest('input')) return;   /* Startgeld-Feld nicht stoeren */
+      if(e.target.closest('input, button:not(.aufklapp)')) return;
       box.classList.toggle('offen');
     });
   });
-
-  /* Startgeld von Hand pflegen, bis die Abrechnung da ist. */
-  const startInp = document.getElementById('exp-start-input');
-  if(startInp){
-    startInp.addEventListener('change',()=>{
-      const v = parseAmount(startInp.value);
-      if(v===null){ startInp.value = String(verf.start).replace('.',','); return; }
-      node.startBudget = v;
-      persist(); renderExpenses(c, def);
-    });
-  }
-
-  /* Baum: Jahr als eigener Eintrag, darunter eingerueckt seine Monate */
-  const listBody = document.getElementById('entry-list-body');
-  if(alleYm.length===0){
-    listBody.innerHTML = '<div class="entry-empty" style="padding:12px;">Noch nichts angelegt.</div>';
-  } else {
-    jahre.forEach(j=>{
-      const monateDesJahres = alleYm.filter(k=>k.startsWith(j));
-      const jSum = monateDesJahres.reduce((s,k)=>s + expenseSums(node.months[k]).meins, 0);
-      const jahrId = 'jahr:'+j;
-
-      /* Jahre sind einklappbar; Standard: offen, Zustand bleibt gespeichert */
-      const zu = !!collapsedSaeulen['exp:'+j];
-      const jRow = document.createElement('div');
-      jRow.className = 'entry-year'+(sel===jahrId?' active':'')+(zu?' collapsed':'');
-      jRow.innerHTML = `
-        <button class="entry-year-toggle" aria-label="Monate auf-/zuklappen">${zu?'▸':'▾'}</button>
-        <div class="entry-year-main">
-          <div class="entry-year-title">📊 Jahr ${j}</div>
-          <div class="entry-year-sub">${eur(jSum)} · ${monateDesJahres.length} Monat(e)</div>
-        </div>`;
-      jRow.querySelector('.entry-year-toggle').addEventListener('click',(ev)=>{
-        ev.stopPropagation();
-        collapsedSaeulen['exp:'+j] = !collapsedSaeulen['exp:'+j];
-        saveCollapsed(); renderExpenses(c, def);
-      });
-      jRow.addEventListener('click',()=>{
-        selectedEntry[def.nodeId] = jahrId;
-        showDetailMobile = true;
-        renderExpenses(c, def);
-      });
-      listBody.appendChild(jRow);
-      if(zu) return;   /* eingeklappt: Monate ueberspringen */
-
-      monateDesJahres.forEach(ym=>{
-        const m = node.months[ym];
-        const s = expenseSums(m);
-        const st = m.closed ? 'past' : (ym===heute ? 'now' : '');
-        const item = document.createElement('div');
-        item.className = 'entry-item nested'+(ym===sel?' active':'')+(st?' st-'+st:'');
-        item.innerHTML = `<div class="entry-item-title">${fmtYm(ym).replace(' '+j,'')}</div>
-          <div class="entry-item-sub">${eur(s.meins)} · ${m.closed?'abgeschlossen':'offen'}</div>`;
-        item.addEventListener('click',()=>{
-          selectedEntry[def.nodeId] = ym;
-          showDetailMobile = true;
-          renderExpenses(c, def);
-        });
-        listBody.appendChild(item);
-      });
-    });
-  }
-  document.getElementById('entry-add').addEventListener('click',()=>openExpenseMonthForm(c, def, node));
-
-  /* Detailbereich: Jahresauswertung oder einzelner Monat */
-  const detail = document.getElementById('entry-detail');
-  const backBtn = `<button class="entry-back" id="entry-back">← Zurück zur Liste</button>`;
-  if(!sel){
-    detail.innerHTML = backBtn + '<div class="entry-empty">Wähle links einen Monat oder lege einen neuen an.</div>';
-  } else if(sel.startsWith('jahr:')){
-    detail.innerHTML = backBtn + '<div id="entry-detail-body"></div>';
-    renderExpenseYear(document.getElementById('entry-detail-body'), c, def, node, sel.slice(5));
-  } else {
-    detail.innerHTML = backBtn + '<div id="entry-detail-body"></div>';
-    renderExpenseMonth(document.getElementById('entry-detail-body'), c, def, node, sel);
-  }
-  const bb = document.getElementById('entry-back');
-  if(bb) bb.addEventListener('click',()=>{ showDetailMobile=false; renderMain(); });
 }
+
+/* Die Topf-Zeilen eines Monats. Jede Zeile: Name, was drin ist, aufklappbar
+   zum Bearbeiten. Fixkosten sind vorbelegt und aenderbar, variable Toepfe
+   sammeln Belege. */
+function renderGeldMonat(c, def, node, monat, ym){
+  const host = document.getElementById('gm-liste');
+  if(!host) return;
+  const s = expenseSums(monat);
+  const zu = !!monat.closed;
+  const uni = uniKostenImMonat(ym);
+  if(!monat.ein) monat.ein = leereEinnahmen();
+  /* Nach dem Umbau auf vier Toepfe koennen Felder fehlen. */
+  if(!monat.cats) monat.cats = {};
+  EXPENSE_CATS.forEach(cat=>{
+    if(!Array.isArray(monat.cats[cat.key])) monat.cats[cat.key] = [];
+  });
+  EINNAHME_ARTEN.forEach(a=>{
+    if(!Array.isArray(monat.ein[a.key])) monat.ein[a.key] = [];
+  });
+
+  host.innerHTML = `
+    <!-- Einnahmen zuerst: erst was reinkommt, dann was rausgeht. -->
+    <div class="gm-topf-zeile ein${monat.einZu === false ? ' offen' : ''}" data-topf="__ein">
+      <div class="gm-zeile-kopf">
+        <span class="gm-zeile-titel">💰 Einnahmen</span>
+        <span class="gm-zeile-wert plus">+ ${eur(einnahmeSumme(monat).alles)}</span>
+      </div>
+      <div class="gm-zeile-body">
+        ${EINNAHME_ARTEN.map(art=>`
+          ${(monat.ein[art.key]||[]).map(e=>`
+            <div class="gm-posten">
+              <input type="text" class="gm-label" data-einlabel="${art.key}|${e.id}"
+                value="${escapeHtml(e.label||'')}" placeholder="Wofür?" ${zu?'disabled':''}>
+              <input type="text" class="gm-betrag" data-einbetrag="${art.key}|${e.id}"
+                inputmode="decimal" value="${String(e.amount ?? '').replace('.',',')}" ${zu?'disabled':''}>
+              ${zu?'':`<button class="mini-del" data-eindel="${art.key}|${e.id}">×</button>`}
+            </div>
+          `).join('')}
+        `).join('')}
+        ${zu?'':`<button class="gm-plus" data-einadd="fest">+ Einnahme</button>`}
+      </div>
+    </div>
+
+    ${EXPENSE_CATS.map(cat=>{
+      const roh = s.proKatPlan[cat.key]||0;
+      const aus = s.proKat[cat.key]||0;
+      const anteil = cat.shared ? roh/2 : roh;
+      const posten = monat.cats[cat.key]||[];
+      const offen = monat.katZu && monat.katZu[cat.key] === false;
+      return `<div class="gm-topf-zeile${offen?' offen':''}" data-topf="${cat.key}">
+        <div class="gm-zeile-kopf">
+          <span class="gm-zeile-titel">${cat.icon} ${cat.title}${
+            cat.shared ? ' <i>geteilt</i>' : ''}</span>
+          <span class="gm-zeile-wert">${eur(anteil)}</span>
+        </div>
+        <div class="gm-zeile-body">
+          ${cat.budget ? `
+          <div class="gm-budget">
+            <div class="mod-bar"><div class="mod-bar-fill" style="width:${
+              Math.min(100, aus/cat.budget*100)}%;background:${
+              aus > cat.budget ? 'var(--danger)' : 'var(--business)'};"></div></div>
+            <div class="gm-budget-text">${eur(aus)} von ${eur(cat.budget)} ·
+              ${aus > cat.budget ? eur(aus-cat.budget) + ' drüber' : eur(cat.budget-aus) + ' übrig'}</div>
+          </div>` : ''}
+          ${posten.map(e=>`
+            <div class="gm-posten">
+              <input type="text" class="gm-label" data-plabel="${cat.key}|${e.id}"
+                value="${escapeHtml(e.label||'')}" placeholder="Wofür?" ${zu?'disabled':''}>
+              <input type="text" class="gm-betrag" data-pbetrag="${cat.key}|${e.id}"
+                inputmode="decimal" value="${String(e.amount ?? '').replace('.',',')}" ${zu?'disabled':''}>
+              ${zu?'':`<button class="mini-del" data-pdel2="${cat.key}|${e.id}">×</button>`}
+            </div>
+          `).join('') || `<div class="gm-leer">${cat.hint}</div>`}
+          ${zu?'':`<button class="gm-plus" data-padd="${cat.key}">+ ${
+            cat.mode === 'fixed' ? 'Fixkosten' : 'Ausgabe'}</button>`}
+          ${cat.shared ? `<div class="gm-halb">Gesamt ${eur(roh)} · deine Hälfte ${eur(anteil)}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('')}
+
+    ${uni.length ? `
+    <div class="gm-topf-zeile uni" data-topf="__uni">
+      <div class="gm-zeile-kopf">
+        <span class="gm-zeile-titel">🎓 Uni</span>
+        <span class="gm-zeile-wert">${eur(uniKostenSumme(ym))}</span>
+      </div>
+      <div class="gm-zeile-body">
+        ${uni.map(p=>`<div class="gm-uni-posten">
+          <span>${escapeHtml(p.text)}</span>
+          <b>${eur(p.betrag)}</b>
+        </div>`).join('')}
+        <div class="gm-leer">Kommt aus dem Uni-Bereich – dort abhaken, hier erscheint es.</div>
+      </div>
+    </div>` : ''}
+  `;
+
+  /* Zeile auf/zu */
+  host.querySelectorAll('.gm-zeile-kopf').forEach(k=>k.addEventListener('click',()=>{
+    const zeile = k.closest('.gm-topf-zeile');
+    const key = zeile.dataset.topf;
+    zeile.classList.toggle('offen');
+    if(key === '__ein'){ monat.einZu = !zeile.classList.contains('offen'); }
+    else if(key !== '__uni'){
+      if(!monat.katZu) monat.katZu = {};
+      monat.katZu[key] = !zeile.classList.contains('offen');
+    }
+    persist();
+  }));
+
+  if(zu) return;
+  const neuZeichnen = ()=>{ persist(); renderMain(); };
+
+  /* Ausgaben */
+  host.querySelectorAll('[data-padd]').forEach(b=>b.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    const k = b.dataset.padd;
+    if(!Array.isArray(monat.cats[k])) monat.cats[k] = [];
+    monat.cats[k].push({id:uid(), label:'', amount:0});
+    if(!monat.katZu) monat.katZu = {};
+    monat.katZu[k] = false;
+    neuZeichnen();
+  }));
+  host.querySelectorAll('[data-plabel]').forEach(i=>i.addEventListener('change',()=>{
+    const [k, id] = i.dataset.plabel.split('|');
+    const e = (monat.cats[k]||[]).find(x=>x.id===id);
+    if(e){ e.label = i.value.trim(); persist(); }
+  }));
+  host.querySelectorAll('[data-pbetrag]').forEach(i=>i.addEventListener('change',()=>{
+    const [k, id] = i.dataset.pbetrag.split('|');
+    const e = (monat.cats[k]||[]).find(x=>x.id===id);
+    if(e){ const v = parseAmount(i.value); e.amount = v === null ? 0 : v; neuZeichnen(); }
+  }));
+  host.querySelectorAll('[data-pdel2]').forEach(b=>b.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    const [k, id] = b.dataset.pdel2.split('|');
+    monat.cats[k] = (monat.cats[k]||[]).filter(x=>x.id!==id);
+    neuZeichnen();
+  }));
+
+  /* Einnahmen */
+  host.querySelectorAll('[data-einadd]').forEach(b=>b.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    const k = b.dataset.einadd;
+    if(!Array.isArray(monat.ein[k])) monat.ein[k] = [];
+    monat.ein[k].push({id:uid(), label:'', amount:0});
+    monat.einZu = false;
+    neuZeichnen();
+  }));
+  host.querySelectorAll('[data-einlabel]').forEach(i=>i.addEventListener('change',()=>{
+    const [k, id] = i.dataset.einlabel.split('|');
+    const e = (monat.ein[k]||[]).find(x=>x.id===id);
+    if(e){ e.label = i.value.trim(); persist(); }
+  }));
+  host.querySelectorAll('[data-einbetrag]').forEach(i=>i.addEventListener('change',()=>{
+    const [k, id] = i.dataset.einbetrag.split('|');
+    const e = (monat.ein[k]||[]).find(x=>x.id===id);
+    if(e){ const v = parseAmount(i.value); e.amount = v === null ? 0 : v; neuZeichnen(); }
+  }));
+  host.querySelectorAll('[data-eindel]').forEach(b=>b.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    const [k, id] = b.dataset.eindel.split('|');
+    monat.ein[k] = (monat.ein[k]||[]).filter(x=>x.id!==id);
+    neuZeichnen();
+  }));
+}
+
 
 /* Neuen Monat anlegen - zeigt die naechsten offenen Monate zur Auswahl */
 function openExpenseMonthForm(c, def, node){
@@ -7964,6 +8160,30 @@ function einnahmenUebernehmen(){
 /* Stand 31.08.2026, abgelesen in C24: der August ist durch, alles
    Laufende ist abgebucht. C24 Pocket kam dazu - dort laedt Leon sein
    Essensgeld auf. Ueberschreibt die alten Werte, weil sie ueberholt sind. */
+/* Sechs Toepfe wurden vier: was in "Sonstiges gemeinsam" und "Gadgets"
+   stand, wandert weiter - nichts geht verloren, es steht nur woanders. */
+const TOEPFE_KEY = 'toepfe-vier-2026-08';
+function toepfeZusammenlegen(){
+  if(data.uebernommen && data.uebernommen[TOEPFE_KEY]) return 0;
+  const n = data.nodes['privat:ausgaben'];
+  if(!n || !n.months) return 0;
+  let verschoben = 0;
+  Object.keys(n.months).forEach(ym=>{
+    const cats = n.months[ym].cats;
+    if(!cats) return;
+    Object.keys(EXPENSE_ALT).forEach(alt=>{
+      const ziel = EXPENSE_ALT[alt];
+      if(!Array.isArray(cats[alt]) || !cats[alt].length) return;
+      if(!Array.isArray(cats[ziel])) cats[ziel] = [];
+      cats[alt].forEach(e=>{ cats[ziel].push(e); verschoben++; });
+      delete cats[alt];
+    });
+  });
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[TOEPFE_KEY] = true;
+  return verschoben;
+}
+
 const KONTEN_AUG_KEY = 'kontostaende-2026-08-31';
 function kontenAugustEnde(){
   if(data.uebernommen && data.uebernommen[KONTEN_AUG_KEY]) return 0;
@@ -11595,7 +11815,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 64;
+const APP_FASSUNG = 65;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
