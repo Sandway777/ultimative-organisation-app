@@ -1429,13 +1429,12 @@ tr.row-off .tt-num{text-decoration:line-through;}
   font-family:'IBM Plex Sans',sans-serif;font-size:0.78rem;cursor:pointer;}
 .konten-plus:hover{color:var(--privat);border-color:var(--privat);}
 
-/* Der Abgleich: nur auffaellig, wenn es nicht passt. */
-.konten-abgleich{margin-top:12px;padding:11px 13px;border-radius:10px;
-  background:var(--card);border:1px solid var(--idea);font-size:0.79rem;
-  color:var(--ink-soft);line-height:1.5;}
-.konten-abgleich b{color:var(--idea);font-weight:600;}
-.konten-abgleich.passt{border-color:var(--business);}
-.konten-abgleich.passt b{color:var(--business);}
+/* Die Rechnung unter den Konten: Stand, minus Monat, bleibt. */
+.konten-rechnung{margin-top:14px;padding:12px 14px;border-radius:10px;
+  background:var(--card);border:1px solid var(--line);}
+.konten-rechnung .sum-zeile.summe b{font-size:0.95rem;color:var(--privat);}
+.konten-datum{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;
+  color:var(--ink-soft);margin-top:7px;text-align:right;opacity:.8;}
 
 .exp-budget{margin:10px 0 2px;}
 .exp-budget-kopf{display:flex;justify-content:space-between;align-items:baseline;
@@ -4572,6 +4571,13 @@ function renderKonten(c, def, node){
   }
 
   const summe = kontenSumme(k);
+  /* Der laufende Monat - was er kostet und was noch reinkommt. Damit
+     wird aus dem Kontostand eine Vorschau statt einer Momentaufnahme. */
+  const heuteYm = isoToday().slice(0,7);
+  const laufend = node.months[heuteYm] || node.months[Object.keys(node.months||{}).sort().pop()];
+  const lSums = expenseSums(laufend);
+  const monatKosten = lSums.meins + (laufend ? moebelMonatMeins(node, heuteYm) : 0);
+  const monatEin = einnahmeSumme(laufend).alles;
   host.innerHTML = `
     ${k.liste.map(e=>`
       <div class="konto-zeile" data-kid="${e.id}">
@@ -4586,18 +4592,13 @@ function renderKonten(c, def, node){
     `).join('')}
     <button class="konten-plus" id="konten-add">+ Konto</button>
     ${summe ? `
-    <div class="konten-abgleich${Math.abs(summe - verfuegbar(node, isoToday().slice(0,7)).rest) < 1 ? ' passt' : ''}">
-      ${(()=>{
-        const rest = verfuegbar(node, isoToday().slice(0,7)).rest;
-        const d = summe - rest;
-        if(Math.abs(d) < 1) return `<b>Passt.</b> Konten und Rechnung stimmen überein.`;
-        return d > 0
-          ? `Du hast <b>${eur(d)}</b> mehr, als die App gerechnet hat.
-             Vermutlich Einnahmen, die noch nicht eingetragen sind.`
-          : `Dir fehlen <b>${eur(-d)}</b> gegenüber der Rechnung.
-             Vermutlich Ausgaben, die noch nicht eingetragen sind.`;
-      })()}
-    </div>` : ''}
+    <div class="konten-rechnung">
+      <div class="sum-zeile"><span>auf allen Konten</span><b>${eur(summe)}</b></div>
+      <div class="sum-zeile minus"><span>− dieser Monat kostet dich</span><b>− ${eur(monatKosten)}</b></div>
+      ${monatEin ? `<div class="sum-zeile plus"><span>+ kommt noch rein</span><b>+ ${eur(monatEin)}</b></div>` : ''}
+      <div class="sum-zeile summe"><span>bleibt nach dem Monat</span><b>${eur(summe - monatKosten + monatEin)}</b></div>
+    </div>
+    <div class="konten-datum">${k.stand ? `Stand ${fmtDate(k.stand)}` : 'noch kein Stand eingetragen'}</div>` : ''}
   `;
 
   const neuZeichnen = ()=>{ persist(); renderMain(); };
@@ -7260,6 +7261,10 @@ function renderExpenses(c, def){
   const bleibt = einSum.alles - monatMeins;
   const verf = verfuegbar(node, neuesterYm || heute);
   const kontoDiff = kontoSumme - verf.rest;
+  /* Was nach dem laufenden Monat uebrig ist: was jetzt da liegt, minus
+     was der Monat kostet, plus was noch reinkommt. Das ist die Zahl, mit
+     der Leon in den naechsten Monat geht. */
+  const kontoNachher = kontoSumme - monatMeins + einSum.alles;
   const gesperrt = !!(neuester && neuester.closed);
 
   c.innerHTML = renderNodeHead(def, `${alleYm.length} Monat(e) · ${jahre.length} Jahr(e)`) + `
@@ -7314,31 +7319,31 @@ function renderExpenses(c, def){
         </div>
       </div>
 
-      <!-- Zwei Zahlen: was wirklich auf den Konten liegt und was die App
-           rechnet. Laufen sie auseinander, fehlt in der App etwas -
-           darum steht die Differenz da, statt versteckt zu werden. -->
+      <!-- Der Kontostand ist die Wahrheit, nicht die Rechnung: was C24
+           anzeigt, liegt wirklich da. Davon geht ab, was der laufende
+           Monat noch kostet - so sieht Leon, womit er rausgeht. -->
       <div class="exp-sum-box aufklapp" data-rechnung="geld">
-        <div class="exp-sum-label">${kontoSumme ? 'Auf deinen Konten' : 'Mein Geld'} <span class="sum-pfeil">▾</span></div>
-        <div class="exp-sum-value sub">${eur(kontoSumme || verf.rest)}</div>
+        <div class="exp-sum-label">${kontoSumme ? 'Nach diesem Monat' : 'Mein Geld'} <span class="sum-pfeil">▾</span></div>
+        <div class="exp-sum-value sub">${eur(kontoSumme ? kontoNachher : verf.rest)}</div>
         <div class="exp-sum-note">${kontoSumme
-          ? (Math.abs(kontoDiff) < 1
-              ? 'stimmt mit der Rechnung überein'
-              : `Rechnung sagt ${eur(verf.rest)} · ${kontoDiff > 0 ? '+' : '−'}${eur(Math.abs(kontoDiff))} Unterschied`)
+          ? `jetzt ${eur(kontoSumme)} · ${eur(monatMeins)} kostet der Monat noch`
           : `gerechnet aus ${gesperrt ? eur(verf.start) : `<input type="text" id="exp-start-input" class="mo-budget-input" inputmode="decimal" value="${String(verf.start).replace('.',',')}"> €`} Startgeld`}</div>
         <div class="sum-rechnung" id="rechnung-geld">
           ${kontoSumme ? `
-          <div class="sum-zeile hinweis"><span><i>Was wirklich da ist – eingetragen unter „Kontostände“ weiter unten.</i></span><b></b></div>
           ${konten.liste.filter(k=>Number(k.stand)).map(k=>
             `<div class="sum-zeile"><span>${k.icon || '🏦'} ${escapeHtml(k.name)}</span><b>${eur(k.stand)}</b></div>`
           ).join('')}
-          <div class="sum-zeile summe"><span>zusammen</span><b>${eur(kontoSumme)}</b></div>
-          <div class="sum-zeile hinweis"><span><i>Die App rechnet daneben: Startgeld minus alles, was raus ist.</i></span><b></b></div>` : ''}
+          <div class="sum-zeile summe"><span>auf den Konten</span><b>${eur(kontoSumme)}</b></div>
+          <div class="sum-zeile minus"><span>− ${fmtYm(neuesterYm)} kostet dich</span><b>− ${eur(monatMeins)}</b></div>
+          ${einSum.alles ? `<div class="sum-zeile plus"><span>+ ${fmtYm(neuesterYm)} kommt rein</span><b>+ ${eur(einSum.alles)}</b></div>` : ''}
+          <div class="sum-zeile summe"><span>bleibt danach</span><b>${eur(kontoNachher)}</b></div>
+          <div class="sum-zeile hinweis"><span><i>Die Kontostände trägst du unten ein – pass sie an, wenn sich etwas geändert hat.</i></span><b></b></div>` : `
           <div class="sum-zeile"><span>Startgeld</span><b>${eur(verf.start)}</b></div>
           ${verf.semesterVorab ? `<div class="sum-zeile plus"><span>+ vorab gezahlt <i>Uni</i></span><b>+ ${eur(verf.semesterVorab)}</b></div>` : ''}
           <div class="sum-zeile minus"><span>− alle Monate <i>wirklich ausgegeben</i></span><b>− ${eur(verf.alleMonate)}</b></div>
           <div class="sum-zeile minus"><span>− Wohnungseinrichtung <i>deine Hälfte</i></span><b>− ${eur(verf.moebelMeins)}</b></div>
           ${verf.semester ? `<div class="sum-zeile minus"><span>− Semesterkosten</span><b>− ${eur(verf.semester)}</b></div>` : ''}
-          <div class="sum-zeile summe"><span>${kontoSumme ? 'Rechnung sagt' : 'bleibt'}</span><b>${eur(verf.rest)}</b></div>
+          <div class="sum-zeile summe"><span>bleibt</span><b>${eur(verf.rest)}</b></div>`}
         </div>
       </div>
       <div class="exp-sum-box aufklapp" data-rechnung="moebel">
@@ -11459,7 +11464,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 59;
+const APP_FASSUNG = 60;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
