@@ -1396,6 +1396,28 @@ tr.row-off .tt-num{text-decoration:line-through;}
   border:1px solid var(--business);}
 
 
+/* ---- Kontostand als Kopfzahl ----
+   Steht ganz oben und ist die groesste Zahl der Seite: alles andere
+   erklaert nur, was mit diesem Geld passiert. Die einzelnen Konten
+   klappen auf, weil man sie nur beim Pflegen braucht. */
+/* flex:0 0 auto ist noetig: .content ist ein Flex-Container, in dem ein
+   Block sonst auf 0 schrumpft, sobald darunter etwas Platz beansprucht. */
+.kontostand{flex:0 0 auto;background:var(--card);border:1px solid var(--privat);
+  border-radius:14px;margin-bottom:16px;overflow:hidden;}
+.kontostand-kopf{display:flex;align-items:center;gap:12px;width:100%;
+  padding:16px 18px;background:none;border:none;color:inherit;cursor:pointer;
+  text-align:left;font-family:inherit;}
+.kontostand-links{flex:1;min-width:0;}
+.kontostand-label{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--privat);}
+.kontostand-wert{font-family:'Fraunces',serif;font-size:1.9rem;font-weight:600;
+  color:var(--ink);line-height:1.15;margin-top:2px;}
+.kontostand-note{font-family:'IBM Plex Mono',monospace;font-size:0.63rem;
+  color:var(--ink-soft);margin-top:4px;}
+.kontostand-pfeil{font-size:0.8rem;color:var(--ink-soft);flex-shrink:0;}
+.kontostand-body{display:none;padding:0 18px 16px;}
+.kontostand.offen .kontostand-body{display:block;}
+
 /* ---- Kontostaende ----
    Unauffaellig gehalten: es ist die Gegenprobe, nicht der Arbeitsbereich.
    Nur der Abgleich am Ende faellt auf, wenn etwas nicht stimmt. */
@@ -2683,6 +2705,10 @@ function antragStatusDef(key){
 
 const GLOBAL_NODES = [
   {key:'heute',     title:'Heute',                icon:'👋', sub:'was jetzt ansteht'},
+  /* Geld gehoert nach vorn: Leon schaut taeglich drauf, nicht nur wenn er
+     gerade im Bereich Privat unterwegs ist. Der Knoten bleibt
+     privat:ausgaben - nur der Weg dorthin ist kuerzer. */
+  {key:'privat:ausgaben', cls:'geld', title:'Geld', icon:'💶', sub:'Konten, Monate, was bleibt'},
   {key:'ideaboard', title:'Idee-Board',           icon:'📇', sub:'automatisch einsortiert'},
   {key:'daily',     title:'Notizzettel',icon:'🗓️', sub:'Tage + Gesammeltes'},
   {key:'months',    title:'Monatsübersicht',      icon:'📆', sub:'alle vier Bereiche'},
@@ -4379,6 +4405,7 @@ function migrateData(){
   fixkostenSeptember();
   bafoegUebernehmen();
   kontenUebernehmen();
+  bafoegAugustRaus();
 
   /* Ganz zum Schluss, wenn auch die uebernommenen Kategorien stehen: alle
      Idee-Board-Karten einmal zuklappen. Weiter oben lief das ins Leere, weil
@@ -4915,7 +4942,7 @@ function renderSidebar(){
   gWrap.innerHTML = '';
   GLOBAL_NODES.forEach(g=>{
     const div = document.createElement('div');
-    div.className = 'main-btn '+g.key+(data.activeId===g.key?' active':'');
+    div.className = 'main-btn '+(g.cls||g.key)+(data.activeId===g.key?' active':'');
     div.innerHTML = `
       <div class="main-btn-icon">${g.icon}</div>
       <div class="main-btn-text">
@@ -7284,6 +7311,26 @@ function renderExpenses(c, def){
   const gesperrt = !!(neuester && neuester.closed);
 
   c.innerHTML = renderNodeHead(def, `${alleYm.length} Monat(e) · ${jahre.length} Jahr(e)`) + `
+    <!-- Ganz oben die eine Zahl, die zaehlt: was wirklich da ist. Die
+         einzelnen Konten stehen darunter zum Aufklappen - man will sie
+         sehen, wenn man sie pflegt, sonst nicht. -->
+    <section class="kontostand${konten.zu === false ? ' offen' : ''}">
+      <button class="kontostand-kopf" id="konten-klapp">
+        <div class="kontostand-links">
+          <div class="kontostand-label">Auf deinen Konten</div>
+          <div class="kontostand-wert">${eur(kontoSumme)}</div>
+          <div class="kontostand-note">${konten.stand
+            ? `Stand ${fmtDate(konten.stand)} · ${konten.liste.filter(k=>Number(k.stand)).length} Konten`
+            : 'noch nichts eingetragen'}</div>
+        </div>
+        <span class="kontostand-pfeil">${konten.zu === false ? '▾' : '▸'}</span>
+      </button>
+      <div class="kontostand-body">
+        <div class="konten-hinweis">Trag hier ein, was auf den Konten liegt –
+          am besten am Monatsanfang, wenn du in der Bank nachschaust.</div>
+        <div id="konten-liste"></div>
+      </div>
+    </section>
     <div class="exp-summary" style="margin-bottom:22px;">
       <!-- Jede Kachel laesst sich aufklappen und zeigt dann, aus welchen
            Zahlen sie entsteht. Ohne das muss man raten, was mitgerechnet
@@ -7335,38 +7382,6 @@ function renderExpenses(c, def){
         </div>
       </div>
 
-      <!-- Der Kontostand ist der Stand von heute: alles Gelaufene steckt
-           schon drin. Abgezogen wird darum nur, was noch kommt - der
-           naechste Monat. -->
-      <div class="exp-sum-box aufklapp" data-rechnung="geld">
-        <div class="exp-sum-label">${!kontoSumme ? 'Mein Geld'
-          : naechster ? 'Nach ' + fmtYm(naechsterYm) : 'Auf deinen Konten'} <span class="sum-pfeil">▾</span></div>
-        <div class="exp-sum-value sub">${eur(kontoSumme ? kontoNachher : verf.rest)}</div>
-        <div class="exp-sum-note">${!kontoSumme
-          ? `gerechnet aus ${gesperrt ? eur(verf.start) : `<input type="text" id="exp-start-input" class="mo-budget-input" inputmode="decimal" value="${String(verf.start).replace('.',',')}"> €`} Startgeld`
-          : naechster
-            ? `jetzt ${eur(kontoSumme)} · ${fmtYm(naechsterYm)} kostet ${eur(naechsterKosten)}`
-            : `Stand ${konten.stand ? fmtDate(konten.stand) : 'heute'} · kein Folgemonat angelegt`}</div>
-        <div class="sum-rechnung" id="rechnung-geld">
-          ${kontoSumme ? `
-          ${konten.liste.filter(k=>Number(k.stand)).map(k=>
-            `<div class="sum-zeile"><span>${k.icon || '🏦'} ${escapeHtml(k.name)}</span><b>${eur(k.stand)}</b></div>`
-          ).join('')}
-          <div class="sum-zeile summe"><span>auf den Konten heute</span><b>${eur(kontoSumme)}</b></div>
-          ${naechster ? `
-          <div class="sum-zeile minus"><span>− ${fmtYm(naechsterYm)} kostet dich</span><b>− ${eur(naechsterKosten)}</b></div>
-          ${naechsterEin ? `<div class="sum-zeile plus"><span>+ ${fmtYm(naechsterYm)} kommt rein</span><b>+ ${eur(naechsterEin)}</b></div>` : ''}
-          <div class="sum-zeile summe"><span>bleibt danach</span><b>${eur(kontoNachher)}</b></div>`
-          : `<div class="sum-zeile hinweis"><span><i>Leg einen Monat an, dann steht hier, was danach uebrig bleibt.</i></span><b></b></div>`}
-          <div class="sum-zeile hinweis"><span><i>Die Kontostände trägst du unten ein – pass sie an, wenn sich etwas geändert hat.</i></span><b></b></div>` : `
-          <div class="sum-zeile"><span>Startgeld</span><b>${eur(verf.start)}</b></div>
-          ${verf.semesterVorab ? `<div class="sum-zeile plus"><span>+ vorab gezahlt <i>Uni</i></span><b>+ ${eur(verf.semesterVorab)}</b></div>` : ''}
-          <div class="sum-zeile minus"><span>− alle Monate <i>wirklich ausgegeben</i></span><b>− ${eur(verf.alleMonate)}</b></div>
-          <div class="sum-zeile minus"><span>− Wohnungseinrichtung <i>deine Hälfte</i></span><b>− ${eur(verf.moebelMeins)}</b></div>
-          ${verf.semester ? `<div class="sum-zeile minus"><span>− Semesterkosten</span><b>− ${eur(verf.semester)}</b></div>` : ''}
-          <div class="sum-zeile summe"><span>bleibt</span><b>${eur(verf.rest)}</b></div>`}
-        </div>
-      </div>
       </div>
       <div class="exp-sum-box aufklapp" data-rechnung="moebel">
         <div class="exp-sum-label">🛋️ Wohnungseinrichtung <span class="sum-pfeil">▾</span></div>
@@ -7390,20 +7405,17 @@ function renderExpenses(c, def){
       </div>
       <div class="entry-detail" id="entry-detail"></div>
     </div>
-    <!-- Kontostaende ganz unten: es ist die Gegenprobe, nicht der
-         Arbeitsbereich. Man traegt sie alle paar Wochen einmal ein. -->
-    <section class="konten">
-      <div class="konten-kopf">
-        <span class="konten-titel">🏦 Kontostände</span>
-        <span class="konten-summe">${kontoSumme ? eur(kontoSumme) : '–'}</span>
-      </div>
-      <div class="konten-hinweis">Trag hier ab und zu ein, was wirklich auf den Konten liegt.
-        Die App vergleicht das mit ihrer eigenen Rechnung.</div>
-      <div id="konten-liste"></div>
-    </section>
 
   `;
   renderKonten(c, def, node);
+  /* Die Kontoliste startet zugeklappt: die Summe reicht meistens, die
+     einzelnen Konten braucht man nur beim Pflegen. */
+  const kKlapp = document.getElementById('konten-klapp');
+  if(kKlapp) kKlapp.addEventListener('click',()=>{
+    const k = kontenNode();
+    k.zu = k.zu === false;
+    persist(); renderMain();
+  });
   /* Kachel antippen zeigt, aus welchen Zahlen ihr Betrag entsteht. */
   c.querySelectorAll('.exp-sum-box.aufklapp').forEach(box=>{
     box.addEventListener('click',(e)=>{
@@ -7915,6 +7927,27 @@ function einnahmenUebernehmen(){
    BAfoeG schon ueber die monatlichen Einnahmen. */
 /* Leons Kontostaende vom 26.08.2026, abgelesen in C24. Nur einmal
    gesetzt - danach traegt er selbst ein, was aktuell ist. */
+/* Im August kam noch kein BAfoeG - das startet erst im September.
+   Die erste Uebernahme setzte es pauschal in den neuesten Monat, das
+   war der August. Hier wird es dort wieder entfernt; September hat es
+   ueber fixkostenSeptember() ohnehin. */
+const BAFOEG_AUG_KEY = 'bafoeg-august-raus-2026';
+function bafoegAugustRaus(){
+  if(data.uebernommen && data.uebernommen[BAFOEG_AUG_KEY]) return 0;
+  const n = data.nodes['privat:ausgaben'];
+  const m = n && n.months && n.months['2026-08'];
+  let raus = 0;
+  if(m && m.ein && Array.isArray(m.ein.fest)){
+    const vorher = m.ein.fest.length;
+    m.ein.fest = m.ein.fest.filter(e=>
+      String(e.label||'').toLowerCase().indexOf('baf') !== 0);
+    raus = vorher - m.ein.fest.length;
+  }
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[BAFOEG_AUG_KEY] = true;
+  return raus;
+}
+
 const KONTEN_KEY = 'kontostaende-2026-08-26';
 function kontenUebernehmen(){
   if(data.uebernommen && data.uebernommen[KONTEN_KEY]) return 0;
@@ -11486,7 +11519,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 61;
+const APP_FASSUNG = 62;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
