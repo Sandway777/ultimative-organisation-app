@@ -4322,6 +4322,7 @@ function migrateData(){
   kundenUebernehmen();
   juliEndgueltigWeg();
   einnahmenUebernehmen();
+  fixkostenSeptember();
 
   /* Ganz zum Schluss, wenn auch die uebernommenen Kategorien stehen: alle
      Idee-Board-Karten einmal zuklappen. Weiter oben lief das ins Leere, weil
@@ -7620,6 +7621,47 @@ function einnahmenUebernehmen(){
   if(!data.uebernommen) data.uebernommen = {};
   data.uebernommen[EINNAHMEN_KEY] = true;
   return dazu;
+}
+
+
+/* Leons Fixkosten ab September 2026, von ihm selbst aufgestellt:
+   Miete 425 (seine Haelfte von 850), Internet 17,50 (von 35),
+   Gerichtskosten 50, Claude AI 21,42, Handy 16,49, Essen 175 (Budget).
+   Die Sparkasse faellt weg - stand im August noch mit 9,45 drin.
+   Zusammen 705,41 gegen 1114 Einnahmen: 408,59 bleiben. */
+const FIX_SEP_KEY = 'fixkosten-september-2026';
+function fixkostenSeptember(){
+  if(data.uebernommen && data.uebernommen[FIX_SEP_KEY]) return 0;
+  const n = data.nodes['privat:ausgaben'];
+  if(!n || !n.months) return 0;
+  const ym = '2026-09';
+  /* Nur anlegen, nicht ueberschreiben - hat Leon dort schon etwas
+     eingetragen, bleibt es stehen. */
+  if(n.months[ym]){
+    if(!data.uebernommen) data.uebernommen = {};
+    data.uebernommen[FIX_SEP_KEY] = true;
+    return 0;
+  }
+  const m = {cats: emptyExpenseCats(), ein: leereEinnahmen(), closed:false};
+  /* Geteilt - Leon zahlt die Haelfte */
+  m.cats.wohnen = [
+    {id:uid(), label:'Miete',    amount:850},
+    {id:uid(), label:'Internet', amount:35}
+  ];
+  /* Traegt Leon allein */
+  m.cats.sonstiges = [
+    {id:uid(), label:'Gerichtskosten', amount:50},
+    {id:uid(), label:'Claude AI',      amount:21.42},
+    {id:uid(), label:'Handy',          amount:16.49}
+  ];
+  m.ein.fest = [
+    {id:uid(), label:'BAföG',      amount:855},
+    {id:uid(), label:'Kindergeld', amount:259}
+  ];
+  n.months[ym] = m;
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[FIX_SEP_KEY] = true;
+  return 1;
 }
 
 /* Akzeptiert "12,50" und "12.50" */
@@ -11103,7 +11145,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 56;
+const APP_FASSUNG = 57;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
