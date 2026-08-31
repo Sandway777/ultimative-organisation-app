@@ -1396,6 +1396,29 @@ tr.row-off .tt-num{text-decoration:line-through;}
   border:1px solid var(--business);}
 
 
+/* ---- Geld-Zeilen ----
+   Statt gleich grosser Kacheln, die sich zu widersprechen scheinen:
+   eine Zeile je Sache, aufklappbar. Nur der Kontostand oben ist gross,
+   alles andere erklaert ihn. */
+.geld-zeile{background:var(--card);border:1px solid var(--line);
+  border-radius:11px;padding:13px 15px;margin-bottom:9px;cursor:pointer;
+  flex:0 0 auto;}
+.geld-zeile.topf{opacity:.88;}
+.geld-zeile-kopf{display:flex;justify-content:space-between;align-items:baseline;
+  gap:12px;}
+.geld-zeile-label{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;
+  letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);}
+.geld-zeile-wert{font-family:'Fraunces',serif;font-size:1.25rem;
+  font-weight:600;color:var(--business);flex-shrink:0;}
+.geld-zeile-wert.minus{color:var(--danger);}
+.geld-zeile-wert.ruhig{color:var(--ink);font-size:1.05rem;}
+.geld-zeile-wert i{font-style:normal;font-size:0.7rem;color:var(--ink-soft);
+  font-family:'IBM Plex Mono',monospace;font-weight:400;}
+.geld-zeile-sub{font-family:'IBM Plex Mono',monospace;font-size:0.63rem;
+  color:var(--ink-soft);margin-top:3px;}
+.geld-zeile .sum-rechnung{margin-top:10px;padding-top:9px;
+  border-top:1px solid var(--line-soft);}
+
 /* ---- Kontostand als Kopfzahl ----
    Steht ganz oben und ist die groesste Zahl der Seite: alles andere
    erklaert nur, was mit diesem Geld passiert. Die einzelnen Konten
@@ -2606,7 +2629,7 @@ const STRUKTUR = {
   privat: [
     {key:'reisen',    title:'Reisen',   icon:'✈️', type:'trips'},
     {key:'antraege',  title:'Anträge',  icon:'📄', type:'deadlines'},
-    {key:'ausgaben',  title:'Ausgaben', icon:'💶', type:'expenses'},
+
     {key:'umzug',     title:'Umzug',    icon:'📦', type:'moving'}
   ],
   business: [
@@ -3921,6 +3944,9 @@ function defaultData(){
       nodes[bereich+':'+def.key] = emptyNodeContent(def.type);
     });
   });
+  /* Geld steht bei den Hauptbereichen, nicht in einer Saeule - der Knoten
+     muss darum eigens angelegt werden. */
+  nodes[GELD_DEF.nodeId] = emptyNodeContent(GELD_DEF.type);
   const months = beispielDaten(nodes);
   return {
     /* Leer - die echten Kategorien legt ideenUebernehmen() an. Frueher stand
@@ -3935,7 +3961,13 @@ function defaultData(){
 }
 
 /* Findet die Definition eines festen Unterpunkts ueber seine nodeId ("privat:reisen"). */
+/* Geld gehoert keiner Saeule mehr an - es steht bei den Hauptbereichen.
+   Der Knotenname bleibt privat:ausgaben, damit bestehende Daten passen. */
+const GELD_DEF = {key:'ausgaben', title:'Geld', icon:'💶', ohneTag:true,
+  type:'expenses', bereich:'privat', nodeId:'privat:ausgaben'};
+
 function findNodeDef(nodeId){
+  if(nodeId === 'privat:ausgaben') return {...GELD_DEF};
   if(typeof nodeId!=='string' || !nodeId.includes(':')) return null;
   const [bereich, key] = nodeId.split(':');
   const list = STRUKTUR[bereich];
@@ -4050,9 +4082,16 @@ function migrateData(){
     delete data.nodes[alt];
   });
 
-  /* Fehlende Unterpunkte anlegen und Felder je Typ absichern. */
-  Object.keys(STRUKTUR).forEach(bereich=>{
-    STRUKTUR[bereich].forEach(def=>{
+  /* Fehlende Unterpunkte anlegen und Felder je Typ absichern.
+     Geld laeuft mit, obwohl es keiner Saeule mehr angehoert - sonst
+     bliebe sein Knoten ungeprueft und alte Staende fielen auf die Nase. */
+  /* STRUKTUR plus den eigenstaendigen Geld-Bereich - dieselbe zweistufige
+     Form wie vorher, damit die Klammern passen. */
+  const ALLE_BEREICHE = Object.assign({}, STRUKTUR, {
+    privat: (STRUKTUR.privat||[]).concat([GELD_DEF])
+  });
+  Object.keys(ALLE_BEREICHE).forEach(bereich=>{
+    ALLE_BEREICHE[bereich].forEach(def=>{
       const id = bereich+':'+def.key;
       if(!data.nodes[id]) data.nodes[id] = emptyNodeContent(def.type);
       const n = data.nodes[id];
@@ -5148,7 +5187,10 @@ function renderBereichOverview(c, key){
 
 /* Kopfzeile eines festen Unterpunkts - ohne Loeschen, die Struktur ist fix. */
 function renderNodeHead(def, meta){
-  const tag = `<span class="bereich-tag ${def.bereich}">${BEREICH_SHORT[def.bereich]}</span>`;
+  /* Geld steht bei den Hauptbereichen und gehoert keiner Saeule an -
+     ein Tag "Privat" waere dort irrefuehrend. */
+  const tag = def.ohneTag ? ''
+    : `<span class="bereich-tag ${def.bereich}">${BEREICH_SHORT[def.bereich]}</span>`;
   return `
     <div class="head-row">
       <div><h1 class="zt">${def.icon} ${escapeHtml(def.title)}${tag}</h1>
@@ -7340,68 +7382,47 @@ function renderExpenses(c, def){
         <div id="konten-liste"></div>
       </div>
     </section>
-    <div class="exp-summary" style="margin-bottom:22px;">
-      <!-- Jede Kachel laesst sich aufklappen und zeigt dann, aus welchen
-           Zahlen sie entsteht. Ohne das muss man raten, was mitgerechnet
-           wurde - und bei drei Kacheln mit aehnlichen Betraegen widersprechen
-           sie sich scheinbar. -->
-      <!-- Erste Kachel: bleibt am Monatsende etwas uebrig. Das ist die
-           Frage, mit der man diesen Bildschirm aufmacht - alles andere
-           erklaert nur, wie die Zahl zustande kommt. -->
-      <div class="exp-sum-box bleibt aufklapp${bleibt < 0 ? ' minus' : ''}" data-rechnung="bleibt">
-        <div class="exp-sum-label">${bleibt < 0 ? 'Dir fehlen' : 'Bleibt dir'} <span class="sum-pfeil">▾</span></div>
-        <div class="exp-sum-value">${bleibt < 0 ? '− ' : '+ '}${eur(Math.abs(bleibt))}</div>
-        <div class="exp-sum-note">${einSum.alles ? eur(einSum.alles) + ' rein, ' + eur(neuesterSums.meins) + ' raus' : 'noch keine Einnahmen eingetragen'}</div>
-        <div class="sum-rechnung" id="rechnung-bleibt">
-          ${EINNAHME_ARTEN.map(art=>{
-            const sum = einSum[art.key] || 0;
-            if(!sum) return '';
-            return `<div class="sum-zeile plus"><span>${art.icon} ${art.title}</span><b>+ ${eur(sum)}</b></div>`;
-          }).join('')}
-          ${!einSum.alles ? `<div class="sum-zeile hinweis"><span><i>Trag unten im Monat ein, was reinkommt – dann steht hier, was uebrig bleibt.</i></span><b></b></div>` : ''}
-          <div class="sum-zeile minus"><span>− laufende Kosten</span><b>− ${eur(neuesterSums.meins)}</b></div>
-          <div class="sum-zeile summe"><span>${bleibt < 0 ? 'fehlt' : 'bleibt'}</span><b>${bleibt < 0 ? '− ' : '+ '}${eur(Math.abs(bleibt))}</b></div>
-        </div>
+    <!-- Eine Zeile statt drei Kacheln: der laufende Monat und was danach
+         bleibt. Der Moebeltopf steht getrennt darunter, er laeuft ueber
+         Jahre und hat mit dem Monat nichts zu tun. -->
+    <div class="geld-zeile aufklapp" data-rechnung="monat">
+      <div class="geld-zeile-kopf">
+        <span class="geld-zeile-label">${neuesterYm ? fmtYm(neuesterYm) : 'Kein Monat'} <span class="sum-pfeil">▾</span></span>
+        <span class="geld-zeile-wert${bleibt < 0 ? ' minus' : ''}">${bleibt < 0 ? '− ' : '+ '}${eur(Math.abs(bleibt))}</span>
       </div>
+      <div class="geld-zeile-sub">${eur(einSum.alles)} rein · ${eur(neuesterSums.meins)} raus</div>
+      <div class="sum-rechnung" id="rechnung-monat">
+        ${EINNAHME_ARTEN.map(art=>{
+          const sum = einSum[art.key] || 0;
+          if(!sum) return '';
+          return `<div class="sum-zeile plus"><span>${art.icon} ${art.title}</span><b>+ ${eur(sum)}</b></div>`;
+        }).join('')}
+        ${EXPENSE_CATS.map(cat=>{
+          const roh = neuesterSums.proKatPlan[cat.key]||0;
+          const aus = neuesterSums.proKat[cat.key]||0;
+          if(!roh) return '';
+          const anteil = cat.shared ? roh/2 : roh;
+          const hinweis = cat.budget ? ` <i>Budget · ${eur(aus)} weg</i>`
+            : (cat.shared ? ` <i>½ von ${eur(roh)}</i>` : '');
+          return `<div class="sum-zeile minus"><span>${cat.icon} ${cat.title}${hinweis}</span><b>− ${eur(anteil)}</b></div>`;
+        }).join('')}
+        <div class="sum-zeile summe"><span>${bleibt < 0 ? 'fehlt' : 'bleibt'}</span><b>${bleibt < 0 ? '− ' : '+ '}${eur(Math.abs(bleibt))}</b></div>
+      </div>
+    </div>
 
-      <div class="exp-sum-box main aufklapp" data-rechnung="monat">
-        <div class="exp-sum-label">Dieser Monat kostet dich <span class="sum-pfeil">▾</span></div>
-        <div class="exp-sum-value">${eur(monatMeins)}</div>
-        <div class="exp-sum-note">${neuesterYm ? fmtYm(neuesterYm) : 'noch kein Monat'} ·
-          davon ${eur(fixSumme/2 + fixPrivat)} fest</div>
-        <div class="sum-rechnung" id="rechnung-monat">
-          ${EXPENSE_CATS.map(cat=>{
-            /* Budget-Toepfe mit dem eingeplanten Betrag, daneben was davon
-               schon weg ist - so sieht man, ob man drueber oder drunter liegt. */
-            const roh = neuesterSums.proKatPlan[cat.key]||0;
-            const aus = neuesterSums.proKat[cat.key]||0;
-            if(!roh) return '';
-            const anteil = cat.shared ? roh/2 : roh;
-            const hinweis = cat.budget
-              ? ` <i>Budget · ${eur(aus)} ausgegeben</i>`
-              : (cat.shared ? ` <i>½ von ${eur(roh)}</i>` : '');
-            return `<div class="sum-zeile"><span>${cat.icon} ${cat.title}${hinweis}</span><b>${eur(anteil)}</b></div>`;
-          }).join('')}
-          ${moebelMonat ? `<div class="sum-zeile"><span>🛋️ Wohnungseinrichtung <i>dieser Monat</i></span><b>${eur(moebelMonat)}</b></div>` : ''}
-          <div class="sum-zeile summe"><span>zusammen</span><b>${eur(monatMeins)}</b></div>
-          ${neuesterSums.istMeins < neuesterSums.meins - 0.005 ? `
-          <div class="sum-zeile hinweis"><span>davon wirklich ausgegeben</span><b>${eur(neuesterSums.istMeins + moebelMonat)}</b></div>
-          <div class="sum-zeile hinweis"><span><i>Der Rest ist eingeplantes Budget, das noch nicht weg ist.
-            „Mein Geld" rechnet nur mit dem, was wirklich raus ist.</i></span><b></b></div>` : ''}
-        </div>
+    <!-- Der Einrichtungstopf: laeuft ueber Jahre, aus dem Ersparten
+         bezahlt. Steht darum getrennt und nicht im Monat. -->
+    <div class="geld-zeile aufklapp topf" data-rechnung="moebel">
+      <div class="geld-zeile-kopf">
+        <span class="geld-zeile-label">🛋️ Wohnungseinrichtung <span class="sum-pfeil">▾</span></span>
+        <span class="geld-zeile-wert ruhig">${eur(moebelH.restMeins)}</span>
       </div>
-
-      </div>
-      <div class="exp-sum-box aufklapp" data-rechnung="moebel">
-        <div class="exp-sum-label">🛋️ Wohnungseinrichtung <span class="sum-pfeil">▾</span></div>
-        <div class="exp-sum-value sub">${eur(moebelH.rest)} <span class="mod-ziel">/ ${eur(moebelH.budget)}</span></div>
-        <div class="exp-sum-note">du ${eur(moebelH.restMeins)} · sie ${eur(moebelH.restIhrs)}</div>
-        <div class="sum-rechnung" id="rechnung-moebel">
-          <div class="sum-zeile"><span>Budget</span><b>${eur(moebelH.budget)}</b></div>
-          <div class="sum-zeile minus"><span>− du ausgegeben</span><b>− ${eur(moebelH.meins)}</b></div>
-          <div class="sum-zeile minus"><span>− sie ausgegeben</span><b>− ${eur(moebelH.ihrs)}</b></div>
-          <div class="sum-zeile summe"><span>noch übrig</span><b>${eur(moebelH.rest)}</b></div>
-        </div>
+      <div class="geld-zeile-sub">von deinen ${eur(moebelH.proKopf)} · zusammen ${eur(moebelH.rest)} übrig</div>
+      <div class="sum-rechnung" id="rechnung-moebel">
+        <div class="sum-zeile"><span>deine Hälfte</span><b>${eur(moebelH.proKopf)}</b></div>
+        <div class="sum-zeile minus"><span>− du ausgegeben</span><b>− ${eur(moebelH.meins)}</b></div>
+        <div class="sum-zeile summe"><span>dir bleibt</span><b>${eur(moebelH.restMeins)}</b></div>
+        <div class="sum-zeile hinweis"><span><i>Sie hat ${eur(moebelH.ihrs)} ausgegeben, ihr bleiben ${eur(moebelH.restIhrs)}.</i></span><b></b></div>
       </div>
     </div>
     <div class="entry-layout${showDetailMobile?' show-detail':''}" id="entry-layout">
@@ -7426,7 +7447,7 @@ function renderExpenses(c, def){
     persist(); renderMain();
   });
   /* Kachel antippen zeigt, aus welchen Zahlen ihr Betrag entsteht. */
-  c.querySelectorAll('.exp-sum-box.aufklapp').forEach(box=>{
+  c.querySelectorAll('.exp-sum-box.aufklapp, .geld-zeile.aufklapp').forEach(box=>{
     box.addEventListener('click',(e)=>{
       if(e.target.closest('input')) return;   /* Startgeld-Feld nicht stoeren */
       box.classList.toggle('offen');
@@ -11574,7 +11595,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 63;
+const APP_FASSUNG = 64;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
