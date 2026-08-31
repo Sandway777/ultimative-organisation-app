@@ -2187,8 +2187,14 @@ tr.row-off .tt-num{text-decoration:line-through;}
     <div class="cloud-schritt">
       <div class="cloud-schritt-kopf"><span class="kur-schritt-nr">2</span>
         <span class="kur-schritt-titel">Schlüssel hier einfügen</span></div>
+      <!-- Am iPhone macht die Tastatur aus einem Schluessel sonst schnell
+           Unsinn: Grossbuchstabe am Anfang, Autokorrektur, Anfuehrungszeichen.
+           Alles abschalten, sonst schlaegt das Verbinden ohne erkennbaren
+           Grund fehl. -->
       <input type="password" id="cloud-token" class="cloud-input"
-             placeholder="ghp_… hier einfügen" autocomplete="off">
+             placeholder="ghp_… hier einfügen" autocomplete="off"
+             autocapitalize="off" autocorrect="off" spellcheck="false"
+             inputmode="text">
       <label class="cloud-check"><input type="checkbox" id="cloud-token-zeigen">
         <span>Schlüssel anzeigen</span></label>
     </div>
@@ -2331,6 +2337,45 @@ function cloudStatusZeigen(){
 
 /* Sucht die Cloud-Datei im Konto. So findet das zweite Geraet mit demselben
    Schluessel automatisch den bestehenden Stand, ohne dass man Ids abtippt. */
+/* Der haeufigste Grund fuer "Schluessel geht nicht" ist nicht der Schluessel
+   selbst, sondern etwas daneben: ein mitkopiertes Leerzeichen, ein
+   abgelaufener Token, fehlende gist-Berechtigung oder schlicht kein Netz.
+   Darum vorher pruefen und beim Namen nennen, statt pauschal zu scheitern. */
+async function cloudTokenPruefen(token){
+  if(!navigator.onLine){
+    throw new Error('Keine Internetverbindung. Verbinde dich mit WLAN oder Mobilfunk und versuch es nochmal.');
+  }
+  /* Form pruefen, bevor GitHub gefragt wird - spart einen Fehlversuch. */
+  if(/\s/.test(token)){
+    throw new Error('Im Schlüssel steht ein Leerzeichen oder Zeilenumbruch. Beim Kopieren ist etwas mitgerutscht – kopier ihn nochmal.');
+  }
+  if(token.length < 20){
+    throw new Error('Der Schlüssel ist zu kurz – da fehlt ein Stück. Kopier ihn nochmal ganz.');
+  }
+  let res;
+  try{
+    res = await fetch('https://api.github.com/user', {
+      headers:{'Authorization':'Bearer '+token, 'Accept':'application/vnd.github+json'},
+      cache:'no-store'
+    });
+  }catch(e){
+    throw new Error('GitHub ist nicht erreichbar. Hast du Internet?');
+  }
+  if(res.status === 401){
+    throw new Error('GitHub kennt diesen Schlüssel nicht. Entweder ist er abgelaufen oder beim Kopieren fehlt ein Stück – leg auf github.com/settings/tokens einen neuen an.');
+  }
+  if(!res.ok){
+    throw new Error('GitHub antwortet mit Fehler ' + res.status + '. Versuch es gleich nochmal.');
+  }
+  /* Berechtigungen stehen im Kopf der Antwort - so faellt "gist vergessen"
+     sofort auf, statt erst beim Speichern. */
+  const rechte = res.headers.get('x-oauth-scopes');
+  if(rechte !== null && rechte !== '' && !rechte.split(',').map(x=>x.trim()).includes('gist')){
+    throw new Error('Der Schlüssel hat keine Gist-Berechtigung. Beim Anlegen muss der Haken bei „gist" gesetzt sein – leg bitte einen neuen an.');
+  }
+  return true;
+}
+
 async function cloudGistFinden(token){
   const res = await fetch('https://api.github.com/gists?per_page=100', {
     headers:{'Authorization':'Bearer '+token, 'Accept':'application/vnd.github+json'},
@@ -2364,6 +2409,8 @@ async function cloudVerbinden(token){
     const el = document.getElementById('cloud-meldung');
     if(el){ el.textContent = txt; el.className = 'cloud-meldung' + (art?' '+art:''); }
   };
+  meld('Prüfe den Schlüssel …');
+  await cloudTokenPruefen(token);
   meld('Verbinde …');
   let gistId = await cloudGistFinden(token);
   const neu = !gistId;
@@ -10661,8 +10708,23 @@ document.getElementById('cloud-modal').addEventListener('click',(e)=>{
 document.getElementById('cloud-token-zeigen').addEventListener('change',(e)=>{
   document.getElementById('cloud-token').type = e.target.checked ? 'text' : 'password';
 });
+/* Was beim Kopieren am Handy mitkommt und den Schluessel unbrauchbar macht:
+   Leerzeichen aussen, Zeilenumbrueche, geschweifte Anfuehrungszeichen um den
+   Text herum, und das unsichtbare Zero-Width-Space aus manchen Webseiten. */
+function tokenSaeubern(roh){
+  return String(roh || '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')       /* unsichtbare Zeichen */
+    .replace(/[\u2018\u2019\u201C\u201D]/g, '')  /* typografische Anfuehrungszeichen */
+    .trim()
+    .replace(/^["'`]+|["'`]+$/g, '')             /* Anfuehrungszeichen aussen */
+    .trim();
+}
+
 document.getElementById('cloud-verbinden').addEventListener('click', async ()=>{
-  const token = document.getElementById('cloud-token').value.trim();
+  const feld = document.getElementById('cloud-token');
+  const token = tokenSaeubern(feld.value);
+  /* Gesaeubertes zurueckschreiben, damit Leon sieht, womit gearbeitet wird. */
+  if(token !== feld.value) feld.value = token;
   const meld = document.getElementById('cloud-meldung');
   if(!token){
     meld.textContent = 'Bitte zuerst den Schlüssel aus Schritt 1 einfügen.';
@@ -10745,7 +10807,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 53;
+const APP_FASSUNG = 54;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
