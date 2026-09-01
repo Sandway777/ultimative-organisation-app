@@ -1535,6 +1535,19 @@ tr.row-off .tt-num{text-decoration:line-through;}
   color:var(--ink);line-height:1.15;margin-top:2px;}
 .kontostand-note{font-family:'IBM Plex Mono',monospace;font-size:0.63rem;
   color:var(--ink-soft);margin-top:4px;}
+/* Was noch unterwegs ist - steht beim Kontostand, weil es dort fehlt. */
+.kontostand-offen{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;
+  color:var(--business);margin-top:5px;}
+/* Haken je Einnahme: da oder kommt noch. */
+.gm-haken{width:26px;height:26px;flex-shrink:0;border-radius:50%;
+  border:1px solid var(--line);background:none;color:var(--ink-soft);
+  cursor:pointer;font-size:0.8rem;line-height:1;padding:0;}
+.gm-haken.da{color:var(--business);border-color:var(--business);
+  background:var(--business-bg);}
+.gm-posten.offen .gm-label,.gm-posten.offen .gm-betrag{opacity:.6;}
+.gm-zeile-wert i{font-style:normal;font-size:0.66rem;color:var(--ink-soft);}
+.gm-schluss-zeile i{font-style:normal;font-size:0.68rem;opacity:.75;}
+
 .kontostand-pfeil{font-size:0.8rem;color:var(--ink-soft);flex-shrink:0;}
 .kontostand-body{display:none;padding:0 18px 16px;}
 .kontostand.offen .kontostand-body{display:block;}
@@ -4546,6 +4559,8 @@ function migrateData(){
   studiumUebernehmen();
   kundenUebernehmen();
   juliEndgueltigWeg();
+  /* Vor den Uebernahmen: sie schreiben in m.ein und brauchen die Faecher. */
+  einnahmenFaecherSichern();
   einnahmenUebernehmen();
   fixkostenSeptember();
   bafoegUebernehmen();
@@ -4554,6 +4569,9 @@ function migrateData(){
   kontenAugustEnde();
   essenSeptember();
   toepfeZusammenlegen();
+  /* Nochmal: fixkostenSeptember und Konsorten legen eigene Monate an. */
+  einnahmenFaecherSichern();
+  kindergeldAugustOffen();
 
   /* Ganz zum Schluss, wenn auch die uebernommenen Kategorien stehen: alle
      Idee-Board-Karten einmal zuklappen. Weiter oben lief das ins Leere, weil
@@ -4864,16 +4882,29 @@ function uniKostenSumme(ym){
   return uniKostenImMonat(ym).reduce((s,p)=>s + p.betrag, 0);
 }
 
+/* Einnahmen haben zwei Zustaende: schon auf dem Konto oder noch
+   unterwegs. Kindergeld kommt manchmal Wochen spaeter - ohne diese
+   Trennung behauptet die App Geld, das noch nirgends liegt.
+     alles = was der Monat bringt (fuer die Monatsrechnung)
+     da    = was schon angekommen ist (steckt im Kontostand)
+     kommt = was noch aussteht */
 function einnahmeSumme(monat){
-  if(!monat || !monat.ein) return {fest:0, extra:0, alles:0};
+  if(!monat || !monat.ein) return {fest:0, extra:0, alles:0, da:0, kommt:0};
   const proArt = {};
-  let alles = 0;
+  let alles = 0, da = 0, kommt = 0;
   EINNAHME_ARTEN.forEach(a=>{
-    const sum = (monat.ein[a.key]||[]).reduce((s,e)=>s + (Number(e.amount)||0), 0);
+    let sum = 0;
+    (monat.ein[a.key]||[]).forEach(e=>{
+      const b = Number(e.amount)||0;
+      sum += b;
+      /* Ohne Angabe gilt eine Einnahme als angekommen - so verhalten
+         sich alte Staende wie bisher. */
+      if(e.offen) kommt += b; else da += b;
+    });
     proArt[a.key] = sum;
     alles += sum;
   });
-  return Object.assign(proArt, {alles});
+  return Object.assign(proArt, {alles, da, kommt});
 }
 
 function getExpenseMonth(node, ym, autoCreate){
@@ -7452,6 +7483,7 @@ function renderExpenses(c, def){
           <div class="kontostand-wert">${eur(kontoSumme)}</div>
           <div class="kontostand-note">${konten.stand
             ? `Stand ${fmtDate(konten.stand)}` : 'noch nichts eingetragen'}</div>
+          ${ein.kommt ? `<div class="kontostand-offen">+ ${eur(ein.kommt)} kommt noch</div>` : ''}
         </div>
         <span class="kontostand-pfeil">${konten.zu === false ? '▾' : '▸'}</span>
       </button>
@@ -7474,7 +7506,8 @@ function renderExpenses(c, def){
     <!-- 3. Was bleibt? -->
     <div class="gm-schluss${bleibt < 0 ? ' minus' : ''}">
       <div class="gm-schluss-zeile">
-        <span>Einnahmen</span><b class="plus">+ ${eur(ein.alles)}</b>
+        <span>Einnahmen${ein.kommt ? ` <i>davon ${eur(ein.kommt)} noch offen</i>` : ''}</span>
+        <b class="plus">+ ${eur(ein.alles)}</b>
       </div>
       <div class="gm-schluss-zeile">
         <span>Ausgaben</span><b class="minus">− ${eur(kostet)}</b>
@@ -7587,12 +7620,15 @@ function renderGeldMonat(c, def, node, monat, ym){
     <div class="gm-topf-zeile ein${monat.einZu === false ? ' offen' : ''}" data-topf="__ein">
       <div class="gm-zeile-kopf">
         <span class="gm-zeile-titel">💰 Einnahmen</span>
-        <span class="gm-zeile-wert plus">+ ${eur(einnahmeSumme(monat).alles)}</span>
+        <span class="gm-zeile-wert plus">+ ${eur(einnahmeSumme(monat).alles)}${
+          einnahmeSumme(monat).kommt ? `<i> · ${eur(einnahmeSumme(monat).kommt)} offen</i>` : ''}</span>
       </div>
       <div class="gm-zeile-body">
         ${EINNAHME_ARTEN.map(art=>`
           ${(monat.ein[art.key]||[]).map(e=>`
-            <div class="gm-posten">
+            <div class="gm-posten${e.offen ? ' offen' : ''}">
+              <button class="gm-haken${e.offen ? '' : ' da'}" data-einoffen="${art.key}|${e.id}"
+                title="${e.offen ? 'kommt noch' : 'ist da'} – tippen zum Wechseln">${e.offen ? '○' : '✓'}</button>
               <input type="text" class="gm-label" data-einlabel="${art.key}|${e.id}"
                 value="${escapeHtml(e.label||'')}" placeholder="Wofür?" ${zu?'disabled':''}>
               <input type="text" class="gm-betrag" data-einbetrag="${art.key}|${e.id}"
@@ -7720,6 +7756,14 @@ function renderGeldMonat(c, def, node, monat, ym){
     const e = (monat.ein[k]||[]).find(x=>x.id===id);
     if(e){ const v = parseAmount(i.value); e.amount = v === null ? 0 : v; neuZeichnen(); }
   }));
+  /* Haken: ist das Geld schon da oder kommt es noch? */
+  host.querySelectorAll('[data-einoffen]').forEach(b=>b.addEventListener('click',(ev)=>{
+    ev.stopPropagation();
+    const [k, id] = b.dataset.einoffen.split('|');
+    const e = (monat.ein[k]||[]).find(x=>x.id===id);
+    if(e){ e.offen = !e.offen; neuZeichnen(); }
+  }));
+
   host.querySelectorAll('[data-eindel]').forEach(b=>b.addEventListener('click',(e)=>{
     e.stopPropagation();
     const [k, id] = b.dataset.eindel.split('|');
@@ -8162,6 +8206,50 @@ function einnahmenUebernehmen(){
    Essensgeld auf. Ueberschreibt die alten Werte, weil sie ueberholt sind. */
 /* Sechs Toepfe wurden vier: was in "Sonstiges gemeinsam" und "Gadgets"
    stand, wandert weiter - nichts geht verloren, es steht nur woanders. */
+/* Leons Kindergeld fuer August ist am 01.09. immer noch nicht da.
+   Als offen markieren, damit die App kein Geld behauptet, das
+   nirgends liegt. */
+/* August: Kindergeld steht Leon zu, ist aber am 01.09. immer noch
+   nicht da. BAfoeG gab es im August noch gar nicht - das startet
+   erst im September. Einmalig eintragen und als offen markieren. */
+const KG_OFFEN_KEY = 'kindergeld-august-offen-2026';
+function kindergeldAugustOffen(){
+  if(data.uebernommen && data.uebernommen[KG_OFFEN_KEY]) return 0;
+  const n = data.nodes['privat:ausgaben'];
+  const m = n && n.months && n.months['2026-08'];
+  if(!m) return 0;
+  if(!m.ein) m.ein = leereEinnahmen();
+  if(!Array.isArray(m.ein.fest)) m.ein.fest = [];
+  const da = m.ein.fest.find(e=>
+    String(e.label||'').toLowerCase().indexOf('kindergeld') >= 0);
+  if(da){ da.offen = true; }
+  else { m.ein.fest.push({id:uid(), label:'Kindergeld', amount:259, offen:true}); }
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[KG_OFFEN_KEY] = true;
+  return 1;
+}
+
+
+/* Ganz zum Schluss: jeder Monat braucht seine Einnahmen-Faecher. Die
+   Absicherung weiter oben lief, bevor beispielDaten und die Uebernahmen
+   ihre Monate anlegten - dadurch fehlten sie dort. */
+function einnahmenFaecherSichern(){
+  const n = data.nodes['privat:ausgaben'];
+  if(!n || !n.months) return 0;
+  let raus = 0;
+  Object.keys(n.months).forEach(k=>{
+    const m = n.months[k];
+    if(!m.ein || typeof m.ein !== 'object'){ m.ein = leereEinnahmen(); raus++; }
+    EINNAHME_ARTEN.forEach(a=>{
+      if(!Array.isArray(m.ein[a.key])) m.ein[a.key] = [];
+    });
+    if(!m.cats || typeof m.cats !== 'object') m.cats = emptyExpenseCats();
+    EXPENSE_CATS.forEach(cat=>{
+      if(!Array.isArray(m.cats[cat.key])) m.cats[cat.key] = [];
+    });
+  });
+  return raus;
+}
 const TOEPFE_KEY = 'toepfe-vier-2026-08';
 function toepfeZusammenlegen(){
   if(data.uebernommen && data.uebernommen[TOEPFE_KEY]) return 0;
@@ -11815,7 +11903,7 @@ window.addEventListener('online', cloudAbgleich);
    und verglichen - steht dort eine neuere Nummer, laedt sich die Seite selbst
    einmal neu. Notwendig, weil Safari am iPhone die Seite hartnaeckig aus dem
    eigenen Speicher zieht und Aenderungen sonst nie ankommen. */
-const APP_FASSUNG = 65;
+const APP_FASSUNG = 66;
 async function fassungPruefen(){
   if(!navigator.onLine) return;
   if(sessionStorage.getItem('fassung-geprueft')) return;   /* nur einmal je Sitzung */
