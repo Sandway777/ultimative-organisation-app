@@ -301,6 +301,7 @@ h1.zt{font-family:'Fraunces',serif;font-weight:600;font-size:1.9rem;margin:0;col
 .content.bereich-uni .mini-checkbox svg{stroke:var(--uni);}
 .content.bereich-uni .mini-item.done .mini-checkbox{border-color:var(--uni);background:var(--uni-bg);}
 .content.bereich-uni .input-row button{background:var(--uni);}
+.content.bereich-uni .ib-btn.primary{background:var(--uni);color:#fff;}
 
 .content.bereich-sport h1.zt{color:var(--sport);}
 .content.bereich-sport .input-row input:focus{border-bottom-color:var(--sport);}
@@ -355,6 +356,14 @@ ul.mini-list{list-style:none;margin:0;padding:0;}
   opacity:.4;padding:2px 5px;flex-shrink:0;line-height:1;}
 .mini-move:hover{color:var(--idea);opacity:1;}
 .mini-item.done .mini-move{opacity:.2;}
+/* Bearbeiten - wie der Loeschknopf immer sichtbar, damit es am Handy
+   ohne Hover auffindbar ist. */
+.mini-edit{border:none;background:none;color:var(--ink-soft);font-size:1rem;cursor:pointer;
+  opacity:.6;padding:2px 6px;flex-shrink:0;line-height:1;}
+.mini-edit:hover{color:var(--idea);opacity:1;}
+.mini-edit-feld{width:100%;font:inherit;font-size:.9rem;color:var(--ink);
+  border:none;border-bottom:1.5px solid var(--idea);background:transparent;
+  padding:1px 0;outline:none;}
 
 /* Auswahl, wohin verschoben wird - klappt unter dem Punkt auf. */
 .move-box{background:var(--card-soft,rgba(255,255,255,.04));border:1px solid var(--line);
@@ -1900,6 +1909,35 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .day-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
 .day-card h4{font-family:'Fraunces',serif;font-size:0.98rem;margin:0 0 8px;color:var(--ink);}
 
+/* Schnellnotizen - ein Block je Tag, einzeln zuklappbar. */
+.nz-neu{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--card);
+  border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:14px;}
+.nz-neu input[type=text]{flex:1;min-width:160px;font-family:inherit;font-size:0.92rem;
+  color:var(--ink);border:none;border-bottom:1.5px solid var(--line);background:transparent;
+  padding:6px 2px;outline:none;}
+.nz-neu input[type=text]:focus{border-bottom-color:var(--uni);}
+.nz-neu input[type=date]{font-family:inherit;font-size:0.85rem;color:var(--ink-soft);
+  border:1px solid var(--line);border-radius:7px;background:transparent;padding:6px 8px;}
+.nz-tag{background:var(--card);border:1px solid var(--line);border-radius:10px;
+  padding:12px 14px;margin-bottom:10px;}
+.nz-tag-kopf{display:flex;align-items:center;gap:8px;}
+.nz-tag-kopf h4{font-family:'Fraunces',serif;font-size:0.95rem;margin:0;color:var(--uni);flex:1;}
+.nz-klapp{border:none;background:none;color:var(--ink-soft);font-size:0.9rem;cursor:pointer;
+  padding:2px 4px;line-height:1;flex-shrink:0;}
+.nz-zahl{font-size:0.76rem;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;flex-shrink:0;}
+.nz-tag-inhalt{margin-top:10px;}
+.nz-tag.zu .nz-tag-inhalt{display:none;}
+.nz-tag-add{font-family:inherit;font-size:0.95rem;border:none;border-radius:7px;
+  background:var(--uni);color:#fff;cursor:pointer;padding:0 14px;flex-shrink:0;}
+.mini-del.fragt{color:var(--danger);opacity:1;font-size:0.74rem;
+  font-family:'IBM Plex Mono',monospace;}
+/* Am Handy bekommt der Text eine eigene Zeile - zwischen Datum und Knopf
+   gequetscht sieht man beim Tippen zu wenig vom eigenen Satz. */
+@media(max-width:720px){
+  .nz-neu input[type=text]{flex:1 1 100%;}
+  .nz-neu input[type=date]{flex:1;}
+}
+
 /* idea board */
 .ib-inbox{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px;}
 .ib-inbox strong{color:var(--ink);font-weight:600;}
@@ -2757,7 +2795,12 @@ const STRUKTUR = {
     {key:'pruefungen', title:'Prüfungstermine', icon:'📝', type:'exams'},
     {key:'lernplan',   title:'Lernplan',        icon:'📚', type:'study'},
     {key:'module',     title:'Module & Noten',  icon:'🎓', type:'modules'},
-    {key:'kosten',     title:'Semesterkosten',  icon:'🧾', type:'unikosten'}
+    {key:'kosten',     title:'Semesterkosten',  icon:'🧾', type:'unikosten'},
+    /* Schnellnotizen: was in der Vorlesung oder zwischendurch anfaellt und
+       sonst nirgends hingehoert. Nach Tag gruppiert, weil Leon spaeter
+       ueber den Tag sucht ("was war in der Vorwoche"), nicht ueber ein
+       Stichwort. */
+    {key:'notizen',    title:'Schnellnotizen',  icon:'✍️', type:'notizen'}
   ],
   sport: [
     {key:'training',  title:'Trainingsübersicht',      icon:'🏃', type:'training'},
@@ -3006,6 +3049,9 @@ function emptyNodeContent(type){
     return {weeks:{}};
   }
   if(type==='cures')      return {cures: []};
+  /* Schnellnotizen: tage: [{date, items:[{id,text,done}], zu}] - ein Block
+     je Tag, neueste zuerst. */
+  if(type==='notizen')    return {tage: []};
   return {};
 }
 
@@ -4431,6 +4477,14 @@ function migrateData(){
             if(typeof p.freiwillig!=='boolean') p.freiwillig = false;
           });
         });
+      } else if(def.type==='notizen'){
+        /* Schnellnotizen liegen nach Tagen, nicht als items-Liste. */
+        if(!Array.isArray(n.tage)) n.tage = [];
+        n.tage.forEach(t=>{
+          if(!Array.isArray(t.items)) t.items = [];
+          if(typeof t.zu!=='boolean') t.zu = false;
+        });
+        n.tage.sort((x,y)=>String(y.date).localeCompare(String(x.date)));
       } else if(def.type==='clients'){
         /* Kunden liegen nach Jahren, nicht als items-Liste. */
         if(!n.jahre || typeof n.jahre!=='object') n.jahre = {};
@@ -4674,6 +4728,10 @@ function nodeOpenCount(nodeId, def){
     /* Offene Posten - das ist, was noch aussteht */
     return (n.semester||[]).reduce((s,sem)=>
       s + (sem.posten||[]).filter(p=>!p.bezahlt).length, 0);
+  }
+  if(def.type==='notizen'){
+    return (n.tage||[]).reduce((sum,t)=>
+      sum + (t.items||[]).filter(i=>!i.done).length, 0);
   }
   if(def.type==='timetable') return 0;   /* Stundenplan zeigt Anzahl Termine separat */
   if(def.type==='modules')   return 0;   /* Module zeigen Credits */
@@ -5274,6 +5332,7 @@ function renderMain(){
   else if(def.type==='bizkonto')  renderBizKonto(c, def);
   else if(def.type==='training')  renderTraining(c, def);
   else if(def.type==='cures')     renderCures(c, def);
+  else if(def.type==='notizen')   renderNotizen(c, def);
 }
 
 function renderBereichOverview(c, key){
@@ -5306,6 +5365,12 @@ function renderBereichOverview(c, key){
       const neuestes = jahre.sort().pop();
       sub = alle ? `${alle} Kunden · ${neuestes}: ${n.jahre[neuestes].kunden.length}`
                  : 'noch kein Jahr';
+    }
+    else if(def.type==='notizen'){
+      const tage = n.tage||[];
+      const anz = tage.reduce((x,t)=>x+(t.items||[]).length, 0);
+      sub = anz ? `${anz} Notiz(en) · zuletzt ${fmtDay(tage[0].date)}`
+                : 'noch nichts notiert';
     }
     else if(def.type==='trips')     sub = `${(n.trips||[]).length} Reise(n) · ${open} offen`;
     else if(def.type==='expenses'){
@@ -5456,7 +5521,7 @@ function renderMiniList(ul, items, opts){
       : '';
     li.innerHTML=`<span class="mini-checkbox" data-id="${it.id}"><svg viewBox="0 0 18 18"><path d="M3 9l4 4 8-8"/></svg></span>
       ${datePart}<span class="mini-text">${escapeHtml(it.text)}</span>
-      ${zeitPart}${movePart}<button class="mini-del" data-id="${it.id}">×</button>`;
+      ${zeitPart}${movePart}<button class="mini-edit" data-edit="${it.id}" title="Bearbeiten" aria-label="Bearbeiten">✎</button><button class="mini-del" data-id="${it.id}">×</button>`;
     ul.appendChild(li);
   });
 }
@@ -5512,8 +5577,35 @@ function zeitBoxOeffnen(knopf, item, onChanged){
 function bindMiniList(ul, items, onChanged){
   ul.addEventListener('click',(e)=>{
     const cb=e.target.closest('.mini-checkbox'); const del=e.target.closest('.mini-del');
+    const ed=e.target.closest('.mini-edit');
     if(cb){ const it=items.find(i=>i.id===cb.dataset.id); if(it){it.done=!it.done; onChanged();} }
     else if(del){ const idx=items.findIndex(i=>i.id===del.dataset.id); if(idx>-1){items.splice(idx,1); onChanged();} }
+    else if(ed){ const it=items.find(i=>i.id===ed.dataset.edit); if(it) miniTextAendern(ul, it, onChanged); }
+  });
+}
+
+/* Einen Eintrag im Feld selbst aendern - der Text wird zum Eingabefeld.
+   Bewusst ein sichtbarer Knopf statt "einfach auf den Text tippen": am
+   Handy ist ein Tipp auf den Text nicht von einem Tipp zum Abhaken zu
+   unterscheiden, und man findet nur, was man sieht. */
+function miniTextAendern(ul, it, onChanged){
+  const li = ul.querySelector('.mini-edit[data-edit="'+it.id+'"]');
+  const feld = li && li.closest('.mini-item').querySelector('.mini-text');
+  if(!feld || feld.querySelector('input')) return;
+  const inp = document.createElement('input');
+  inp.type='text'; inp.className='mini-edit-feld'; inp.value=it.text; inp.maxLength=200;
+  feld.textContent=''; feld.appendChild(inp); inp.focus(); inp.select();
+  let fertig=false;
+  const sichern=()=>{
+    if(fertig) return; fertig=true;
+    const t=inp.value.trim();
+    if(t) it.text=t;
+    onChanged();
+  };
+  inp.addEventListener('blur', sichern);
+  inp.addEventListener('keydown',(e)=>{
+    if(e.key==='Enter'){ e.preventDefault(); inp.blur(); }
+    else if(e.key==='Escape'){ fertig=true; onChanged(); }
   });
 }
 
@@ -6904,7 +6996,8 @@ const APP_BEREICHE = [
     {t:'Prüfungstermine', d:'mit Datum'},
     {t:'Lernplan',        d:'was wann lernen'},
     {t:'Module & Noten',  d:'36 Module, 180 CP, Wahlpflicht, Schnitt'},
-    {t:'Semesterkosten',  d:'je Semester, Beitrag und Online-Module'}
+    {t:'Semesterkosten',  d:'je Semester, Beitrag und Online-Module'},
+    {t:'Schnellnotizen',  d:'nach Tag gruppiert, Datum frei wählbar', neu:true}
   ]},
   {saeule:'Sport und Gesundheit', farbe:'var(--sport)', punkte:[
     {t:'Trainingsübersicht', d:'ein Wochenplan je Monat'},
@@ -6932,6 +7025,8 @@ const APP_BEREICHE = [
 
 /* Was sich wann geaendert hat - neueste zuerst. Beim Weiterbauen ergaenzen. */
 const APP_VERLAUF = [
+  {v:53, d:'11.09.2026', t:'Schnellnotizen für Uni',
+   b:'Was in der Vorlesung anfällt, nach Tag gruppiert statt als eine lange Liste. Dazu ein Bearbeiten-Knopf an jeder Notiz – überall in der App.'},
   {v:52, d:'22.08.2026', t:'Ziele: Schwächen',
    b:'Was du lassen willst – mit Gegenargumenten, eigenen Regeln je Wochentag und einer Strecke sauberer Tage.'},
   {v:51, d:'22.08.2026', t:'Heute-Bildschirm',
@@ -10213,6 +10308,124 @@ function cureProgress(k){
   return {done, soll};
 }
 
+/* ---------------- SCHNELLNOTIZEN ----------------
+   Fuer alles, was in der Vorlesung oder zwischendurch anfaellt und sonst
+   nirgends hingehoert. Bewusst nach Tag gruppiert statt als eine lange
+   Liste: Leon sucht spaeter ueber den Tag ("was war in der Vorwoche"),
+   nicht ueber ein Stichwort. Damit ist die Zugehoerigkeit sichtbar, statt
+   nur als Datum neben dem Text zu stehen.
+
+   Der heutige Tag entsteht beim Tippen von selbst - fuer die schnelle
+   Notiz will man kein Datum auswaehlen muessen. Das Datumsfeld daneben ist
+   fuer den Nachtrag da. Aeltere Tage starten zugeklappt, damit am Handy
+   oben steht, woran gerade gearbeitet wird. */
+function notizenTag(z, datum){
+  let t = z.tage.find(x=>x.date===datum);
+  if(!t){
+    t = {date:datum, items:[], zu:false};
+    z.tage.push(t);
+    z.tage.sort((x,y)=>String(y.date).localeCompare(String(x.date)));
+  }
+  return t;
+}
+
+function renderNotizen(c, def){
+  const z = data.nodes[def.nodeId];
+  if(!Array.isArray(z.tage)) z.tage = [];
+  const heute = isoToday();
+  const anz  = z.tage.reduce((s,t)=>s+(t.items||[]).length, 0);
+  const offen = z.tage.reduce((s,t)=>s+(t.items||[]).filter(i=>!i.done).length, 0);
+
+  c.innerHTML = renderNodeHead(def,
+    anz ? `${anz} Notiz(en) · ${offen} offen` : 'noch nichts notiert') + `
+    <div class="nz-neu">
+      <input type="text" id="nz-text" placeholder="Was ist gerade wichtig?" maxlength="200">
+      <input type="date" id="nz-datum" value="${heute}" aria-label="Datum">
+      <button class="ib-btn primary" id="nz-add">Notieren</button>
+    </div>
+    <div id="nz-tage"></div>
+  `;
+
+  const neu = ()=>{ persist(); renderNotizen(c, def); renderSidebar(); };
+  const wrap = document.getElementById('nz-tage');
+
+  if(!z.tage.length){
+    wrap.innerHTML = '<div class="empty-mini">Noch nichts notiert. Schreib oben rein, das Datum steht schon auf heute.</div>';
+  }
+
+  z.tage.forEach(t=>{
+    const card = document.createElement('div');
+    card.className = 'nz-tag' + (t.zu ? ' zu' : '');
+    const label = t.date===heute ? 'Heute — '+fmtDay(t.date) : fmtDay(t.date);
+    const tOffen = (t.items||[]).filter(i=>!i.done).length;
+    card.innerHTML = `
+      <div class="nz-tag-kopf">
+        <button class="nz-klapp" aria-label="Auf- oder zuklappen">${t.zu?'▸':'▾'}</button>
+        <h4>${label}</h4>
+        <span class="nz-zahl">${t.items.length} · ${tOffen} offen</span>
+        <button class="mini-del nz-tag-del" aria-label="Tag löschen">×</button>
+      </div>
+      <div class="nz-tag-inhalt">
+        <div class="input-row">
+          <input type="text" class="nz-tag-input" placeholder="Notiz für diesen Tag …" maxlength="200">
+          <button class="nz-tag-add">+</button>
+        </div>
+        <ul class="mini-list"></ul>
+      </div>
+    `;
+    const ul = card.querySelector('ul');
+    const inp = card.querySelector('.nz-tag-input');
+    const frisch = ()=>{ persist(); renderNotizen(c, def); renderSidebar(); };
+    renderMiniList(ul, t.items);
+    bindMiniList(ul, t.items, ()=>{
+      renderMiniList(ul, t.items); persist(); renderSidebar();
+    });
+    const dazu = ()=>{
+      const txt = inp.value.trim(); if(!txt) return;
+      t.items.unshift({id:uid(), text:txt, done:false});
+      frisch();
+    };
+    card.querySelector('.nz-tag-add').addEventListener('click', dazu);
+    inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') dazu(); });
+    card.querySelector('.nz-klapp').addEventListener('click',()=>{
+      t.zu = !t.zu; frisch();
+    });
+    /* Tag loeschen braucht zwei Klicks - da haengen alle Notizen des
+       Tages dran. */
+    const del = card.querySelector('.nz-tag-del');
+    del.addEventListener('click',()=>{
+      if(del.dataset.sicher !== '1'){
+        del.dataset.sicher = '1';
+        del.textContent = 'wirklich?';
+        del.classList.add('fragt');
+        setTimeout(()=>{
+          if(!del.isConnected) return;
+          del.dataset.sicher=''; del.textContent='×'; del.classList.remove('fragt');
+        }, 3000);
+        return;
+      }
+      z.tage = z.tage.filter(x=>x.date!==t.date);
+      frisch();
+    });
+    wrap.appendChild(card);
+  });
+
+  function anlegen(){
+    const txt = document.getElementById('nz-text').value.trim();
+    const dat = document.getElementById('nz-datum').value || heute;
+    if(!txt) return;
+    const t = notizenTag(z, dat);
+    t.items.unshift({id:uid(), text:txt, done:false});
+    t.zu = false;              /* der Tag, in den man gerade schreibt, bleibt offen */
+    neu();
+    const feld = document.getElementById('nz-text'); if(feld) feld.focus();
+  }
+  document.getElementById('nz-add').addEventListener('click', anlegen);
+  document.getElementById('nz-text').addEventListener('keydown',(e)=>{
+    if(e.key==='Enter') anlegen();
+  });
+}
+
 function renderCures(c, def){
   const z = data.nodes[def.nodeId];
   if(!z.cures) z.cures = [];
@@ -11616,14 +11829,20 @@ function renderIbBoard(){
         row.className='mini-item'+(it.done?' done':'');
         row.innerHTML=`<span class="mini-checkbox" data-id="${it.id}"><svg viewBox="0 0 18 18"><path d="M3 9l4 4 8-8"/></svg></span>
           <span class="mini-text">${escapeHtml(it.text)}</span>
+          <button class="mini-edit" data-edit="${it.id}" title="Bearbeiten" aria-label="Bearbeiten">✎</button>
           <button class="mini-del" data-id="${it.id}">×</button>`;
         itemsWrap.appendChild(row);
       });
     }
     itemsWrap.addEventListener('click',(e)=>{
       const cb=e.target.closest('.mini-checkbox'); const del=e.target.closest('.mini-del');
+      const ed=e.target.closest('.mini-edit');
       if(cb){ const it=ib.items.find(i=>i.id===cb.dataset.id); if(it){it.done=!it.done; persist(); renderIbBoard();} }
       else if(del){ ib.items = ib.items.filter(i=>i.id!==del.dataset.id); persist(); renderIbBoard(); }
+      else if(ed){
+        const it=ib.items.find(i=>i.id===ed.dataset.edit);
+        if(it) miniTextAendern(itemsWrap, it, ()=>{ persist(); renderIbBoard(); });
+      }
     });
     card.querySelector('.ib-klapp').addEventListener('click',()=>{
       if(!ib.zu) ib.zu = {};
