@@ -4569,6 +4569,9 @@ function migrateData(){
   kontenAugustEnde();
   essenSeptember();
   toepfeZusammenlegen();
+  /* Nach kontenAugustEnde: das setzt die alten Staende, hier stehen die
+     neueren. Sonst wuerde der August die Septemberzahlen ueberschreiben. */
+  kontenNamenKlar();
   /* Nochmal: fixkostenSeptember und Konsorten legen eigene Monate an. */
   einnahmenFaecherSichern();
   kindergeldAugustOffen();
@@ -4718,12 +4721,14 @@ function emptyExpenseCats(){
    sie auseinander, fehlt in der App etwas. Deshalb wird die Differenz
    ausgewiesen statt versteckt. */
 const KONTEN_VORGABE = [
-  {id:'giro',    name:'Girokonto',            bank:'Sparkasse', icon:'🏦'},
-  {id:'n26',     name:'N26 Hauptkonto',       bank:'N26',       icon:'💼'},
+  {id:'giro',    name:'Sparkassenkonto',      bank:'Sparkasse', icon:'🏦'},
+  /* N26 ist Leons Geschaeftskonto, kein Hauptkonto - der Name sagt es
+     jetzt auch, damit beim Draufschauen klar ist, wessen Geld das ist. */
+  {id:'n26',     name:'N26 Business Konto',   bank:'N26',       icon:'💼'},
   /* Pocket ist Leons Essensgeld - er laedt es auf und zahlt davon
      Lidl und REWE. Deshalb eigenes Konto, nicht Teil des Smartkontos. */
-  {id:'c24pocket',name:'C24 Pocket',           bank:'C24',       icon:'🛒'},
-  {id:'c24smart',name:'C24 Smartkonto',       bank:'C24',       icon:'💳'},
+  {id:'c24pocket',name:'C24 Essen',            bank:'C24',       icon:'🛒'},
+  {id:'c24smart',name:'C24 Hauptkonto',       bank:'C24',       icon:'💳'},
   {id:'c24gem',  name:'C24 Gemeinschaftskonto', bank:'C24',     icon:'👥'},
   {id:'paypal',  name:'PayPal',               bank:'PayPal',    icon:'🅿️'}
 ];
@@ -8292,6 +8297,42 @@ function kontenAugustEnde(){
   if(!data.uebernommen) data.uebernommen = {};
   data.uebernommen[KONTEN_AUG_KEY] = true;
   return 1;
+}
+
+/* Leon hat die Konten am 11.09.2026 klarer benannt: N26 ist sein
+   Geschaeftskonto und hiess faelschlich "Hauptkonto", das Pocket heisst
+   jetzt nach seinem Zweck, und das Smartkonto ist das Hauptkonto.
+   Umbenannt wird nur, wenn der alte Name noch steht - hat Leon selbst
+   etwas hineingeschrieben, bleibt es stehen. Die drei Staende kommen
+   aus derselben Ansage und ueberschreiben die alten Werte.
+
+   Hinweis fuer spaeter: ab dem 01.10.2026 wandert das Geld vom
+   Sparkassenkonto auf das C24 Hauptkonto. Die Zahlen dafuer traegt
+   Leon ein, sobald es soweit ist. */
+const KONTEN_NAMEN_KEY = 'kontonamen-2026-09-11';
+function kontenNamenKlar(){
+  if(data.uebernommen && data.uebernommen[KONTEN_NAMEN_KEY]) return 0;
+  const k = kontenNode();
+  if(!k) return 0;
+  const neu = {
+    giro:      {alt:['girokonto'],      name:'Sparkassenkonto'},
+    n26:       {alt:['n26 hauptkonto'], name:'N26 Business Konto', stand:629.74},
+    c24pocket: {alt:['c24 pocket'],     name:'C24 Essen',          stand:180.76},
+    c24smart:  {alt:['c24 smartkonto'], name:'C24 Hauptkonto'}
+  };
+  let geaendert = 0;
+  k.liste.forEach(e=>{
+    const v = neu[e.id];
+    if(!v) return;
+    if(v.alt.indexOf(String(e.name||'').trim().toLowerCase()) >= 0){
+      e.name = v.name;
+      geaendert++;
+    }
+    if(v.stand !== undefined) e.stand = v.stand;
+  });
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[KONTEN_NAMEN_KEY] = true;
+  return geaendert;
 }
 
 /* Leons erste Septembereinkaeufe, bezahlt vom Pocket-Konto. */
