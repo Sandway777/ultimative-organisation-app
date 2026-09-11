@@ -1925,6 +1925,9 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .ziel-plan.ok{color:var(--sport);background:rgba(127,177,105,.13);}
 .ziel-plan.hinten{color:var(--danger);background:rgba(224,112,140,.13);}
 .ziel-naechster{font-size:0.72rem;color:var(--ink-soft);}
+/* Notiz am Jahresziel - der Zusatz, der erklaert wie es gemeint ist. */
+.ziel-notiz{margin:4px 0 0 33px;font-size:0.76rem;line-height:1.5;
+  color:var(--ink-soft);}
 .ziel-warum{margin-bottom:10px;}
 .ziel-warum label{font-size:0.72rem;color:var(--ink-soft);display:block;}
 .ziel-warum input{width:100%;margin-top:4px;background:var(--bg);
@@ -4676,6 +4679,10 @@ function migrateData(){
      neueren. Sonst wuerde der August die Septemberzahlen ueberschreiben. */
   kontenNamenKlar();
   mindsetUebernehmen();
+  mindsetWeltbild();
+  missionenUebernehmen();
+  jahreszieleUebernehmen();
+  schwaechenUebernehmen();
   /* Nochmal: fixkostenSeptember und Konsorten legen eigene Monate an. */
   einnahmenFaecherSichern();
   kindergeldAugustOffen();
@@ -7075,6 +7082,8 @@ const APP_BEREICHE = [
 
 /* Was sich wann geaendert hat - neueste zuerst. Beim Weiterbauen ergaenzen. */
 const APP_VERLAUF = [
+  {v:55, d:'11.09.2026', t:'Alte Zielnotizen eingearbeitet',
+   b:'Fünf Hauptmissionen als Lebensziele mit Schritten, die Liste 2026 als Jahresziele, vier Schwächen und 19 weitere Mindset-Sätze. Dopplungen raus, Wortlaut gekürzt.'},
   {v:54, d:'11.09.2026', t:'Mindset & Philosophie',
    b:'Zwölf Sätze zum Nachlesen statt zum Abhaken – nach Haltung gruppiert, einer davon als Leitsatz ganz oben.'},
   {v:53, d:'11.09.2026', t:'Schnellnotizen für Uni',
@@ -8489,6 +8498,208 @@ function kontenNamenKlar(){
 
    Der letzte Satz ist sein eigener Reminder ("Mein Reminder: ...") und
    steht darum als Leitsatz oben. */
+/* Leons fuenf Hauptmissionen, geschickt am 11.09.2026. Sie standen in
+   mehreren Notizen verstreut ("Was will ich vom Leben", "Warum mach ich
+   das") und sagten oft dasselbe mit anderen Worten - hier einmal
+   zusammengezogen, Dopplungen raus, Wortlaut gekuerzt aber nicht
+   umgedeutet.
+
+   Als Lebensziele und nicht als eigener Bereich: die Ebene kann genau
+   das, was er braucht - Schritte zum Abhaken, ein "Warum das?" und ein
+   Saeulenbezug. Ein sechster Bereich haette nur dasselbe nochmal
+   gebaut. */
+/* Leons Zielliste 2026, geschickt am 11.09.2026. Zwei Punkte hat die
+   Zeit ueberholt und sie stehen darum als erreicht drin: der Umzug ist
+   durch (Potsdam), und statt der Ausbildung zum Fachinformatiker laeuft
+   das Studium Medizininformatik - dasselbe Ziel, anderer Weg.
+
+   Ohne Zielwert: die meisten dieser Ziele sind Richtungen, keine Zahlen
+   ("mehr Spiritualitaet aufbauen"). Ein erfundener Zielwert wuerde einen
+   Fortschritt behaupten, den es nicht gibt. Wo Leon spaeter zaehlen will,
+   traegt er den Wert selbst nach. */
+/* Leons Schwaechen aus derselben Notiz. "Kontrolle" hatte als einzige
+   einen Endtermin ("keine bis Ende 2026") - der steht darum als Frist
+   drin, die anderen laufen ohne Ende. Das "Warum" ist jeweils sein
+   eigener Grund aus den Notizen, nicht meine Deutung. */
+/* Leons aeltere Mindset-Notizen ("Wo sind wir uns sicher?" und "Warum
+   mach ich das?"), geschickt am 11.09.2026. In Grossbuchstaben
+   geschrieben - hier in normaler Schreibweise, damit man sie lesen kann
+   ohne angeschrien zu werden. Inhalt und Reihenfolge unveraendert.
+
+   Was sich mit den zwoelf Saetzen vom selben Tag doppelte, ist raus:
+   "Geld ist Mittel zur Freiheit" stand dort schon, ebenso der Hebel
+   durch KI und Automatisierung. */
+const MINDSET2_KEY = 'mindset-weltbild-2026-09-11';
+function mindsetWeltbild(){
+  if(data.uebernommen && data.uebernommen[MINDSET2_KEY]) return 0;
+  const z = zieleNode();
+  const saetze = [
+    ['weltbild', 'Das System, in das wir hineingeboren werden, ist ein Sklavensystem.'],
+    ['weltbild', 'Wir gehen nicht den 0815-Weg.'],
+    ['weltbild', 'Wir haben höhere Ziele, die über mein Ego hinausgehen.'],
+    ['weltbild', 'Materialismus hat keinen Wert – Geld genauso wenig.'],
+    ['weltbild', 'Wir sind viel mehr als dieser physische Körper.'],
+    ['weltbild', 'Du bist das, was du denkst.'],
+    ['weltbild', 'Mein größter Feind ist mein Verstand.'],
+    ['weltbild', 'Der Kampf gegen die negativen Energien fängt im Kopf an.'],
+    ['weltbild', 'Gott ist groß. Ihm täglich vertrauen – alles geschieht zu unseren Gunsten.'],
+    ['weltbild', 'Glück ist, die Kleinigkeiten zu sehen, die das Universum uns gab.'],
+    ['warum', 'Um nicht für immer im Sklavensystem zu stecken.'],
+    ['warum', 'Im Kapitalismus heißt Freiheit: finanzielle Freiheit.'],
+    ['warum', 'Ich weiß, wie es ist, nicht viel zu haben.'],
+    ['warum', 'Mir selbst beweisen, dass ich besser bin als ich war.'],
+    ['warum', 'Unabhängig sein von anderen – ich bestimme mein Leben.'],
+    ['warum', 'Ein sorgenfreies Leben haben.'],
+    ['warum', 'Ich war immer anders und gehöre zu den 1 %.'],
+    ['warum', 'Es wäre langweilig, es nicht zu versuchen. Das hier ist ein Spiel und du bist die Hauptfigur.'],
+    ['warum', 'Wie groß wäre dein Traum, wenn du wüsstest, du kannst nicht scheitern?']
+  ];
+  const da = new Set(z.mindset.map(m=>String(m.text||'').trim()));
+  let dazu = 0;
+  saetze.forEach(([gruppe, text])=>{
+    if(da.has(text)) return;
+    z.mindset.push({id:uid(), text, gruppe, leitsatz:false});
+    dazu++;
+  });
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[MINDSET2_KEY] = true;
+  return dazu;
+}
+
+const SCHWAECHEN_KEY = 'schwaechen-2026-09-11';
+function schwaechenUebernehmen(){
+  if(data.uebernommen && data.uebernommen[SCHWAECHEN_KEY]) return 0;
+  const liste = schwaechenListe();
+  const neu = [
+    {text:'Overthinking', frist:'',
+     warum:'Mein größter Feind ist mein Verstand – der Kampf fängt im Kopf an.'},
+    {text:'Kontrolle über andere', frist:'2026-12-31',
+     warum:'Bis Ende 2026 ganz raus.'},
+    {text:'Negativ denken', frist:'',
+     warum:'Du bist das, was du denkst.'},
+    {text:'Fluchen', frist:'',
+     warum:'Passt nicht zu dem Menschen, der ich sein will.'}
+  ];
+  const da = new Set(liste.map(x=>String(x.text||'').trim().toLowerCase()));
+  let dazu = 0;
+  neu.forEach(n=>{
+    if(da.has(n.text.toLowerCase())) return;
+    liste.push({id:uid(), text:n.text, warum:n.warum,
+      von: isoToday(), frist:n.frist,
+      gegen:[], regeln:[], tage:{}, zu:true});
+    dazu++;
+  });
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[SCHWAECHEN_KEY] = true;
+  return dazu;
+}
+
+const JAHRESZIELE_KEY = 'jahresziele-2026-09-11';
+function jahreszieleUebernehmen(){
+  if(data.uebernommen && data.uebernommen[JAHRESZIELE_KEY]) return 0;
+  const z = zieleNode();
+  const ziele = [
+    {text:'Umzug in die Großstadt', bereich:'privat', erreicht:true,
+     notiz:'Erledigt – nach Potsdam gezogen. Details im Bereich Umzug.'},
+    {text:'Medizininformatik studieren', bereich:'uni', erreicht:true,
+     notiz:'Ersetzt das ursprüngliche Ziel „Ausbildungsplatz Fachinformatiker“ – gleiche Richtung, besserer Weg.'},
+    {text:'PETIVO weiterentwickeln, vor allem die Webseite', bereich:'business',
+     notiz:'Maximal alles versuchen.'},
+    {text:'Neue Disziplinen festigen', bereich:'geist',
+     notiz:'Spirit Day am Wochenende, 30–60 Minuten Wissen und Praxis. Bestehendes von 2025 beibehalten.'},
+    {text:'Schwächen abstellen', bereich:'geist',
+     notiz:'Einzeln eingetragen unter Ziele → Schwächen.'},
+    {text:'Körper verbessern – mehr Muskeln, weniger Fett', bereich:'koerper'},
+    {text:'Neue Kontakte knüpfen', bereich:'sozial',
+     notiz:'Menschen mit ähnlichen Ambitionen und Mindset.'},
+    {text:'Neues selbständiges Projekt vorbereiten', bereich:'business',
+     notiz:'Modemarke oder anderes – gegebenenfalls.'},
+    {text:'Plan to the Dream weiterentwickeln', bereich:'geist'},
+    {text:'Mehr Spiritualität aufbauen', bereich:'spirit',
+     notiz:'Wissen und Übung.'},
+    {text:'Mich besser mit Gesundheit und Körper auskennen', bereich:'gesundheit'},
+    {text:'Gesündere Ernährung entwickeln', bereich:'gesundheit',
+     notiz:'Langsam – nicht alles auf einmal umstellen.'},
+    {text:'Gelegentlich Gedichte schreiben', bereich:'privat'}
+  ];
+  const da = new Set(z.jahr.map(j=>String(j.text||'').trim().toLowerCase()));
+  let dazu = 0;
+  ziele.forEach(zi=>{
+    if(da.has(zi.text.toLowerCase())) return;
+    z.jahr.push({id:uid(), text:zi.text, jahr:'2026', bereich:zi.bereich,
+      ziel:0, stand:0, einheit:'', erreicht: !!zi.erreicht, notiz: zi.notiz || ''});
+    dazu++;
+  });
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[JAHRESZIELE_KEY] = true;
+  return dazu;
+}
+
+const MISSIONEN_KEY = 'missionen-2026-09-11';
+function missionenUebernehmen(){
+  if(data.uebernommen && data.uebernommen[MISSIONEN_KEY]) return 0;
+  const z = zieleNode();
+  const missionen = [
+    {text:'Gesunde Familie gründen',
+     bereich:'sozial',
+     warum:'Ein sauberes Leben mit Menschen, die dasselbe Mindset haben',
+     schritte:[
+       'Die richtige zweite Hälfte finden – gleicher Blick auf die Welt',
+       'Freundeskreis auf reinherzige, warme Menschen begrenzen',
+       'Eine gesunde Familie aufbauen, kein Modell von der Stange'
+     ]},
+    {text:'Beste Version meiner selbst werden',
+     bereich:'geist',
+     warum:'Erst fuer mich, dann als Vorbild fuer andere',
+     schritte:[
+       'Jeden Tag besser werden - mental, physisch, psychisch',
+       'Mir selbst beweisen, dass ich besser bin als ich war',
+       'Vorbild sein, damit andere sich verbessern können',
+       'Dieses Leben mit Würde, Stolz und Reinherzigkeit durchleben'
+     ]},
+    {text:'Zeitliche und finanzielle Unabhängigkeit',
+     bereich:'finanzen',
+     warum:'Geld in Zeit umwandeln, nicht andersherum',
+     schritte:[
+       'Passive Einkommensquellen aufbauen',
+       'Systeme, Unternehmen und Vermögenswerte statt Arbeitszeit',
+       'Vermögen aufbauen, nicht nur hohes Einkommen',
+       'Ortsunabhängig und flexibel arbeiten können',
+       'Selbst entscheiden: was ich arbeite, wo ich lebe, wie ich Zeit verbringe'
+     ]},
+    {text:'Mit den Mitteln etwas zurückgeben',
+     bereich:'spirit',
+     warum:'Freiheit ist erst dann etwas wert, wenn sie anderen nützt',
+     schritte:[
+       'Projekte entwickeln, die Menschen wirklich helfen',
+       'Gutes tun fuer Natur und Umwelt',
+       'Mich mit reinherzigen Menschen zusammentun',
+       'Wohltätige Zwecke unterstützen, sobald die Mittel da sind'
+     ]},
+    {text:'Eins mit Gott und dem Universum sein',
+     bereich:'spirit',
+     warum:'Wir sind mehr als dieser Körper – die eigene Mission finden',
+     schritte:[
+       'Verstehen, dass wir eine Seele haben und nicht enden',
+       'Die eigene seelische Mission herausfinden',
+       'Wissen aufbauen und regelmäßig üben',
+       'Ein glücklicher Mensch werden'
+     ]}
+  ];
+  const da = new Set(z.leben.map(l=>String(l.text||'').trim().toLowerCase()));
+  let dazu = 0;
+  missionen.forEach(m=>{
+    if(da.has(m.text.toLowerCase())) return;
+    z.leben.push({id:uid(), text:m.text, bereich:m.bereich, warum:m.warum,
+      schritte: m.schritte.map(t=>({id:uid(), text:t, done:false})),
+      erreicht:false, zu:true});
+    dazu++;
+  });
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[MISSIONEN_KEY] = true;
+  return dazu;
+}
+
 const MINDSET_KEY = 'mindset-saetze-2026-09-11';
 function mindsetUebernehmen(){
   if(data.uebernommen && data.uebernommen[MINDSET_KEY]) return 0;
@@ -11216,7 +11427,14 @@ const MINDSET_GRUPPEN = [
   {key:'freiheit', title:'Freiheit und Richtung',  icon:'🗺️',
    hint:'wo das Ganze hin soll'},
   {key:'leben',    title:'Leben jetzt',            icon:'🌱',
-   hint:'was nicht warten darf'}
+   hint:'was nicht warten darf'},
+  /* Zwei Gruppen aus Leons aelteren Notizen: wie er die Welt sieht, und
+     warum er das Ganze ueberhaupt macht. Beides sind keine Ziele - es
+     sind die Annahmen darunter. */
+  {key:'weltbild', title:'Wie ich die Welt sehe',   icon:'🌍',
+   hint:'die Annahmen darunter'},
+  {key:'warum',    title:'Warum ich das mache',     icon:'🔥',
+   hint:'der Antrieb, wenn es schwer wird'}
 ];
 
 function mindsetGruppe(key){
@@ -11890,8 +12108,11 @@ function renderJahresziele(c, z, jahr){
                   <button class="uk-status" data-zdone="${zl.id}"
                     title="${zl.erreicht?'erreicht':'offen'} – tippen zum Wechseln">${zl.erreicht?'✓':'○'}</button>
                   <span class="ziel-text">${escapeHtml(zl.text)}</span>
+                  <button class="mini-edit" data-zedit="${zl.id}"
+                    title="Bearbeiten" aria-label="Bearbeiten">✎</button>
                   <button class="mini-del" data-zdel="${zl.id}" aria-label="Löschen">×</button>
                 </div>
+                ${zl.notiz ? `<div class="ziel-notiz">${escapeHtml(zl.notiz)}</div>` : ''}
                 ${soll>0 ? `
                 <div class="ziel-bar"><div class="mod-bar"><div class="mod-bar-fill"
                   style="width:${proz}%;background:${imPlan?'var(--sport)':'var(--danger)'};"></div></div></div>
@@ -11919,6 +12140,26 @@ function renderJahresziele(c, z, jahr){
   wrap.querySelectorAll('[data-zdel]').forEach(b=>b.addEventListener('click',()=>{
     const i = z.jahr.findIndex(x=>x.id===b.dataset.zdel);
     if(i>-1) z.jahr.splice(i,1); refresh();
+  }));
+  /* Text im Feld selbst aendern - wie bei den Notizlisten. */
+  wrap.querySelectorAll('[data-zedit]').forEach(b=>b.addEventListener('click',()=>{
+    const zl = z.jahr.find(x=>x.id===b.dataset.zedit); if(!zl) return;
+    const feld = b.parentElement.querySelector('.ziel-text');
+    if(!feld || feld.querySelector('input')) return;
+    const inp = document.createElement('input');
+    inp.type='text'; inp.className='mini-edit-feld'; inp.value=zl.text; inp.maxLength=120;
+    feld.textContent=''; feld.appendChild(inp); inp.focus(); inp.select();
+    let fertig=false;
+    const sichern=()=>{
+      if(fertig) return; fertig=true;
+      const t=inp.value.trim(); if(t) zl.text=t;
+      refresh();
+    };
+    inp.addEventListener('blur', sichern);
+    inp.addEventListener('keydown',(e)=>{
+      if(e.key==='Enter'){ e.preventDefault(); inp.blur(); }
+      else if(e.key==='Escape'){ fertig=true; refresh(); }
+    });
   }));
   wrap.querySelectorAll('[data-zplus]').forEach(b=>b.addEventListener('click',()=>{
     const zl = z.jahr.find(x=>x.id===b.dataset.zplus); if(!zl) return;
