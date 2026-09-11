@@ -1849,6 +1849,55 @@ tr.row-off .tt-num{text-decoration:line-through;}
 /* ---- Ziele ---- */
 .ebene.jahr{border-left:3px solid var(--sport);}
 .ebene.leben{border-left:3px solid var(--uni);}
+.ebene.mindset{border-left:3px solid var(--idea);}
+
+/* ---- Ziele: Mindset ----
+   Hier wird gelesen, nicht bedient. Darum grosszuegige Zeilenhoehe,
+   Serifenschrift wie bei Ueberschriften und viel Ruhe drumherum. Die
+   Knoepfe halten sich zurueck, bis man sie sucht. */
+.ms-leit{margin:0 0 22px;padding:18px 20px 18px 22px;
+  border-left:3px solid var(--idea);border-radius:0 10px 10px 0;
+  background:var(--card);
+  font-family:'Fraunces',serif;font-size:1.12rem;line-height:1.55;
+  color:var(--ink);}
+.ms-leit-marke{display:block;font-family:'IBM Plex Mono',monospace;
+  font-size:0.6rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--idea);margin-bottom:8px;}
+.ms-gruppe{margin-bottom:26px;}
+.ms-gruppe:last-child{margin-bottom:0;}
+.ms-gruppe-kopf{display:flex;align-items:baseline;
+  gap:10px;flex-wrap:wrap;padding-bottom:7px;margin-bottom:4px;
+  border-bottom:1px solid var(--line-soft);}
+.ms-gruppe-kopf h4{margin:0;font-family:'Fraunces',serif;font-size:1rem;
+  color:var(--idea);}
+.ms-gruppe-kopf span{font-family:'IBM Plex Mono',monospace;font-size:0.64rem;
+  letter-spacing:.04em;color:var(--ink-soft);}
+.ms-satz{display:flex;align-items:flex-start;gap:10px;
+  padding:12px 0;border-top:1px solid var(--line-soft);}
+.ms-liste .ms-satz:first-child{border-top:none;}
+.ms-satz.ist-leit{opacity:.5;}
+.ms-text{flex:1;margin:0;font-size:0.94rem;line-height:1.62;color:var(--ink);
+  overflow-wrap:break-word;}
+.ms-knoepfe{display:flex;align-items:center;gap:2px;flex-shrink:0;}
+.ms-stern{border:none;background:none;color:var(--ink-soft);font-size:0.9rem;
+  cursor:pointer;opacity:.35;padding:2px 5px;line-height:1;}
+.ms-stern:hover{opacity:1;color:var(--idea);}
+.ms-stern.an{opacity:1;color:var(--idea);}
+.ms-edit-feld{width:100%;font-family:inherit;font-size:0.94rem;line-height:1.62;
+  color:var(--ink);background:var(--bg);border:1px solid var(--idea);
+  border-radius:8px;padding:8px 10px;outline:none;resize:vertical;}
+.ms-fuss{margin-top:22px;}
+.ms-neu{margin-top:12px;background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:14px;}
+.ms-neu textarea{width:100%;font-family:inherit;font-size:0.92rem;line-height:1.55;
+  color:var(--ink);background:var(--bg);border:1px solid var(--line);
+  border-radius:8px;padding:9px 11px;outline:none;resize:vertical;}
+.ms-neu textarea:focus{border-color:var(--idea);}
+.ms-neu-zeile{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;}
+.ms-neu-zeile select{flex:1;min-width:170px;font-family:inherit;font-size:0.85rem;
+  color:var(--ink);background:var(--bg);border:1px solid var(--line);
+  border-radius:7px;padding:7px 9px;}
+.ms-neu-zeile .ib-btn.primary{background:var(--idea);color:#fff;}
 /* Gruppe je Bereich - Ueberschrift statt Marke an jeder Zeile. */
 .ziel-gruppe{margin-bottom:14px;}
 .ziel-gruppe:last-child{margin-bottom:0;}
@@ -4626,6 +4675,7 @@ function migrateData(){
   /* Nach kontenAugustEnde: das setzt die alten Staende, hier stehen die
      neueren. Sonst wuerde der August die Septemberzahlen ueberschreiben. */
   kontenNamenKlar();
+  mindsetUebernehmen();
   /* Nochmal: fixkostenSeptember und Konsorten legen eigene Monate an. */
   einnahmenFaecherSichern();
   kindergeldAugustOffen();
@@ -7008,7 +7058,7 @@ const APP_BEREICHE = [
     {t:'Idee-Board',      d:'lose Einfälle'},
     {t:'Notizzettel',     d:'Tage + Sammelliste ohne Termin'},
     {t:'Monatsübersicht', d:'alle vier Säulen nebeneinander'},
-    {t:'Ziele',           d:'Jahresziele, Lebensziele, Schwächen'}
+    {t:'Ziele',           d:'Jahresziele, Lebensziele, Schwächen, Mindset', neu:true}
   ]},
   {saeule:'Die App selbst', farbe:'var(--app)', punkte:[
     {t:'Stand',        d:'was die App heute kann', neu:true},
@@ -7025,6 +7075,8 @@ const APP_BEREICHE = [
 
 /* Was sich wann geaendert hat - neueste zuerst. Beim Weiterbauen ergaenzen. */
 const APP_VERLAUF = [
+  {v:54, d:'11.09.2026', t:'Mindset & Philosophie',
+   b:'Zwölf Sätze zum Nachlesen statt zum Abhaken – nach Haltung gruppiert, einer davon als Leitsatz ganz oben.'},
   {v:53, d:'11.09.2026', t:'Schnellnotizen für Uni',
    b:'Was in der Vorlesung anfällt, nach Tag gruppiert statt als eine lange Liste. Dazu ein Bearbeiten-Knopf an jeder Notiz – überall in der App.'},
   {v:52, d:'22.08.2026', t:'Ziele: Schwächen',
@@ -8428,6 +8480,44 @@ function kontenNamenKlar(){
   if(!data.uebernommen) data.uebernommen = {};
   data.uebernommen[KONTEN_NAMEN_KEY] = true;
   return geaendert;
+}
+
+/* Leons Mindset-Saetze, von ihm am 11.09.2026 geschickt. Wortlaut
+   unveraendert - das sind seine Formulierungen, nicht meine. Gruppiert
+   nach dem, worum es im Satz geht, damit man sieht, welche Saetze
+   zusammen eine Haltung ergeben.
+
+   Der letzte Satz ist sein eigener Reminder ("Mein Reminder: ...") und
+   steht darum als Leitsatz oben. */
+const MINDSET_KEY = 'mindset-saetze-2026-09-11';
+function mindsetUebernehmen(){
+  if(data.uebernommen && data.uebernommen[MINDSET_KEY]) return 0;
+  const z = zieleNode();
+  const saetze = [
+    ['studium', 'Studium ist mein Werkzeug, nicht mein Lebensziel.'],
+    ['studium', 'Kompetenz > Perfektion. Wichtiges wirklich verstehen, Unwichtiges solide bestehen – ich brauche nicht überall eine 1.'],
+    ['studium', 'Ich baue mir mit Medizin + IT + Interoperabilität + Beratung ein starkes Fundament und möglichst viele Optionen auf.'],
+    ['business', 'Der Beruf ist ein Mittel für Stabilität, Erfahrung, Kontakte und Kapital – nicht zwingend mein Endziel.'],
+    ['business', 'Business bedeutet echte Probleme lösen, für die Menschen bereit sind zu bezahlen.'],
+    ['business', 'KI und Automatisierung nutze ich als Hebel, um Systeme statt reine Arbeitszeit zu verkaufen.'],
+    ['freiheit', 'Ich muss heute noch nicht wissen, welches Unternehmen ich später aufbaue. Ich muss mich so positionieren, dass ich gute Chancen erkennen und nutzen kann.'],
+    ['freiheit', 'Langfristig: Wissen → Erfahrung → Probleme erkennen → Lösung bauen → automatisieren → skalieren.'],
+    ['freiheit', 'Mein Ziel ist finanzielle UND zeitliche Freiheit. Geld ist Mittel zur Freiheit, nicht der Selbstzweck.'],
+    ['leben', 'Ich optimiere nicht alles gleichzeitig. Priorisieren, konsequent bleiben und langfristig denken.'],
+    ['leben', 'Mein Leben beginnt nicht nach dem Studium. Gesundheit, Beziehung, Freunde und Freizeit gehören genauso dazu.'],
+    ['leben', 'Mein Reminder: Ich baue Schritt für Schritt ein freieres Leben auf – das Studium ist ein Fundament dafür, nicht das Ziel.']
+  ];
+  const da = new Set(z.mindset.map(m=>String(m.text||'').trim()));
+  let dazu = 0;
+  saetze.forEach(([gruppe, text], i)=>{
+    if(da.has(text)) return;
+    z.mindset.push({id:uid(), text, gruppe,
+      leitsatz: i === saetze.length - 1});
+    dazu++;
+  });
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[MINDSET_KEY] = true;
+  return dazu;
 }
 
 /* Leons erste Septembereinkaeufe, bezahlt vom Pocket-Konto. */
@@ -11102,7 +11192,35 @@ function zieleNode(){
   if(!Array.isArray(data.ziele.jahr))  data.ziele.jahr = [];
   if(!Array.isArray(data.ziele.leben)) data.ziele.leben = [];
   if(!Array.isArray(data.ziele.schwaechen)) data.ziele.schwaechen = [];
+  if(!Array.isArray(data.ziele.mindset)) data.ziele.mindset = [];
   return data.ziele;
+}
+
+/* ---------------- ZIELE: MINDSET UND PHILOSOPHIE ----------------
+   Anders als alles andere unter "Ziele": hier wird nichts abgehakt,
+   gemessen oder erreicht. Das sind Saetze, die Leon an schlechten Tagen
+   liest, um sich zu erinnern, warum er tut was er tut.
+
+   Deshalb bewusst keine Haekchen, keine Prozente, keine Fristen - ein
+   Fortschrittsbalken auf einer Lebenshaltung waere Unsinn. Stattdessen
+   Gruppen mit Ueberschrift, damit man sieht, welche Saetze zusammen eine
+   Haltung ergeben, statt zwoelf gleichrangige Zeilen zu lesen.
+
+   Ein Satz kann als Leitsatz markiert werden (stern) - der steht dann
+   oben, gross, als das eine, was zaehlt, wenn man nur einen Satz liest. */
+const MINDSET_GRUPPEN = [
+  {key:'studium',  title:'Studium und Kompetenz', icon:'🎓',
+   hint:'wofür das Studium da ist'},
+  {key:'business', title:'Arbeit und Business',   icon:'💼',
+   hint:'was Arbeit leisten soll'},
+  {key:'freiheit', title:'Freiheit und Richtung',  icon:'🗺️',
+   hint:'wo das Ganze hin soll'},
+  {key:'leben',    title:'Leben jetzt',            icon:'🌱',
+   hint:'was nicht warten darf'}
+];
+
+function mindsetGruppe(key){
+  return MINDSET_GRUPPEN.find(g=>g.key===key) || MINDSET_GRUPPEN[0];
 }
 
 /* Anteil des Jahres, der schon vorbei ist - Vergleichsmass fuer den
@@ -11127,6 +11245,7 @@ function renderZiele(c){
   const schwZahl = schwListe.length
     ? (schwBest ? schwBest + ' Tage am Stück' : schwListe.length + ' im Blick')
     : 'noch keine';
+  const mindZahl = z.mindset.length ? z.mindset.length + ' Sätze' : 'noch leer';
 
   if(zielEbene === null){
     c.innerHTML = `
@@ -11151,6 +11270,12 @@ function renderZiele(c){
           <span class="ebene-sub">was du lassen willst – mit Regeln und Strecke</span>
           <span class="ebene-zahl">${schwZahl}</span>
         </button>
+        <button class="ebene mindset" data-zebene="mindset">
+          <span class="ebene-icon">🧭</span>
+          <span class="ebene-titel">Mindset &amp; Philosophie</span>
+          <span class="ebene-sub">wofür das alles – zum Nachlesen, nicht zum Abhaken</span>
+          <span class="ebene-zahl">${mindZahl}</span>
+        </button>
       </div>
     `;
     c.querySelectorAll('[data-zebene]').forEach(b=>b.addEventListener('click',()=>{
@@ -11160,9 +11285,151 @@ function renderZiele(c){
   }
   if(zielEbene === 'jahr')         renderJahresziele(c, z, jahr);
   else if(zielEbene === 'schwach') renderSchwaechen(c, z);
+  else if(zielEbene === 'mindset') renderMindset(c, z);
   else                             renderLebensziele(c, z);
 }
 
+
+/* Mindset: Lesen steht im Vordergrund, Bearbeiten ist der Sonderfall.
+   Darum liegt die Eingabe hinter einem Knopf statt dauerhaft oben - wer
+   hier hereinschaut, will lesen, nicht tippen. */
+let mindsetNeu = false;
+
+function renderMindset(c, z){
+  const leitsatz = z.mindset.find(m=>m.leitsatz);
+  const anz = z.mindset.length;
+
+  c.innerHTML = `
+    <button class="entry-back" id="ziel-zurueck">← Zurück</button>
+    <div class="head-row"><div><h1 class="zt">🧭 Mindset &amp; Philosophie</h1>
+      <div class="head-meta">${anz ? anz + ' Sätze · zum Nachlesen, nicht zum Abhaken'
+                                   : 'noch leer'}</div></div></div>
+    <div class="divider"></div>
+    ${leitsatz ? `<blockquote class="ms-leit">
+        <span class="ms-leit-marke">Leitsatz</span>
+        ${escapeHtml(leitsatz.text)}
+      </blockquote>` : ''}
+    <div id="ms-gruppen"></div>
+    <div class="ms-fuss">
+      <button class="ib-btn" id="ms-neu-auf">${mindsetNeu ? 'Abbrechen' : '+ Satz hinzufügen'}</button>
+    </div>
+    ${mindsetNeu ? `<div class="ms-neu">
+      <textarea id="ms-text" rows="2" maxlength="400"
+        placeholder="Ein Satz, an den du dich erinnern willst …"></textarea>
+      <div class="ms-neu-zeile">
+        <select id="ms-gruppe">
+          ${MINDSET_GRUPPEN.map(g=>`<option value="${g.key}">${g.icon} ${g.title}</option>`).join('')}
+        </select>
+        <button class="ib-btn primary" id="ms-add">Aufnehmen</button>
+      </div>
+    </div>` : ''}
+  `;
+
+  document.getElementById('ziel-zurueck').addEventListener('click',()=>{
+    mindsetNeu = false; zielEbene = null; renderZiele(c);
+  });
+  document.getElementById('ms-neu-auf').addEventListener('click',()=>{
+    mindsetNeu = !mindsetNeu; renderZiele(c);
+    const f = document.getElementById('ms-text'); if(f) f.focus();
+  });
+  if(mindsetNeu){
+    const anlegen = ()=>{
+      const t = (document.getElementById('ms-text').value||'').trim();
+      if(!t){ document.getElementById('ms-text').focus(); return; }
+      z.mindset.push({id:uid(), text:t,
+        gruppe: document.getElementById('ms-gruppe').value, leitsatz:false});
+      mindsetNeu = false;
+      persist(); renderZiele(c);
+    };
+    document.getElementById('ms-add').addEventListener('click', anlegen);
+    document.getElementById('ms-text').addEventListener('keydown',(e)=>{
+      if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); anlegen(); }
+    });
+  }
+
+  const wrap = document.getElementById('ms-gruppen');
+  if(!anz){
+    wrap.innerHTML = '<div class="empty-mini">Noch nichts hier. Schreib den ersten Satz auf – den, den du dir an schlechten Tagen sagen willst.</div>';
+    return;
+  }
+
+  const frisch = ()=>{ persist(); renderZiele(c); };
+
+  /* Nur Gruppen zeigen, in denen auch etwas steht - eine leere Ueberschrift
+     ist nur Geraeusch. */
+  MINDSET_GRUPPEN.forEach(g=>{
+    const drin = z.mindset.filter(m=>m.gruppe===g.key);
+    if(!drin.length) return;
+    const sek = document.createElement('section');
+    sek.className = 'ms-gruppe';
+    sek.innerHTML = `
+      <div class="ms-gruppe-kopf">
+        <h4>${g.icon} ${g.title}</h4>
+        <span>${g.hint}</span>
+      </div>
+      <div class="ms-liste"></div>
+    `;
+    const liste = sek.querySelector('.ms-liste');
+    drin.forEach(m=>{
+      const zeile = document.createElement('div');
+      zeile.className = 'ms-satz' + (m.leitsatz ? ' ist-leit' : '');
+      zeile.innerHTML = `
+        <p class="ms-text" data-mstext="${m.id}">${escapeHtml(m.text)}</p>
+        <div class="ms-knoepfe">
+          <button class="ms-stern${m.leitsatz?' an':''}" data-msleit="${m.id}"
+            title="Als Leitsatz nach oben" aria-label="Als Leitsatz">★</button>
+          <button class="mini-edit" data-msedit="${m.id}"
+            title="Bearbeiten" aria-label="Bearbeiten">✎</button>
+          <button class="mini-del" data-msdel="${m.id}" aria-label="Entfernen">×</button>
+        </div>
+      `;
+      liste.appendChild(zeile);
+    });
+    wrap.appendChild(sek);
+  });
+
+  /* Leitsatz: immer nur einer. Ein zweiter Stern loest den ersten ab -
+     sonst waere "der eine Satz" keiner mehr. */
+  wrap.querySelectorAll('[data-msleit]').forEach(b=>b.addEventListener('click',()=>{
+    const m = z.mindset.find(x=>x.id===b.dataset.msleit); if(!m) return;
+    const anschalten = !m.leitsatz;
+    z.mindset.forEach(x=>{ x.leitsatz = false; });
+    m.leitsatz = anschalten;
+    frisch();
+  }));
+  wrap.querySelectorAll('[data-msdel]').forEach(b=>b.addEventListener('click',()=>{
+    if(b.dataset.sicher !== '1'){
+      b.dataset.sicher = '1'; b.textContent = 'wirklich?'; b.classList.add('fragt');
+      setTimeout(()=>{
+        if(!b.isConnected) return;
+        b.dataset.sicher=''; b.textContent='×'; b.classList.remove('fragt');
+      }, 3000);
+      return;
+    }
+    z.mindset = z.mindset.filter(x=>x.id!==b.dataset.msdel);
+    frisch();
+  }));
+  wrap.querySelectorAll('[data-msedit]').forEach(b=>b.addEventListener('click',()=>{
+    const m = z.mindset.find(x=>x.id===b.dataset.msedit); if(!m) return;
+    const feld = wrap.querySelector('[data-mstext="'+m.id+'"]');
+    if(!feld || feld.querySelector('textarea')) return;
+    const ta = document.createElement('textarea');
+    ta.className = 'ms-edit-feld'; ta.value = m.text; ta.maxLength = 400;
+    ta.rows = Math.max(2, Math.ceil(m.text.length/60));
+    feld.textContent = ''; feld.appendChild(ta); ta.focus();
+    let fertig = false;
+    const sichern = ()=>{
+      if(fertig) return; fertig = true;
+      const t = ta.value.trim(); if(t) m.text = t;
+      frisch();
+    };
+    ta.addEventListener('blur', sichern);
+    ta.addEventListener('keydown',(e)=>{
+      if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); ta.blur(); }
+      else if(e.key==='Escape'){ fertig = true; renderZiele(c); }
+    });
+  }));
+}
 
 /* ---------------- ZIELE: SCHWAECHEN ----------------
    Was Leon nicht mehr machen will. Anders als ein Ziel, das man erreicht:
