@@ -1987,6 +1987,70 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .day-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
 .day-card h4{font-family:'Fraunces',serif;font-size:0.98rem;margin:0 0 8px;color:var(--ink);}
 
+/* ---- Uni: Wochenplan ---- */
+.wp-neu{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--card);
+  border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:14px;}
+.wp-neu select{flex:1 1 200px;min-width:160px;font-family:inherit;font-size:0.85rem;
+  color:var(--ink);background:var(--field);border:1px solid var(--line);
+  border-radius:7px;padding:7px 9px;}
+.wp-woche{background:var(--card);border:1px solid var(--line);border-radius:11px;
+  padding:13px 15px;margin-bottom:12px;}
+.wp-woche.jetzt{border-color:var(--uni);}
+.wp-kopf{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.wp-kopf h4{flex:1;margin:0;font-family:'Fraunces',serif;font-size:0.98rem;color:var(--ink);}
+.wp-woche.jetzt .wp-kopf h4{color:var(--uni);}
+.wp-meta{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;color:var(--ink-soft);}
+/* Sieben Spalten nebeneinander - so sieht man, welcher Tag voll ist. */
+.wp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;}
+.wp-tag{background:var(--card-2);border:1px solid var(--line-soft);border-radius:8px;
+  padding:7px 8px;min-width:0;display:flex;flex-direction:column;}
+.wp-tag.heute{border-color:var(--uni);background:var(--uni-bg);}
+.wp-tag.weg{opacity:.5;}
+.wp-tag-kopf{display:flex;align-items:baseline;justify-content:space-between;
+  gap:4px;margin-bottom:5px;}
+.wp-tag-name{font-family:'IBM Plex Mono',monospace;font-size:0.63rem;
+  letter-spacing:.05em;color:var(--ink-soft);text-transform:uppercase;}
+.wp-tag.heute .wp-tag-name{color:var(--uni);}
+.wp-tag-datum{font-family:'IBM Plex Mono',monospace;font-size:0.63rem;color:var(--ink-soft);}
+.wp-tag .mini-list{flex:1;}
+.wp-tag .mini-item{padding:4px 0;gap:5px;}
+.wp-tag .mini-text{font-size:0.76rem;line-height:1.35;}
+.wp-tag .mini-checkbox{width:14px;height:14px;flex-shrink:0;}
+.wp-tag .mini-edit,.wp-tag .mini-del{padding:1px 3px;font-size:0.75rem;}
+.wp-tag-neu input{width:100%;font-family:inherit;font-size:0.76rem;color:var(--ink);
+  background:transparent;border:none;border-top:1px solid var(--line-soft);
+  padding:5px 2px 2px;outline:none;}
+.wp-tag-neu input:focus{border-top-color:var(--uni);}
+.wp-notiz{margin-top:11px;}
+.wp-notiz label{display:block;font-size:0.7rem;color:var(--ink-soft);}
+.wp-notiz input{width:100%;margin-top:4px;font-family:inherit;font-size:0.84rem;
+  color:var(--ink);background:var(--field);border:1px solid var(--line);
+  border-radius:7px;padding:7px 10px;outline:none;}
+.wp-notiz input:focus{border-color:var(--uni);}
+/* Am Handy untereinander - sieben Spalten waeren je 40 px breit. */
+@media(max-width:820px){
+  .wp-grid{grid-template-columns:1fr;gap:6px;}
+  .wp-tag{flex-direction:row;align-items:flex-start;gap:9px;}
+  .wp-tag-kopf{flex-direction:column;align-items:flex-start;gap:0;
+    margin-bottom:0;min-width:34px;flex-shrink:0;}
+  .wp-tag .mini-list,.wp-tag-neu{flex:1;min-width:0;}
+  .wp-tag > ul{margin:0;}
+  .wp-tag-neu input{border-top:none;}
+}
+
+/* ---- Uni: Pruefungstermin eintragen ---- */
+.pp-neu{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--card);
+  border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:16px;}
+.pp-neu select,.pp-neu input{font-family:inherit;font-size:0.85rem;color:var(--ink);
+  background:var(--field);border:1px solid var(--line);border-radius:7px;padding:7px 9px;}
+.pp-neu #pp-modul{flex:1 1 220px;min-width:170px;}
+.pp-neu #pp-form{flex:0 1 130px;}
+.pp-neu #pp-raum{flex:0 1 100px;min-width:80px;}
+.pp-neu select:focus,.pp-neu input:focus{border-color:var(--uni);outline:none;}
+@media(max-width:720px){
+  .pp-neu select,.pp-neu input,.pp-neu .ib-btn{flex:1 1 100%;}
+}
+
 /* ---- Uni: eigene Links ---- */
 .ulk-zeile.eigen{align-items:center;}
 .ulk-zeile.eigen .ulk-text{text-decoration:none;color:inherit;}
@@ -3118,6 +3182,9 @@ const STRUKTUR = {
        beginnt. Zwei Fragen, zwei Ansichten, eine Datenbasis. */
     {key:'module',     title:'Module',          icon:'🎓', type:'modules'},
     {key:'modnotiz',   title:'Modul-Notizen',   icon:'📝', type:'modnotiz'},
+    /* Wochenplan: was bis wann zu erledigen ist, als Kalender. Anders als
+       die Modul-Notizen (was war) blickt er nach vorne (was kommt). */
+    {key:'wochenplan', title:'Wochenplan',      icon:'🗓️', type:'wochenplan'},
     {key:'pruefplan',  title:'Prüfungen',       icon:'📋', type:'pruefplan'},
     {key:'kosten',     title:'Semesterkosten',  icon:'🧾', type:'unikosten'},
     /* Schnellnotizen: was in der Vorlesung oder zwischendurch anfaellt und
@@ -3531,6 +3598,8 @@ function emptyNodeContent(type){
   if(type==='pruefplan')  return {};
   /* Links: die festen stehen in UNI_LINKS, hier nur eigene dazu. */
   if(type==='unilinks')   return {eigene: []};
+  /* Wochenplan: wochen: {"YYYY-MM-DD" (Montag): {tage:{0..6:[...]}, notiz}} */
+  if(type==='wochenplan') return {wochen: {}};
   return {};
 }
 
@@ -4959,6 +5028,13 @@ function migrateData(){
             if(typeof p.freiwillig!=='boolean') p.freiwillig = false;
           });
         });
+      } else if(def.type==='wochenplan'){
+        if(!n.wochen || typeof n.wochen !== 'object') n.wochen = {};
+        Object.values(n.wochen).forEach(w=>{
+          if(!w.tage || typeof w.tage !== 'object') w.tage = {};
+          for(let i=0;i<7;i++) if(!Array.isArray(w.tage[i])) w.tage[i] = [];
+          if(typeof w.notiz !== 'string') w.notiz = '';
+        });
       } else if(def.type==='notizen'){
         /* Schnellnotizen liegen nach Tagen, nicht als items-Liste. */
         if(!Array.isArray(n.tage)) n.tage = [];
@@ -5226,6 +5302,12 @@ function nodeOpenCount(nodeId, def){
   }
   if(def.type==='unirahmen') return 0;   /* Unterlagen zeigen Dokumente, nichts zum Abhaken */
   if(def.type==='unilinks')  return 0;   /* Links ebenso */
+  if(def.type==='wochenplan'){
+    const w = (n.wochen||{})[wochenMontag(isoToday())];
+    if(!w) return 0;
+    return Object.values(w.tage||{}).reduce((s,arr)=>
+      s + (arr||[]).filter(x=>!x.done).length, 0);
+  }
   if(def.type==='pruefplan'){
     /* Pruefungen, die noch kommen und nicht bestanden sind. */
     const mod = data.nodes['uni:module'];
@@ -5895,6 +5977,7 @@ function renderMain(){
   else if(def.type==='modnotiz')  renderModNotizen(c, def);
   else if(def.type==='pruefplan') renderPruefPlan(c, def);
   else if(def.type==='unilinks')  renderUniLinks(c, def);
+  else if(def.type==='wochenplan')renderWochenplan(c, def);
 }
 
 function renderBereichOverview(c, key){
@@ -7558,7 +7641,10 @@ const APP_BEREICHE = [
     {t:'Stundenplan',     d:'Wochenraster · Link zum Plan der TH', neu:true},
     {t:'Module',          d:'ein Fach aufklappen: Prüfung, Themen, Notizen', neu:true},
     {t:'Modul-Notizen',   d:'nach Woche gebündelt, Filter je Modul', neu:true},
-    {t:'Prüfungen',       d:'alle Termine nach Nähe sortiert', neu:true},
+    {t:'Wochenplan',      d:'sieben Tage als Tabelle, je Tag was ansteht', neu:true},
+    {t:'Prüfungen',       d:'Termin eintragen, alles nach Nähe sortiert', neu:true},
+    {t:'Links',           d:'Moodle, Hochschul-Mail, eigene', neu:true},
+    {t:'Unterlagen',      d:'Jahreskalender und Rahmentermine als PDF', neu:true},
     {t:'Semesterkosten',  d:'je Semester, Beitrag und Online-Module'},
     {t:'Schnellnotizen',  d:'nach Tag gruppiert, Datum frei wählbar', neu:true}
   ]},
@@ -7588,6 +7674,8 @@ const APP_BEREICHE = [
 
 /* Was sich wann geaendert hat - neueste zuerst. Beim Weiterbauen ergaenzen. */
 const APP_VERLAUF = [
+  {v:60, d:'20.09.2026', t:'Zurück-Knopf und Wochenplan',
+   b:'Die App hat jetzt einen Weg zurück. Dazu ein Wochenplan als Tabelle, Prüfungstermine direkt eintragbar, Links an einem Ort und Modul-Notizen nach Woche statt Tag.'},
   {v:59, d:'20.09.2026', t:'Uni aufgeräumt',
    b:'Prüfungstermine, Lernplan und Module lagen getrennt, obwohl alles am Modul hängt. Jetzt ein Bereich „Module“ zum Aufklappen. Dazu Links zu Moodle und Hochschul-Mail.'},
   {v:58, d:'20.09.2026', t:'Modul-Notizen als eigener Bereich',
@@ -11547,64 +11635,98 @@ function renderPruefPlan(c, def){
   const g = pruefGruppen(mods);
   const anstehend = g.bald.length + g.monat.length + g.spaeter.length;
 
-  const zeile = (m, zeigeDatum)=>{
-    const ps = pruefStatus(m);
+  const zeile = (m)=>{
     const tage = m.pruefdatum ? daysUntil(m.pruefdatum) : null;
     return `<div class="pp-zeile" data-ppmod="${m.id}">
       <span class="pp-name">${escapeHtml(m.text)}</span>
       <span class="pp-sem">${escapeHtml(m.semester||'')}</span>
-      ${zeigeDatum && m.pruefdatum ? `<span class="pp-datum">${fmtDay(m.pruefdatum)}${
-        m.pruefzeit ? ', '+escapeHtml(m.pruefzeit) : ''}</span>` : ''}
+      <span class="pp-datum">${fmtDay(m.pruefdatum)}${
+        m.pruefzeit ? ', '+escapeHtml(m.pruefzeit) : ''}</span>
       ${m.pruefform ? `<span class="pp-form">${escapeHtml(m.pruefform)}</span>` : ''}
       ${m.pruefraum ? `<span class="pp-raum">${escapeHtml(m.pruefraum)}</span>` : ''}
-      ${zeigeDatum && tage !== null && tage >= 0
+      ${tage !== null && tage >= 0
         ? `<span class="pp-tage">${tage === 0 ? 'heute' : 'in '+tage+' T'}</span>` : ''}
     </div>`;
   };
 
-  const block = (titel, hinweis, liste, zeigeDatum, klasse)=>{
+  const block = (titel, hinweis, liste, klasse)=>{
     if(!liste.length) return '';
     return `<section class="pp-block ${klasse||''}">
       <div class="pp-block-kopf">
         <h4>${titel}</h4>
         <span>${hinweis}</span>
       </div>
-      ${liste.map(m=>zeile(m, zeigeDatum !== false)).join('')}
+      ${liste.map(zeile).join('')}
     </section>`;
   };
 
+  /* Module ohne Termin werden nicht mehr aufgelistet - das waren alle 36
+     und damit dieselbe Liste wie unter "Module", nur ohne Nutzen. Statt
+     dessen ein Eingabefeld: Modul waehlen, Datum setzen, fertig. Damit
+     ist dieser Bereich der Ort, an dem Termine entstehen, und nicht nur
+     eine zweite Ansicht auf dieselben Daten. */
   c.innerHTML = renderNodeHead(def,
     anstehend ? `${anstehend} Termin(e) stehen an` : 'noch kein Termin eingetragen') + `
-    ${!anstehend && !g.ohne.length && !g.vorbei.length ? `<div class="uni-hint">
-      Noch nichts hier. Die Termine tr\u00e4gst du beim Modul ein \u2013 unter
-      \u201eModule\u201c das Fach aufklappen, dann stehen sie hier.</div>` : ''}
-    ${block('Diese Woche', 'in den n\u00e4chsten 7 Tagen', g.bald, true, 'bald')}
-    ${block('N\u00e4chste Wochen', 'in den n\u00e4chsten 30 Tagen', g.monat, true, 'monat')}
-    ${block('Sp\u00e4ter', 'weiter weg', g.spaeter, true, '')}
-    ${block('Ohne Termin', 'steht noch nicht fest', g.ohne, false, 'ohne')}
-    ${block('Vorbei', 'gewesen oder bestanden', g.vorbei, true, 'vorbei')}
-    ${anstehend || g.ohne.length ? `<div class="uni-hint" style="margin-top:18px;">
-      Termine \u00e4nderst du beim Modul. Ein Tipp auf eine Zeile bringt dich hin.
+    <div class="pp-neu">
+      <select id="pp-modul" aria-label="Modul">
+        ${mods.filter(m=>m.status !== 'bestanden')
+          .map(m=>`<option value="${m.id}"${m.pruefdatum?' data-hat="1"':''}>${
+            escapeHtml(m.text)}${m.pruefdatum ? ' – ' + fmtDay(m.pruefdatum) : ''}</option>`).join('')}
+      </select>
+      <select id="pp-form" aria-label="Prüfungsform">
+        <option value="">– Form –</option>
+        ${PRUEF_FORMEN.map(p=>`<option value="${p}">${p}</option>`).join('')}
+      </select>
+      <input type="date" id="pp-datum" aria-label="Datum">
+      <input type="time" id="pp-zeit" aria-label="Uhrzeit">
+      <input type="text" id="pp-raum" placeholder="Raum" maxlength="24">
+      <button class="ib-btn primary" id="pp-add">Termin setzen</button>
+    </div>
+
+    ${!anstehend && !g.vorbei.length ? `<div class="uni-hint">
+      Noch kein Termin. Sobald du einen hast, trägst du ihn oben ein –
+      er steht dann auch beim Modul und auf „Heute“.</div>` : ''}
+    ${block('Diese Woche', 'in den nächsten 7 Tagen', g.bald, 'bald')}
+    ${block('Nächste Wochen', 'in den nächsten 30 Tagen', g.monat, 'monat')}
+    ${block('Später', 'weiter weg', g.spaeter, '')}
+    ${block('Vorbei', 'gewesen oder bestanden', g.vorbei, 'vorbei')}
+    ${g.ohne.length ? `<div class="uni-hint" style="margin-top:16px;">
+      ${g.ohne.length} Modul(e) haben noch keinen Termin. Sie stehen unter „Module“.
     </div>` : ''}
   `;
 
-  /* Aus der Uebersicht ins Modul springen - dort wird geaendert. */
+  /* Beim Wechsel des Moduls die vorhandenen Werte einsetzen - so ändert
+     man einen Termin, statt ihn blind zu überschreiben. */
+  const sel = document.getElementById('pp-modul');
+  const felder = ()=>{
+    const m = mods.find(x=>x.id === sel.value);
+    if(!m) return;
+    document.getElementById('pp-form').value  = m.pruefform || '';
+    document.getElementById('pp-datum').value = m.pruefdatum || '';
+    document.getElementById('pp-zeit').value  = m.pruefzeit || '';
+    document.getElementById('pp-raum').value  = m.pruefraum || '';
+  };
+  sel.addEventListener('change', felder);
+  felder();
+
+  document.getElementById('pp-add').addEventListener('click',()=>{
+    const m = mods.find(x=>x.id === sel.value);
+    if(!m) return;
+    const d = document.getElementById('pp-datum').value;
+    if(!d){ document.getElementById('pp-datum').focus(); return; }
+    m.pruefform  = document.getElementById('pp-form').value;
+    m.pruefdatum = d;
+    m.pruefzeit  = document.getElementById('pp-zeit').value;
+    m.pruefraum  = document.getElementById('pp-raum').value.trim();
+    persist(); renderPruefPlan(c, def); renderSidebar();
+  });
+
+  /* Ein Tipp auf eine Zeile setzt sie oben ins Formular - ändern passiert
+     hier, nicht in einem anderen Bereich. */
   c.querySelectorAll('[data-ppmod]').forEach(el=>el.addEventListener('click',()=>{
-    modOffen = {}; modOffen[el.dataset.ppmod] = true;
-    const m = mods.find(x=>x.id===el.dataset.ppmod);
-    const mz = data.nodes['uni:module'];
-    if(m && mz){
-      if(!mz.zu) mz.zu = {};
-      mz.zu[m.semester || 'Ohne Semester'] = false;   /* Semester aufklappen */
-    }
-    data.activeId = 'uni:module';
-    showDetailMobile = true;
-    renderAll();
-    /* Zum aufgeklappten Modul scrollen, sonst sucht man es in der Liste. */
-    setTimeout(()=>{
-      const ziel = document.querySelector('.modrow.auf');
-      if(ziel) ziel.scrollIntoView({block:'center', behavior:'smooth'});
-    }, 50);
+    sel.value = el.dataset.ppmod;
+    felder();
+    sel.scrollIntoView({block:'center', behavior:'smooth'});
   }));
 }
 
@@ -11831,6 +11953,159 @@ function renderModNotizen(c, def){
    Die drei festen (Moodle, Mail, Stundenplan) stehen in UNI_LINKS und
    koennen nicht geloescht werden. Was Leon selbst dazutraegt, liegt in
    den Daten. */
+/* ---------------- UNI: WOCHENPLAN ----------------
+   Was bis wann zu erledigen ist, als Wochentabelle. Anders als die
+   Modul-Notizen, die festhalten was war, blickt der Wochenplan nach
+   vorne: sieben Spalten, in jede kommt rein, was an dem Tag ansteht.
+
+   Warum eine Tabelle und keine Liste: bei einer Liste sieht man nicht,
+   dass am Mittwoch nichts liegt und am Donnerstag vier Sachen. Genau das
+   ist aber die Frage beim Planen.
+
+   Wochen werden einzeln angelegt und koennen einzeln weg. Kein
+   Automatismus, der leere Wochen erzeugt - sonst steht nach einem
+   Semester ein Dutzend leerer Tabellen da. */
+/* Eigene Tagesliste: WOCHENTAGE hat nur Montag bis Freitag, weil der
+   Stundenplan keine Wochenenden kennt. Geplant wird aber ueber sieben
+   Tage - am Wochenende liegt oft die Arbeit fuer die Abgabe am Montag. */
+const WP_TAGE = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
+const WP_KURZ = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+
+function wochenplanNode(def){
+  const z = data.nodes[def.nodeId];
+  if(!z.wochen || typeof z.wochen !== 'object') z.wochen = {};
+  return z;
+}
+
+function wochenplanWoche(z, montag){
+  if(!z.wochen[montag]){
+    const tage = {};
+    for(let i=0;i<7;i++) tage[i] = [];
+    z.wochen[montag] = {tage, notiz:''};
+  }
+  const w = z.wochen[montag];
+  if(!w.tage) w.tage = {};
+  for(let i=0;i<7;i++) if(!Array.isArray(w.tage[i])) w.tage[i] = [];
+  return w;
+}
+
+/* Datum des n-ten Tages einer Woche (0 = Montag). */
+function wochenTagDatum(montag, i){
+  const d = new Date(montag + 'T12:00:00');
+  d.setDate(d.getDate() + i);
+  return isoLocal(d);
+}
+
+function renderWochenplan(c, def){
+  const z = wochenplanNode(def);
+  const heute = isoToday();
+  const heuteMo = wochenMontag(heute);
+  const montage = Object.keys(z.wochen).sort().reverse();
+  const offen = montage.reduce((s,mo)=>s + Object.values(z.wochen[mo].tage||{})
+    .reduce((x,arr)=>x + (arr||[]).filter(e=>!e.done).length, 0), 0);
+
+  c.innerHTML = renderNodeHead(def,
+    montage.length ? `${montage.length} Woche(n) · ${offen} offen` : 'noch keine Woche') + `
+    <div class="wp-neu">
+      <select id="wp-wahl" aria-label="Woche">
+        ${wochenAuswahl().map(w=>`<option value="${w.montag}"${
+          w.montag===heuteMo?' selected':''}>${w.label}</option>`).join('')}
+      </select>
+      <button class="ib-btn primary" id="wp-add">Woche anlegen</button>
+    </div>
+    <div id="wp-liste"></div>
+  `;
+
+  const neu = ()=>{ persist(); renderWochenplan(c, def); renderSidebar(); };
+
+  document.getElementById('wp-add').addEventListener('click',()=>{
+    const mo = document.getElementById('wp-wahl').value;
+    if(!mo) return;
+    wochenplanWoche(z, mo);
+    neu();
+  });
+
+  const wrap = document.getElementById('wp-liste');
+  if(!montage.length){
+    wrap.innerHTML = '<div class="empty-mini">Noch keine Woche. Wähl oben eine aus und leg sie an – dann trägst du je Tag ein, was ansteht.</div>';
+    return;
+  }
+
+  montage.forEach(mo=>{
+    const w = wochenplanWoche(z, mo);
+    const istJetzt = mo === heuteMo;
+    const wOffen = Object.values(w.tage).reduce((s,arr)=>s+(arr||[]).filter(e=>!e.done).length, 0);
+    const sek = document.createElement('section');
+    sek.className = 'wp-woche' + (istJetzt ? ' jetzt' : '');
+    sek.innerHTML = `
+      <div class="wp-kopf">
+        <h4>${wochenLabel(mo)}</h4>
+        <span class="wp-meta">${wOffen} offen</span>
+        <button class="mini-del wp-del" aria-label="Woche löschen">×</button>
+      </div>
+      <div class="wp-grid"></div>
+      <div class="wp-notiz">
+        <label>Notiz zur Woche
+          <input type="text" value="${escapeHtml(w.notiz||'')}"
+            placeholder="Was ist diese Woche wichtig?" maxlength="200">
+        </label>
+      </div>
+    `;
+    const grid = sek.querySelector('.wp-grid');
+
+    WP_TAGE.forEach((name, i)=>{
+      const datum = wochenTagDatum(mo, i);
+      const istHeute = datum === heute;
+      const vorbei = datum < heute;
+      const liste = w.tage[i] || [];
+      const spalte = document.createElement('div');
+      spalte.className = 'wp-tag' + (istHeute ? ' heute' : '') + (vorbei ? ' weg' : '');
+      spalte.innerHTML = `
+        <div class="wp-tag-kopf">
+          <span class="wp-tag-name">${WP_KURZ[i]}</span>
+          <span class="wp-tag-datum">${new Date(datum+'T12:00:00').getDate()}.</span>
+        </div>
+        <ul class="mini-list"></ul>
+        <div class="wp-tag-neu">
+          <input type="text" placeholder="+" maxlength="120" aria-label="Eintrag für ${name}">
+        </div>
+      `;
+      const ul = spalte.querySelector('ul');
+      renderMiniList(ul, liste);
+      bindMiniList(ul, liste, ()=>{ renderMiniList(ul, liste); persist(); renderSidebar(); });
+      const inp = spalte.querySelector('.wp-tag-neu input');
+      const dazu = ()=>{
+        const t = inp.value.trim(); if(!t) return;
+        liste.push({id:uid(), text:t, done:false});
+        neu();
+      };
+      inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') dazu(); });
+      inp.addEventListener('blur', dazu);
+      grid.appendChild(spalte);
+    });
+
+    const nInp = sek.querySelector('.wp-notiz input');
+    nInp.addEventListener('blur',()=>{ w.notiz = nInp.value.trim(); persist(); });
+
+    /* Woche loeschen braucht zwei Klicks - da haengen sieben Tage dran. */
+    const del = sek.querySelector('.wp-del');
+    del.addEventListener('click',()=>{
+      if(del.dataset.sicher !== '1'){
+        del.dataset.sicher='1'; del.textContent='wirklich?'; del.classList.add('fragt');
+        setTimeout(()=>{
+          if(!del.isConnected) return;
+          del.dataset.sicher=''; del.textContent='×'; del.classList.remove('fragt');
+        }, 3000);
+        return;
+      }
+      delete z.wochen[mo];
+      neu();
+    });
+
+    wrap.appendChild(sek);
+  });
+}
+
 function renderUniLinks(c, def){
   const z = data.nodes[def.nodeId] || {};
   if(!Array.isArray(z.eigene)) z.eigene = [];
