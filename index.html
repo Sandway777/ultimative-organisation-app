@@ -109,6 +109,23 @@ body{font-family:'IBM Plex Sans',sans-serif;color:var(--ink);background:var(--si
 .nav-auf span{display:block;width:20px;min-width:20px;height:2px;
   border-radius:1px;background:#fff;opacity:1;}
 .nav-auf:active{background:rgba(255,255,255,.18);}
+/* Am Rechner gibt es die Handy-Kopfzeile nicht - dort schwebt der
+   Zurueck-Knopf oben im Inhalt. Beide steuern dieselbe Funktion. */
+.nav-zurueck-gross{position:fixed;top:16px;left:calc(var(--sidebar-w, 250px) + 22px);
+  z-index:40;display:flex;align-items:center;gap:6px;
+  font-family:'IBM Plex Sans',sans-serif;font-size:0.78rem;color:var(--ink-soft);
+  background:var(--card);border:1px solid var(--line);border-radius:8px;
+  padding:7px 13px;cursor:pointer;transition:.14s;}
+.nav-zurueck-gross:hover{border-color:var(--uni);color:var(--ink);}
+@media(max-width:820px){ .nav-zurueck-gross{display:none;} }
+
+/* Zurueck - gleich gross wie das Menue daneben, damit man ihn am Handy
+   sicher trifft. Steht nur da, wenn es wirklich zurueckgeht. */
+.nav-zurueck{display:flex;align-items:center;justify-content:center;
+  width:38px;height:38px;flex-shrink:0;border:none;border-radius:9px;
+  background:rgba(255,255,255,.08);color:#fff;font-size:1.15rem;cursor:pointer;
+  line-height:1;padding:0;}
+.nav-zurueck:active{background:rgba(255,255,255,.2);}
 .handy-titel{font-family:'Fraunces',serif;font-size:1.02rem;color:#fff;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;}
 /* Cloud-Knopf rechts in der Kopfzeile. Rot, solange nicht verbunden -
@@ -1970,6 +1987,37 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .day-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
 .day-card h4{font-family:'Fraunces',serif;font-size:0.98rem;margin:0 0 8px;color:var(--ink);}
 
+/* ---- Uni: eigene Links ---- */
+.ulk-zeile.eigen{align-items:center;}
+.ulk-zeile.eigen .ulk-text{text-decoration:none;color:inherit;}
+.ulk-zeile.eigen .ulk-text:hover strong{text-decoration:underline;}
+.ulk-neu{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--card);
+  border:1px solid var(--line);border-radius:10px;padding:12px 14px;max-width:760px;}
+.ulk-neu input{flex:1 1 150px;min-width:130px;font-family:inherit;font-size:0.88rem;
+  color:var(--ink);background:var(--field);border:1px solid var(--line);
+  border-radius:7px;padding:7px 10px;outline:none;}
+.ulk-neu input:focus{border-color:var(--uni);}
+@media(max-width:720px){ .ulk-neu input{flex:1 1 100%;} }
+
+/* ---- Uni: Notiz in der Woche nachtragen ---- */
+.mnz-dazu{margin-top:6px;margin-bottom:2px;}
+.mnz-dazu input{font-size:0.85rem;}
+.mnz-mehr{display:flex;gap:7px;flex-wrap:wrap;align-items:center;
+  padding-top:11px;margin-top:9px;border-top:1px dashed var(--line);}
+.mnz-mehr select{flex:1 1 170px;min-width:140px;font-family:inherit;font-size:0.82rem;
+  color:var(--ink-soft);background:var(--field);border:1px solid var(--line);
+  border-radius:7px;padding:6px 8px;}
+.mnz-mehr input{flex:2 1 180px;min-width:140px;font-family:inherit;font-size:0.85rem;
+  color:var(--ink);background:var(--field);border:1px solid var(--line);
+  border-radius:7px;padding:6px 9px;outline:none;}
+.mnz-mehr input:focus{border-color:var(--uni);}
+.mnz-mehr button{flex-shrink:0;border:none;border-radius:7px;background:var(--uni);
+  color:#fff;font-size:0.95rem;cursor:pointer;padding:0 14px;height:31px;line-height:1;}
+@media(max-width:720px){
+  .mnz-mehr select,.mnz-mehr input{flex:1 1 100%;}
+  .mnz-mehr button{width:100%;height:34px;}
+}
+
 /* ---- Uni: Modul aufklappbar ---- */
 .modrow-klapp{border:none;background:none;color:var(--ink-soft);font-size:0.72rem;
   cursor:pointer;padding:2px 4px;line-height:1;flex-shrink:0;}
@@ -2696,11 +2744,13 @@ tr.row-off .tt-num{text-decoration:line-through;}
 
 <div class="handy-kopf">
   <button class="nav-auf" id="nav-auf" aria-label="Menü öffnen"><span></span><span></span><span></span></button>
+  <button class="nav-zurueck" id="nav-zurueck" aria-label="Zurück" hidden>←</button>
   <span class="handy-titel" id="handy-titel">Notizblock</span>
   <!-- Cloud direkt in der Kopfzeile: im Menue versteckt hat Leon sie nicht
        gefunden, und ohne Verbindung ist die App am Handy leer. -->
   <button class="kopf-cloud" id="kopf-cloud" aria-label="Cloud verbinden">☁</button>
 </div>
+<button class="nav-zurueck-gross" id="nav-zurueck-gross" hidden>← Zurück</button>
 <div class="nav-schatten" id="nav-schatten"></div>
 <div class="app">
   <aside class="sidebar">
@@ -3046,7 +3096,12 @@ const STRUKTUR = {
        raus. An seiner Stelle der Semesterrahmen: wann Vorlesungszeit,
        Pruefungen und Rueckmeldung liegen - das bleibt jedes Semester
        relevant, eine Startcheckliste nur einmal. */
-    {key:'rahmen',     title:'Semesterplan',    icon:'🗓️', type:'unirahmen'},
+    /* Die Rahmentermine standen hier als selbstgebaute Liste - das war
+       doppelt, weil dasselbe im PDF der Hochschule steht und dort
+       verbindlich ist. Geblieben sind die Dokumente selbst. */
+    {key:'rahmen',     title:'Unterlagen',      icon:'📎', type:'unirahmen'},
+    /* Links an einem Ort statt auf jeder Seite wiederholt. */
+    {key:'links',      title:'Links',           icon:'🔗', type:'unilinks'},
     {key:'stundenplan',title:'Stundenplan',     icon:'📅', type:'timetable'},
     /* Ein Modul traegt sechzehn Felder: Note, Pruefungsform, Termin, Raum,
        Themen, Tipps, Notizen. Die lagen auf vier Bereiche verteilt - man
@@ -3474,6 +3529,8 @@ function emptyNodeContent(type){
   /* Pruefungen liest nur die Termine an den Modulen - eigener Inhalt
      entsteht hier keiner. */
   if(type==='pruefplan')  return {};
+  /* Links: die festen stehen in UNI_LINKS, hier nur eigene dazu. */
+  if(type==='unilinks')   return {eigene: []};
   return {};
 }
 
@@ -5167,7 +5224,8 @@ function nodeOpenCount(nodeId, def){
     return (n.tage||[]).reduce((sum,t)=>
       sum + (t.items||[]).filter(i=>!i.done).length, 0);
   }
-  if(def.type==='unirahmen') return 0;   /* Rahmen zeigt Zeitraeume, nichts zum Abhaken */
+  if(def.type==='unirahmen') return 0;   /* Unterlagen zeigen Dokumente, nichts zum Abhaken */
+  if(def.type==='unilinks')  return 0;   /* Links ebenso */
   if(def.type==='pruefplan'){
     /* Pruefungen, die noch kommen und nicht bestanden sind. */
     const mod = data.nodes['uni:module'];
@@ -5595,8 +5653,58 @@ function diffInfo(jetzt, vorher){
   return {cls: d>0?'hoch':'runter', text: `${vz}${eur(Math.abs(d))}${proz}`};
 }
 
+/* ---------------- ZURUECK ----------------
+   Die App hatte keinen Weg zurueck: wer von den Pruefungen ins Modul
+   sprang oder aus der Wochenuebersicht in ein Fach, kam nur ueber das
+   Menue wieder raus - und landete dort, wo er gar nicht war.
+
+   Statt jede der zwanzig Stellen umzuschreiben, die activeId setzen,
+   merkt sich renderAll den Wechsel selbst. Das erwischt auch die, die
+   spaeter dazukommen. */
+let navVerlauf = [];
+let navZurueckLaeuft = false;
+let navLetzteId = null;
+
+function navMerken(){
+  const jetzt = data && data.activeId;
+  if(!jetzt) return;
+  if(navZurueckLaeuft){ navLetzteId = jetzt; return; }
+  if(navLetzteId !== null && navLetzteId !== jetzt){
+    navVerlauf.push(navLetzteId);
+    /* Nicht endlos mitschreiben - dreissig Schritte reichen weit. */
+    if(navVerlauf.length > 30) navVerlauf.shift();
+  }
+  navLetzteId = jetzt;
+}
+
+function navZurueck(){
+  if(!navVerlauf.length) return;
+  const ziel = navVerlauf.pop();
+  navZurueckLaeuft = true;
+  data.activeId = ziel;
+  /* Ebenen zuruecksetzen, sonst landet man in einer Unteransicht des
+     Ziels statt an dessen Anfang. */
+  if(ziel === 'ziele')  zielEbene = null;
+  if(ziel === 'daily')  notizEbene = null;
+  showDetailMobile = false;
+  persist();
+  renderAll();
+  navZurueckLaeuft = false;
+}
+
+/* Knopf ein- und ausblenden - er soll nur dastehen, wenn es auch
+   irgendwohin zurueckgeht. */
+function navKnopfSetzen(){
+  const leer = !navVerlauf.length;
+  ['nav-zurueck','nav-zurueck-gross'].forEach(id=>{
+    const b = document.getElementById(id);
+    if(b) b.hidden = leer;
+  });
+}
+
 function renderAll(){
-  renderSidebar(); renderMain();
+  navMerken();
+  renderSidebar(); renderMain(); navKnopfSetzen();
   if(typeof beispielKnopfZeigen === 'function') beispielKnopfZeigen();
   handyTitelSetzen();
 }
@@ -5786,6 +5894,7 @@ function renderMain(){
   else if(def.type==='unirahmen') renderUniRahmen(c, def);
   else if(def.type==='modnotiz')  renderModNotizen(c, def);
   else if(def.type==='pruefplan') renderPruefPlan(c, def);
+  else if(def.type==='unilinks')  renderUniLinks(c, def);
 }
 
 function renderBereichOverview(c, key){
@@ -10060,7 +10169,7 @@ function renderTimetable(c, def){
     ${slots.length===0 ? `<div class="uni-hint">
       Noch leer. Sobald du deinen Stundenplan hast, trägst du unten die Veranstaltungen ein –
       sie erscheinen dann automatisch im Raster.</div>` : ''}
-    ${uniLinkKasten(['plan','moodle','mail'], 'Seiten der Hochschule')}
+    ${uniLinkKasten(['plan'])}
     <div class="uni-hint" style="margin-bottom:16px;">
       Was unten im Raster steht, ist deine Abschrift. Der Plan der TH gilt –
       Raumänderungen stehen meist in Moodle.
@@ -11499,6 +11608,21 @@ function renderPruefPlan(c, def){
   }));
 }
 
+/* Wochen fuer das Auswahlfeld: vier zurueck, eine voraus. Mehr braucht
+   niemand - fuer aeltere Wochen scrollt man in der Liste, dort stehen sie
+   ohnehin alle. */
+function wochenAuswahl(){
+  const raus = [];
+  const heuteMo = new Date(wochenMontag(isoToday()) + 'T12:00:00');
+  for(let i = 1; i >= -4; i--){
+    const d = new Date(heuteMo);
+    d.setDate(d.getDate() + i * 7);
+    const mo = isoLocal(d);
+    raus.push({montag: mo, label: wochenLabel(mo)});
+  }
+  return raus;
+}
+
 function renderModNotizen(c, def){
   const mods = uniModule();
   const z = data.nodes[def.nodeId] || {};
@@ -11518,6 +11642,7 @@ function renderModNotizen(c, def){
   });
   const letztes = z.letztesModul && mods.some(m=>m.id===z.letztesModul)
     ? z.letztesModul : (mods[0] ? mods[0].id : '');
+  const startWoche = wochenMontag(isoToday());
 
   c.innerHTML = renderNodeHead(def,
     gesamt ? `${gesamt} Notiz(en) \u00b7 ${wochen.length} Woche(n)` : 'noch nichts notiert') + `
@@ -11530,7 +11655,10 @@ function renderModNotizen(c, def){
           </optgroup>`).join('')}
       </select>
       <input type="text" id="mnz-text" placeholder="Was war wichtig?" maxlength="200">
-      <input type="date" id="mnz-datum" value="${isoToday()}" aria-label="Datum">
+      <select id="mnz-woche" aria-label="Woche">
+        ${wochenAuswahl().map(w=>`<option value="${w.montag}"${
+          w.montag===startWoche?' selected':''}>${w.label}</option>`).join('')}
+      </select>
       <button class="ib-btn primary" id="mnz-add">Notieren</button>
     </div>
     ${mitNotiz.length > 1 ? `<div class="mnz-filter">
@@ -11552,7 +11680,9 @@ function renderModNotizen(c, def){
   function anlegen(){
     const mid = document.getElementById('mnz-modul').value;
     const txt = document.getElementById('mnz-text').value.trim();
-    const dat = document.getElementById('mnz-datum').value || isoToday();
+    /* Die Notiz haengt am Montag der gewaehlten Woche. Der genaue Tag
+       spielt keine Rolle - Leon denkt in Wochen, nicht in Tagen. */
+    const dat = document.getElementById('mnz-woche').value || wochenMontag(isoToday());
     if(!txt || !mid) return;
     const m = mods.find(x=>x.id===mid); if(!m) return;
     if(!Array.isArray(m.notizen)) m.notizen = [];
@@ -11576,7 +11706,7 @@ function renderModNotizen(c, def){
   if(!wochen.length){
     wrap.innerHTML = `<div class="empty-mini">${
       filter ? 'Zu diesem Modul ist noch nichts notiert.'
-             : 'Noch nichts notiert. W\u00e4hl oben ein Modul und schreib los \u2013 das Datum steht schon auf heute.'}</div>`;
+             : 'Noch nichts notiert. W\u00e4hl oben ein Modul und schreib los \u2013 die Woche steht schon auf dieser.'}</div>`;
     return;
   }
 
@@ -11589,13 +11719,17 @@ function renderModNotizen(c, def){
     sek.className = 'mnz-woche' + (zu?' zu':'') + (i===0?' neu':'');
     sek.innerHTML = `
       <button class="mnz-woche-kopf" data-mnzzu="${w.montag}">
-        <span class="mnz-klapp">${zu?'\u25b8':'\u25be'}</span>
+        <span class="mnz-klapp">${zu?'▸':'▾'}</span>
         <span class="mnz-woche-titel">${wochenLabel(w.montag)}</span>
-        <span class="mnz-woche-meta">${w.module.length} Modul(e) \u00b7 ${w.anzahl} Notiz(en)</span>
+        <span class="mnz-woche-meta">${w.module.length} Modul(e) · ${w.anzahl} Notiz(en)</span>
       </button>
       <div class="mnz-woche-body"></div>
     `;
     const body = sek.querySelector('.mnz-woche-body');
+
+    /* Alle Notizen eines Moduls in dieser Woche als eine Liste. Frueher
+       stand hier je Tag ein eigener Block mit Datum - das war zu fein:
+       notiert wird fuer die Woche, nicht fuer den Dienstag. */
     w.module.forEach(e=>{
       const kasten = document.createElement('div');
       kasten.className = 'mnz-modul';
@@ -11604,29 +11738,82 @@ function renderModNotizen(c, def){
           <h5>${escapeHtml(e.modul.text)}</h5>
           <span>${escapeHtml(e.modul.semester||'')}</span>
         </div>
+        <ul class="mini-list"></ul>
+        <div class="input-row mnz-dazu">
+          <input type="text" placeholder="Noch etwas dazu …" maxlength="200">
+          <button>+</button>
+        </div>
       `;
-      /* Innerhalb des Moduls nach Tag, neueste zuerst - damit man sieht,
-         ob etwas von Montag oder Freitag stammt. */
-      e.tage.slice().sort((a,b)=>b.date.localeCompare(a.date)).forEach(t=>{
-        const tagBox = document.createElement('div');
-        tagBox.className = 'mnz-tag';
-        tagBox.innerHTML = `<div class="mnz-tag-datum">${fmtDay(t.date)}</div>
-          <ul class="mini-list"></ul>`;
-        const ul = tagBox.querySelector('ul');
-        renderMiniList(ul, t.items);
-        bindMiniList(ul, t.items, ()=>{
-          /* Leert sich der Tag, verschwindet er - ein leeres Datum ohne
-             Inhalt ist nur Rauschen. */
-          if(!t.items.length){
-            e.modul.notizen = e.modul.notizen.filter(x=>x.date!==t.date);
-            neu(); return;
-          }
-          renderMiniList(ul, t.items); persist(); renderSidebar();
-        });
-        kasten.appendChild(tagBox);
+      /* Die Eintraege aller Tage dieser Woche zusammengelegt. In den Daten
+         behalten sie ihren Tag, angezeigt wird die Woche. */
+      const alle = [];
+      e.tage.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(t=>{
+        (t.items||[]).forEach(it=>alle.push(it));
       });
+      const ul = kasten.querySelector('ul');
+      renderMiniList(ul, alle);
+      /* Loeschen wirkt auf den echten Tag, nicht nur auf die Sammelliste -
+         sonst waere der Eintrag beim naechsten Zeichnen wieder da. */
+      bindMiniList(ul, alle, ()=>{
+        const drin = new Set(alle.map(x=>x.id));
+        e.tage.forEach(t=>{ t.items = (t.items||[]).filter(x=>drin.has(x.id)); });
+        e.modul.notizen = (e.modul.notizen||[]).filter(t=>(t.items||[]).length);
+        neu();
+      });
+
+      /* Nachtragen direkt hier, ohne nach oben zu springen. Die Notiz
+         landet am Montag dieser Woche. */
+      const inp = kasten.querySelector('.mnz-dazu input');
+      const dazu = ()=>{
+        const txt = inp.value.trim(); if(!txt) return;
+        if(!Array.isArray(e.modul.notizen)) e.modul.notizen = [];
+        let tag = e.modul.notizen.find(t=>t.date === w.montag);
+        if(!tag){
+          tag = {date:w.montag, items:[], zu:false};
+          e.modul.notizen.push(tag);
+          e.modul.notizen.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+        }
+        tag.items.push({id:uid(), text:txt, done:false});
+        neu();
+      };
+      kasten.querySelector('.mnz-dazu button').addEventListener('click', dazu);
+      inp.addEventListener('keydown',(ev)=>{ if(ev.key==='Enter') dazu(); });
+
       body.appendChild(kasten);
     });
+
+    /* In dieser Woche ein Modul ergaenzen, das noch nichts hat. */
+    const mehr = document.createElement('div');
+    mehr.className = 'mnz-mehr';
+    mehr.innerHTML = `
+      <select aria-label="Weiteres Modul">
+        <option value="">+ Weiteres Modul …</option>
+        ${mods.filter(m=>!w.module.some(e=>e.modul.id===m.id))
+          .map(m=>`<option value="${m.id}">${escapeHtml(m.text)}</option>`).join('')}
+      </select>
+      <input type="text" placeholder="Notiz …" maxlength="200">
+      <button>+</button>
+    `;
+    const mSel = mehr.querySelector('select');
+    const mInp = mehr.querySelector('input');
+    const mDazu = ()=>{
+      const mid = mSel.value, txt = mInp.value.trim();
+      if(!mid || !txt) return;
+      const m = mods.find(x=>x.id===mid); if(!m) return;
+      if(!Array.isArray(m.notizen)) m.notizen = [];
+      let tag = m.notizen.find(t=>t.date === w.montag);
+      if(!tag){
+        tag = {date:w.montag, items:[], zu:false};
+        m.notizen.push(tag);
+        m.notizen.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+      }
+      tag.items.push({id:uid(), text:txt, done:false});
+      neu();
+    };
+    mehr.querySelector('button').addEventListener('click', mDazu);
+    mInp.addEventListener('keydown',(ev)=>{ if(ev.key==='Enter') mDazu(); });
+    body.appendChild(mehr);
+
     sek.querySelector('[data-mnzzu]').addEventListener('click',()=>{
       z.zu[w.montag] = !zu;
       data.nodes[def.nodeId] = z;
@@ -11636,37 +11823,123 @@ function renderModNotizen(c, def){
   });
 }
 
+/* ---------------- UNI: LINKS ----------------
+   Alles, was ausserhalb der App liegt und regelmaessig gebraucht wird.
+   Vorher standen dieselben Links auf mehreren Seiten - man wusste nie,
+   wo man zuletzt draufgetippt hatte.
+
+   Die drei festen (Moodle, Mail, Stundenplan) stehen in UNI_LINKS und
+   koennen nicht geloescht werden. Was Leon selbst dazutraegt, liegt in
+   den Daten. */
+function renderUniLinks(c, def){
+  const z = data.nodes[def.nodeId] || {};
+  if(!Array.isArray(z.eigene)) z.eigene = [];
+  data.nodes[def.nodeId] = z;
+
+  c.innerHTML = renderNodeHead(def,
+    `${UNI_LINKS.length + z.eigene.length} Link(s)`) + `
+    <div class="ulk">
+      <h4>Feste Seiten</h4>
+      ${UNI_LINKS.map(l=>`
+        <a class="ulk-zeile" href="${l.url}" target="_blank" rel="noopener">
+          <span class="ulk-icon">${l.icon}</span>
+          <span class="ulk-text"><strong>${escapeHtml(l.titel)}</strong>
+            <span>${escapeHtml(l.was)}</span></span>
+          <span class="ulk-pfeil">\u2197</span>
+        </a>`).join('')}
+    </div>
+
+    ${z.eigene.length ? `<div class="ulk">
+      <h4>Deine Links</h4>
+      ${z.eigene.map(l=>`
+        <div class="ulk-zeile eigen">
+          <span class="ulk-icon">\U0001f517</span>
+          <a class="ulk-text" href="${escapeHtml(l.url)}" target="_blank" rel="noopener">
+            <strong>${escapeHtml(l.titel)}</strong>
+            <span>${escapeHtml(l.was || l.url)}</span></a>
+          <button class="mini-del" data-ulkdel="${l.id}" aria-label="Entfernen">\u00d7</button>
+        </div>`).join('')}
+    </div>` : ''}
+
+    <div class="ulk-neu">
+      <input type="text" id="ulk-titel" placeholder="Name, z. B. Bibliothek" maxlength="60">
+      <input type="text" id="ulk-url" placeholder="https://\u2026" maxlength="400">
+      <input type="text" id="ulk-was" placeholder="Wof\u00fcr? (optional)" maxlength="120">
+      <button class="ib-btn primary" id="ulk-add">+ Link</button>
+    </div>
+  `;
+
+  const neu = ()=>{ persist(); renderUniLinks(c, def); };
+
+  c.querySelectorAll('[data-ulkdel]').forEach(b=>b.addEventListener('click',()=>{
+    if(b.dataset.sicher !== '1'){
+      b.dataset.sicher='1'; b.textContent='wirklich?'; b.classList.add('fragt');
+      setTimeout(()=>{
+        if(!b.isConnected) return;
+        b.dataset.sicher=''; b.textContent='\u00d7'; b.classList.remove('fragt');
+      }, 3000);
+      return;
+    }
+    z.eigene = z.eigene.filter(l=>l.id !== b.dataset.ulkdel);
+    neu();
+  }));
+
+  function anlegen(){
+    const titel = document.getElementById('ulk-titel').value.trim();
+    let url = document.getElementById('ulk-url').value.trim();
+    const was = document.getElementById('ulk-was').value.trim();
+    if(!titel || !url) return;
+    /* Ohne Protokoll wuerde der Browser die Adresse als Datei im eigenen
+       Ordner suchen - deshalb https ergaenzen, wenn nichts dasteht. */
+    if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    z.eigene.push({id:uid(), titel, url, was});
+    neu();
+  }
+  document.getElementById('ulk-add').addEventListener('click', anlegen);
+  ['ulk-titel','ulk-url','ulk-was'].forEach(id=>
+    document.getElementById(id).addEventListener('keydown',(e)=>{
+      if(e.key==='Enter') anlegen();
+    }));
+}
+
+/* ---------------- UNI: UNTERLAGEN ----------------
+   Die Dokumente der Hochschule, in der Datei selbst. Hier stand vorher
+   zusaetzlich eine selbstgebaute Liste der Rahmentermine - abgetippt aus
+   demselben PDF, das darunter lag. Zwei Fassungen derselben Sache, von
+   denen nur eine verbindlich ist: die der Hochschule.
+
+   Geblieben ist ein Satz darueber, was gerade laeuft. Der beantwortet
+   die Frage, fuer die man sonst das PDF aufmacht, und widerspricht ihm
+   nicht - er liest aus denselben Daten. */
 function renderUniRahmen(c, def){
   const z = data.nodes[def.nodeId];
   if(!z.notiz || typeof z.notiz !== 'object') z.notiz = {};
   const heute = isoToday();
   const aktuell = UNI_RAHMEN.find(s=>heute >= s.von && heute <= s.bis);
 
-  /* Was als naechstes ansteht - die eine Zahl, die oben stehen soll. */
+  /* Was gerade laeuft und was als Naechstes kommt - zwei Zeilen statt
+     einer Tabelle. */
+  const laufend = aktuell ? aktuell.bloecke.filter(b=>rahmenLaeuft(b, heute)) : [];
   let naechst = null;
   UNI_RAHMEN.forEach(sem=>sem.bloecke.forEach(b=>{
     if(b.bis < heute) return;
-    if(!naechst || b.von < naechst.b.von) naechst = {b, sem};
+    if(rahmenLaeuft(b, heute)) return;
+    if(!naechst || b.von < naechst.von) naechst = b;
   }));
-  const laufend = aktuell
-    ? aktuell.bloecke.filter(b=>rahmenLaeuft(b, heute))
-    : [];
 
-  c.innerHTML = renderNodeHead(def,
-    aktuell ? aktuell.sem : 'Rahmentermine der TH Brandenburg') + `
+  c.innerHTML = renderNodeHead(def, aktuell ? aktuell.sem : 'Unterlagen der Hochschule') + `
     ${laufend.length ? `<div class="rh-jetzt">
       <span class="rh-jetzt-marke">gerade</span>
       ${laufend.map(b=>`<strong>${escapeHtml(b.was)}</strong> bis ${fmtDay(b.bis)}`).join(' · ')}
     </div>` : ''}
-    ${naechst && !laufend.some(b=>b===naechst.b) ? `<div class="rh-naechst">
-      Als Nächstes: <strong>${escapeHtml(naechst.b.was)}</strong>
-      ab ${fmtDay(naechst.b.von)}${
-        rahmenTageBis(naechst.b, heute)!==null
-          ? ` · in ${rahmenTageBis(naechst.b, heute)} Tagen` : ''}
+    ${naechst ? `<div class="rh-naechst">
+      Als Nächstes: <strong>${escapeHtml(naechst.was)}</strong> ab ${fmtDay(naechst.von)}${
+        rahmenTageBis(naechst, heute) !== null
+          ? ` · in ${rahmenTageBis(naechst, heute)} Tagen` : ''}
     </div>` : ''}
-    <div id="rh-liste"></div>
+
     <div class="pdf-box">
-      <h4>📎 Original-Dokumente der Hochschule</h4>
+      <h4>📎 Dokumente der Hochschule</h4>
       <p class="pdf-hint">Liegen in der App – gehen auch ohne Internet auf.</p>
       ${UNI_PDFS.map(pd=>`
         <div class="pdf-zeile">
@@ -11682,11 +11955,10 @@ function renderUniRahmen(c, def){
           </span>
         </div>`).join('')}
     </div>
-    ${uniLinkKasten(['moodle','mail'], 'Schnell hin')}
-    <div class="uni-hint rh-hinweis">
-      Das sind die Rahmentermine der Hochschule, keine einzelnen Prüfungstermine.
-      Sobald du deine echten Termine hast, trägst du sie unter
-      „Prüfungstermine“ ein.
+
+    <div class="uni-hint">
+      Im Jahreskalender siehst du Vorlesungszeit, Prüfungszeiträume und
+      Feiertage farbig. Die Rahmentermine listen dieselben Zeiträume als Text.
     </div>
   `;
 
@@ -11696,141 +11968,6 @@ function renderUniRahmen(c, def){
   c.querySelectorAll('[data-pdfsave]').forEach(b=>b.addEventListener('click',()=>{
     uniPdfSpeichern(b.dataset.pdfsave);
   }));
-
-  const wrap = document.getElementById('rh-liste');
-  UNI_RAHMEN.forEach(sem=>{
-    const vorbei = sem.bis < heute;
-    const ist = sem === aktuell;
-    /* Vergangene und kuenftige Semester zugeklappt - nur das laufende
-       steht offen. Leon kann jedes von Hand aufklappen. */
-    const zu = z.notiz['zu:'+sem.sem] !== undefined
-      ? !!z.notiz['zu:'+sem.sem] : !ist;
-    const sek = document.createElement('section');
-    sek.className = 'rh-sem' + (ist?' ist':'') + (vorbei?' vorbei':'') + (zu?' zu':'');
-    sek.innerHTML = `
-      <button class="rh-sem-kopf" data-rhzu="${escapeHtml(sem.sem)}">
-        <span class="rh-klapp">${zu?'▸':'▾'}</span>
-        <span class="rh-sem-titel">${escapeHtml(sem.sem)}</span>
-        <span class="rh-sem-meta">${ist ? 'läuft' : (vorbei ? 'vorbei' : fmtDay(sem.von))}</span>
-      </button>
-      <div class="rh-sem-body">
-        ${[...sem.bloecke].sort((a,b)=>a.von.localeCompare(b.von)).map(b=>{
-          const jetzt = rahmenLaeuft(b, heute);
-          const weg   = b.bis < heute;
-          const tage  = rahmenTageBis(b, heute);
-          return `<div class="rh-block ${b.art}${jetzt?' jetzt':''}${weg?' weg':''}">
-            <span class="rh-block-was">${escapeHtml(b.was)}</span>
-            <span class="rh-block-zeit">${
-              b.von===b.bis ? fmtDay(b.von) : fmtDay(b.von)+' – '+fmtDay(b.bis)}</span>
-            <span class="rh-block-status">${
-              jetzt ? 'läuft' : (weg ? '' : (tage!==null && tage<=60 ? 'in '+tage+' T' : ''))}</span>
-          </div>`;
-        }).join('')}
-      </div>
-    `;
-    sek.querySelector('[data-rhzu]').addEventListener('click',()=>{
-      z.notiz['zu:'+sem.sem] = !zu;
-      persist(); renderUniRahmen(c, def);
-    });
-    wrap.appendChild(sek);
-  });
-}
-
-function renderNotizen(c, def){
-  const z = data.nodes[def.nodeId];
-  if(!Array.isArray(z.tage)) z.tage = [];
-  const heute = isoToday();
-  const anz  = z.tage.reduce((s,t)=>s+(t.items||[]).length, 0);
-  const offen = z.tage.reduce((s,t)=>s+(t.items||[]).filter(i=>!i.done).length, 0);
-
-  c.innerHTML = renderNodeHead(def,
-    anz ? `${anz} Notiz(en) · ${offen} offen` : 'noch nichts notiert') + `
-    <div class="nz-neu">
-      <input type="text" id="nz-text" placeholder="Was ist gerade wichtig?" maxlength="200">
-      <input type="date" id="nz-datum" value="${heute}" aria-label="Datum">
-      <button class="ib-btn primary" id="nz-add">Notieren</button>
-    </div>
-    <div id="nz-tage"></div>
-  `;
-
-  const neu = ()=>{ persist(); renderNotizen(c, def); renderSidebar(); };
-  const wrap = document.getElementById('nz-tage');
-
-  if(!z.tage.length){
-    wrap.innerHTML = '<div class="empty-mini">Noch nichts notiert. Schreib oben rein, das Datum steht schon auf heute.</div>';
-  }
-
-  z.tage.forEach(t=>{
-    const card = document.createElement('div');
-    card.className = 'nz-tag' + (t.zu ? ' zu' : '');
-    const label = t.date===heute ? 'Heute — '+fmtDay(t.date) : fmtDay(t.date);
-    const tOffen = (t.items||[]).filter(i=>!i.done).length;
-    card.innerHTML = `
-      <div class="nz-tag-kopf">
-        <button class="nz-klapp" aria-label="Auf- oder zuklappen">${t.zu?'▸':'▾'}</button>
-        <h4>${label}</h4>
-        <span class="nz-zahl">${t.items.length} · ${tOffen} offen</span>
-        <button class="mini-del nz-tag-del" aria-label="Tag löschen">×</button>
-      </div>
-      <div class="nz-tag-inhalt">
-        <div class="input-row">
-          <input type="text" class="nz-tag-input" placeholder="Notiz für diesen Tag …" maxlength="200">
-          <button class="nz-tag-add">+</button>
-        </div>
-        <ul class="mini-list"></ul>
-      </div>
-    `;
-    const ul = card.querySelector('ul');
-    const inp = card.querySelector('.nz-tag-input');
-    const frisch = ()=>{ persist(); renderNotizen(c, def); renderSidebar(); };
-    renderMiniList(ul, t.items);
-    bindMiniList(ul, t.items, ()=>{
-      renderMiniList(ul, t.items); persist(); renderSidebar();
-    });
-    const dazu = ()=>{
-      const txt = inp.value.trim(); if(!txt) return;
-      t.items.unshift({id:uid(), text:txt, done:false});
-      frisch();
-    };
-    card.querySelector('.nz-tag-add').addEventListener('click', dazu);
-    inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') dazu(); });
-    card.querySelector('.nz-klapp').addEventListener('click',()=>{
-      t.zu = !t.zu; frisch();
-    });
-    /* Tag loeschen braucht zwei Klicks - da haengen alle Notizen des
-       Tages dran. */
-    const del = card.querySelector('.nz-tag-del');
-    del.addEventListener('click',()=>{
-      if(del.dataset.sicher !== '1'){
-        del.dataset.sicher = '1';
-        del.textContent = 'wirklich?';
-        del.classList.add('fragt');
-        setTimeout(()=>{
-          if(!del.isConnected) return;
-          del.dataset.sicher=''; del.textContent='×'; del.classList.remove('fragt');
-        }, 3000);
-        return;
-      }
-      z.tage = z.tage.filter(x=>x.date!==t.date);
-      frisch();
-    });
-    wrap.appendChild(card);
-  });
-
-  function anlegen(){
-    const txt = document.getElementById('nz-text').value.trim();
-    const dat = document.getElementById('nz-datum').value || heute;
-    if(!txt) return;
-    const t = notizenTag(z, dat);
-    t.items.unshift({id:uid(), text:txt, done:false});
-    t.zu = false;              /* der Tag, in den man gerade schreibt, bleibt offen */
-    neu();
-    const feld = document.getElementById('nz-text'); if(feld) feld.focus();
-  }
-  document.getElementById('nz-add').addEventListener('click', anlegen);
-  document.getElementById('nz-text').addEventListener('keydown',(e)=>{
-    if(e.key==='Enter') anlegen();
-  });
 }
 
 function renderCures(c, def){
@@ -13634,6 +13771,8 @@ document.getElementById('beispiel-her').addEventListener('click', function(){
 });
 
 document.getElementById('nav-auf').addEventListener('click', navAuf);
+document.getElementById('nav-zurueck').addEventListener('click', navZurueck);
+document.getElementById('nav-zurueck-gross').addEventListener('click', navZurueck);
 document.getElementById('kopf-cloud').addEventListener('click', cloudModalOeffnen);
 document.getElementById('nav-zu').addEventListener('click', navZu);
 document.getElementById('nav-schatten').addEventListener('click', navZu);
