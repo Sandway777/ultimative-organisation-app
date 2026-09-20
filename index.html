@@ -1961,6 +1961,74 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .day-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
 .day-card h4{font-family:'Fraunces',serif;font-size:0.98rem;margin:0 0 8px;color:var(--ink);}
 
+/* ---- Uni: Link zur Hochschulseite ---- */
+.uni-link{display:flex;align-items:flex-start;gap:11px;text-decoration:none;
+  background:var(--card);border:1px solid var(--line);border-radius:10px;
+  padding:13px 15px;margin-bottom:16px;max-width:760px;transition:.15s;}
+.uni-link:hover{border-color:var(--uni);}
+.uni-link-icon{color:var(--uni);font-size:1rem;flex-shrink:0;line-height:1.4;}
+.uni-link-text{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.uni-link-text strong{font-size:0.9rem;color:var(--uni);font-weight:600;}
+.uni-link-text span{font-size:0.78rem;color:var(--ink-soft);line-height:1.45;}
+
+/* ---- Uni: Semesterplan (Rahmentermine) ---- */
+.rh-jetzt{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+  background:var(--card);border-left:3px solid var(--uni);border-radius:0 10px 10px 0;
+  padding:13px 16px;margin-bottom:10px;font-size:0.92rem;color:var(--ink);}
+.rh-jetzt-marke{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;
+  letter-spacing:.11em;text-transform:uppercase;color:var(--uni);}
+.rh-naechst{font-size:0.85rem;color:var(--ink-soft);margin-bottom:18px;padding-left:2px;}
+.rh-naechst strong{color:var(--ink);font-weight:600;}
+.rh-sem{background:var(--card);border:1px solid var(--line);border-radius:11px;
+  margin-bottom:10px;overflow:hidden;}
+.rh-sem.ist{border-color:var(--uni);}
+.rh-sem.vorbei{opacity:.55;}
+.rh-sem-kopf{display:flex;align-items:center;gap:10px;width:100%;padding:13px 15px;
+  background:none;border:none;color:inherit;cursor:pointer;text-align:left;font-family:inherit;}
+.rh-klapp{font-size:0.72rem;color:var(--ink-soft);flex-shrink:0;}
+.rh-sem-titel{flex:1;font-family:'Fraunces',serif;font-size:0.98rem;color:var(--ink);}
+.rh-sem.ist .rh-sem-titel{color:var(--uni);}
+.rh-sem-meta{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--ink-soft);}
+.rh-sem-body{padding:0 15px 12px;}
+.rh-sem.zu .rh-sem-body{display:none;}
+.rh-block{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+  padding:9px 0 9px 11px;border-top:1px solid var(--line-soft);
+  border-left:2px solid transparent;}
+.rh-sem-body .rh-block:first-child{border-top:none;}
+.rh-block.vorlesung{border-left-color:var(--uni);}
+.rh-block.pruefung{border-left-color:var(--danger);}
+.rh-block.nach{border-left-color:#C08A2E;}
+.rh-block.frist{border-left-color:var(--business);}
+.rh-block.frei{border-left-color:var(--sport);}
+.rh-block.weg{opacity:.4;}
+.rh-block.jetzt{background:var(--uni-bg);border-radius:0 7px 7px 0;}
+.rh-block-was{flex:1;font-size:0.88rem;color:var(--ink);min-width:120px;}
+.rh-block-zeit{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);}
+.rh-block-status{font-family:'IBM Plex Mono',monospace;font-size:0.64rem;
+  color:var(--uni);min-width:44px;text-align:right;}
+.rh-hinweis{margin-top:16px;}
+
+/* ---- Uni: Notizen am Modul, Wochenuebersicht ---- */
+.mn-block{max-width:1100px;margin-top:24px;}
+.mn-block h5{font-family:'Fraunces',serif;font-size:0.92rem;margin:0 0 10px;color:var(--ink);}
+.mnw{background:var(--card);border:1px solid var(--line);border-radius:11px;
+  padding:13px 15px;margin-bottom:16px;}
+.mnw-kopf{display:flex;align-items:baseline;justify-content:space-between;
+  gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.mnw-kopf h4{margin:0;font-family:'Fraunces',serif;font-size:0.95rem;color:var(--uni);}
+.mnw-kopf span{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;color:var(--ink-soft);}
+.mnw-liste{display:flex;flex-direction:column;gap:2px;}
+.mnw-modul{display:flex;align-items:baseline;gap:10px;width:100%;
+  padding:8px 9px;border:none;border-radius:7px;background:none;color:inherit;
+  cursor:pointer;text-align:left;font-family:inherit;transition:.12s;}
+.mnw-modul:hover{background:var(--uni-bg);}
+.mnw-name{font-size:0.86rem;color:var(--ink);flex-shrink:0;max-width:44%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mnw-zahl{font-family:'IBM Plex Mono',monospace;font-size:0.64rem;color:var(--uni);
+  background:var(--uni-bg);border-radius:20px;padding:1px 7px;flex-shrink:0;}
+.mnw-letzt{flex:1;font-size:0.76rem;color:var(--ink-soft);min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
 /* Schnellnotizen - ein Block je Tag, einzeln zuklappbar. */
 .nz-neu{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--card);
   border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:14px;}
@@ -2842,7 +2910,11 @@ const STRUKTUR = {
     {key:'konto',       title:'Geschäftskonto',   icon:'🏦', type:'bizkonto'}
   ],
   uni: [
-    {key:'termine',    title:'Vor dem Start',   icon:'📋', type:'checklist'},
+    /* "Vor dem Start" ist mit dem Semesterbeginn hinfaellig geworden und
+       raus. An seiner Stelle der Semesterrahmen: wann Vorlesungszeit,
+       Pruefungen und Rueckmeldung liegen - das bleibt jedes Semester
+       relevant, eine Startcheckliste nur einmal. */
+    {key:'rahmen',     title:'Semesterplan',    icon:'🗓️', type:'unirahmen'},
     {key:'stundenplan',title:'Stundenplan',     icon:'📅', type:'timetable'},
     {key:'pruefungen', title:'Prüfungstermine', icon:'📝', type:'exams'},
     {key:'lernplan',   title:'Lernplan',        icon:'📚', type:'study'},
@@ -2951,6 +3023,54 @@ const GLOBAL_NODES = [
 /* Mehr als die vier Saeulen: Ziele betreffen auch Sachen, die in der App
    sonst keinen Bereich haben - Gesundheit, Kopf, Innenleben. Reihenfolge
    nach Naehe: erst das Aeussere (Alltag, Arbeit), dann das Eigene. */
+/* Der offizielle Stundenplan der Hochschule. Die App kann ihn nicht
+   abrufen (kein Server, und die Seite gibt keine Daten raus), darum der
+   Link: Leon traegt seine Termine hier ab und hat die Quelle daneben. */
+const STUNDENPLAN_URL = 'https://informatik.th-brandenburg.de/studium/plaene-und-termine/stundenplan/medizininformatik-bachelor/1-semester/';
+
+/* Rahmentermine der TH Brandenburg, aus dem offiziellen PDF
+   (SoSe 2026 bis SoSe 2028, Stand 18.09.2026). Das sind keine
+   Pruefungstermine - es ist der Rahmen, in dem sie liegen werden.
+   Genau deshalb hier: solange die echten Termine fehlen, weiss Leon
+   wenigstens, auf welche Wochen er hinarbeitet.
+
+   ende: letzter Tag, ab dem der Block Vergangenheit ist. */
+const UNI_RAHMEN = [
+  {sem:'Wintersemester 2026/2027', von:'2026-09-01', bis:'2027-02-28', bloecke:[
+    {was:'Vorlesungszeit',       von:'2026-09-21', bis:'2027-01-16', art:'vorlesung'},
+    {was:'Weihnachtspause',      von:'2026-12-21', bis:'2027-01-02', art:'frei'},
+    {was:'Rückmeldung SoSe 2027', von:'2027-01-01', bis:'2027-01-22', art:'frist'},
+    {was:'Prüfungszeitraum',     von:'2027-01-18', bis:'2027-02-06', art:'pruefung'},
+    {was:'Nachprüfungen',        von:'2027-03-08', bis:'2027-04-03', art:'nach'}
+  ]},
+  {sem:'Sommersemester 2027', von:'2027-03-01', bis:'2027-08-31', bloecke:[
+    {was:'Vorlesungszeit',       von:'2027-03-22', bis:'2027-07-03', art:'vorlesung'},
+    {was:'Ostern',               von:'2027-03-25', bis:'2027-03-30', art:'frei'},
+    {was:'Himmelfahrt',          von:'2027-05-06', bis:'2027-05-07', art:'frei'},
+    {was:'Pfingsten',            von:'2027-05-17', bis:'2027-05-17', art:'frei'},
+    {was:'Rückmeldung WiSe 2027/28', von:'2027-06-01', bis:'2027-07-25', art:'frist'},
+    {was:'Prüfungszeitraum',     von:'2027-07-05', bis:'2027-07-24', art:'pruefung'},
+    {was:'Nachprüfungen',        von:'2027-09-06', bis:'2027-10-02', art:'nach'}
+  ]},
+  {sem:'Wintersemester 2027/2028', von:'2027-09-01', bis:'2028-02-29', bloecke:[
+    {was:'Vorlesungszeit',       von:'2027-09-27', bis:'2028-01-22', art:'vorlesung'},
+    {was:'Weihnachtspause',      von:'2027-12-22', bis:'2028-01-04', art:'frei'},
+    {was:'Rückmeldung SoSe 2028', von:'2028-01-01', bis:'2028-01-22', art:'frist'},
+    {was:'Prüfungszeitraum',     von:'2028-01-24', bis:'2028-02-12', art:'pruefung'},
+    {was:'Nachprüfungen',        von:'2028-03-06', bis:'2028-03-25', art:'nach'}
+  ]},
+  {sem:'Sommersemester 2028', von:'2028-03-01', bis:'2028-08-31', bloecke:[
+    {was:'Vorlesungszeit',       von:'2028-03-20', bis:'2028-07-01', art:'vorlesung'},
+    {was:'Ostern',               von:'2028-04-13', bis:'2028-04-18', art:'frei'},
+    {was:'Tag der Arbeit',       von:'2028-05-01', bis:'2028-05-01', art:'frei'},
+    {was:'Himmelfahrt',          von:'2028-05-25', bis:'2028-05-26', art:'frei'},
+    {was:'Pfingsten',            von:'2028-06-05', bis:'2028-06-05', art:'frei'},
+    {was:'Rückmeldung WiSe 2028/29', von:'2028-06-01', bis:'2028-07-25', art:'frist'},
+    {was:'Prüfungszeitraum',     von:'2028-07-03', bis:'2028-07-22', art:'pruefung'},
+    {was:'Nachprüfungen',        von:'2028-09-11', bis:'2028-09-30', art:'nach'}
+  ]}
+];
+
 const ZIEL_BEREICHE = [
   {key:'privat',    label:'Privat',      icon:'🏠'},
   {key:'business',  label:'Business',    icon:'💼'},
@@ -3104,6 +3224,9 @@ function emptyNodeContent(type){
   /* Schnellnotizen: tage: [{date, items:[{id,text,done}], zu}] - ein Block
      je Tag, neueste zuerst. */
   if(type==='notizen')    return {tage: []};
+  /* Semesterrahmen: die Daten stehen fest in UNI_RAHMEN, hier liegen nur
+     Leons eigene Notizen zu den Bloecken. */
+  if(type==='unirahmen')  return {notiz: {}};
   return {};
 }
 
@@ -4499,6 +4622,13 @@ function migrateData(){
           /* Lernplan-Felder direkt am Modul - eine Quelle fuer alles */
           if(!Array.isArray(m.topics)) m.topics = [];
           if(!Array.isArray(m.tips))   m.tips   = [];
+          /* Notizen je Modul, nach Tag gruppiert - kam spaeter dazu. */
+          if(!Array.isArray(m.notizen)) m.notizen = [];
+          m.notizen.forEach(t=>{
+            if(!Array.isArray(t.items)) t.items = [];
+            if(typeof t.zu!=='boolean') t.zu = false;
+          });
+          m.notizen.sort((x,y)=>String(y.date).localeCompare(String(x.date)));
           if(typeof m.pruefform!=='string') m.pruefform = '';
           if(typeof m.pruefdatum!=='string') m.pruefdatum = '';
           if(typeof m.pruefzeit!=='string')  m.pruefzeit  = '';
@@ -4680,6 +4810,7 @@ function migrateData(){
   kontenNamenKlar();
   mindsetUebernehmen();
   mindsetWeltbild();
+  vorDemStartRaus();
   missionenUebernehmen();
   jahreszieleUebernehmen();
   schwaechenUebernehmen();
@@ -4790,6 +4921,7 @@ function nodeOpenCount(nodeId, def){
     return (n.tage||[]).reduce((sum,t)=>
       sum + (t.items||[]).filter(i=>!i.done).length, 0);
   }
+  if(def.type==='unirahmen') return 0;   /* Rahmen zeigt Zeitraeume, nichts zum Abhaken */
   if(def.type==='timetable') return 0;   /* Stundenplan zeigt Anzahl Termine separat */
   if(def.type==='modules')   return 0;   /* Module zeigen Credits */
   if(def.type==='exams')     return (n.items||[]).filter(i=>i.status==='offen').length;
@@ -5390,6 +5522,7 @@ function renderMain(){
   else if(def.type==='training')  renderTraining(c, def);
   else if(def.type==='cures')     renderCures(c, def);
   else if(def.type==='notizen')   renderNotizen(c, def);
+  else if(def.type==='unirahmen') renderUniRahmen(c, def);
 }
 
 function renderBereichOverview(c, key){
@@ -7049,9 +7182,10 @@ const APP_BEREICHE = [
   ]},
   {saeule:'Uni', farbe:'var(--uni)', punkte:[
     {t:'Vor dem Start',   d:'Checkliste'},
-    {t:'Stundenplan',     d:'Wochenraster'},
+    {t:'Semesterplan',    d:'Rahmentermine der Hochschule bis 2028', neu:true},
+    {t:'Stundenplan',     d:'Wochenraster · Link zum Plan der TH', neu:true},
     {t:'Prüfungstermine', d:'mit Datum'},
-    {t:'Lernplan',        d:'was wann lernen'},
+    {t:'Lernplan',        d:'Themen, Tipps und Notizen je Modul', neu:true},
     {t:'Module & Noten',  d:'36 Module, 180 CP, Wahlpflicht, Schnitt'},
     {t:'Semesterkosten',  d:'je Semester, Beitrag und Online-Module'},
     {t:'Schnellnotizen',  d:'nach Tag gruppiert, Datum frei wählbar', neu:true}
@@ -7082,6 +7216,8 @@ const APP_BEREICHE = [
 
 /* Was sich wann geaendert hat - neueste zuerst. Beim Weiterbauen ergaenzen. */
 const APP_VERLAUF = [
+  {v:56, d:'20.09.2026', t:'Uni zum Semesterstart',
+   b:'Notizen je Modul mit Datum, Wochenübersicht darüber, Semesterplan mit den Rahmenterminen und Link zum Stundenplan der TH. „Vor dem Start“ ist raus.'},
   {v:55, d:'11.09.2026', t:'Alte Zielnotizen eingearbeitet',
    b:'Fünf Hauptmissionen als Lebensziele mit Schritten, die Liste 2026 als Jahresziele, vier Schwächen und 19 weitere Mindset-Sätze. Dopplungen raus, Wortlaut gekürzt.'},
   {v:54, d:'11.09.2026', t:'Mindset & Philosophie',
@@ -8529,6 +8665,36 @@ function kontenNamenKlar(){
    Was sich mit den zwoelf Saetzen vom selben Tag doppelte, ist raus:
    "Geld ist Mittel zur Freiheit" stand dort schon, ebenso der Hebel
    durch KI und Automatisierung. */
+/* "Vor dem Start" ist raus - eine Startcheckliste taugt genau einmal,
+   und das Semester laeuft seit dem 21.09.2026. Der Knoten wird geloescht,
+   aber nur wenn nichts Offenes mehr drinsteht: sonst wuerde die App
+   stillschweigend Punkte wegwerfen, die Leon noch braucht. Sind welche
+   offen, wandern sie in die Uni-Schnellnotizen von heute. */
+const VORSTART_KEY = 'vor-dem-start-raus-2026-09';
+function vorDemStartRaus(){
+  if(data.uebernommen && data.uebernommen[VORSTART_KEY]) return 0;
+  const alt = data.nodes['uni:termine'];
+  if(alt){
+    const offen = (alt.items||[]).filter(i=>!i.done && !i.beispiel);
+    if(offen.length){
+      const nz = data.nodes['uni:notizen'];
+      if(nz){
+        if(!Array.isArray(nz.tage)) nz.tage = [];
+        const heute = isoToday();
+        let tag = nz.tage.find(t=>t.date===heute);
+        if(!tag){ tag = {date:heute, items:[], zu:false}; nz.tage.unshift(tag); }
+        offen.forEach(i=>{
+          tag.items.push({id:uid(), text:i.text, done:false});
+        });
+      }
+    }
+    delete data.nodes['uni:termine'];
+  }
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[VORSTART_KEY] = true;
+  return 1;
+}
+
 const MINDSET2_KEY = 'mindset-weltbild-2026-09-11';
 function mindsetWeltbild(){
   if(data.uebernommen && data.uebernommen[MINDSET2_KEY]) return 0;
@@ -9564,6 +9730,12 @@ function renderTimetable(c, def){
     ${slots.length===0 ? `<div class="uni-hint">
       Noch leer. Sobald du deinen Stundenplan hast, trägst du unten die Veranstaltungen ein –
       sie erscheinen dann automatisch im Raster.</div>` : ''}
+    <a class="uni-link" href="${STUNDENPLAN_URL}" target="_blank" rel="noopener">
+      <span class="uni-link-icon">↗</span>
+      <span class="uni-link-text"><strong>Aktueller Plan der TH Brandenburg</strong>
+        <span>Was hier steht, ist deine Abschrift – die Hochschule ändert ihren Plan ohne Bescheid zu sagen.</span>
+      </span>
+    </a>
     <div class="tt-grid-wrap">
       <div class="tt-grid" style="grid-template-rows:auto repeat(${stunden.length}, 56px);">
         <div class="tt-corner"></div>
@@ -9982,8 +10154,17 @@ function uniModule(){
   const n = data.nodes['uni:module'];
   return (n && Array.isArray(n.items)) ? n.items : [];
 }
+/* Das Semester steht am Modul als Text ("1. Semester"), der Baum fragt
+   mit der Zahl. Ein direkter Vergleich trifft darum nie - deshalb wird
+   die fuehrende Zahl herausgezogen. Davor blieb der Lernplan-Baum leer,
+   obwohl alle 36 Module da waren. */
+function semesterNummer(wert){
+  const m = String(wert||'').match(/\d+/);
+  return m ? Number(m[0]) : null;
+}
+
 function moduleImSemester(sem){
-  return uniModule().filter(m=>String(m.semester||'') === String(sem));
+  return uniModule().filter(m=>semesterNummer(m.semester) === Number(sem));
 }
 function modulFortschritt(m){
   const t = m.topics||[];
@@ -10004,6 +10185,31 @@ function pruefStatus(m){
   return {cls:'future', label:`in ${d} Tg.`};
 }
 
+/* Was in den letzten sieben Tagen notiert wurde, je Modul gebuendelt.
+   Die Frage dahinter ist "wo war ich diese Woche dran" - dafuer taugt
+   eine Liste aller Notizen nicht, sondern nur die Verteilung ueber die
+   Module. Ein Klick springt ins Modul. */
+function notizenDerWoche(mods){
+  const grenze = new Date(); grenze.setHours(12,0,0,0);
+  grenze.setDate(grenze.getDate() - 6);
+  const ab = isoLocal(grenze);
+  const proModul = [];
+  let gesamt = 0;
+  mods.forEach(m=>{
+    const tage = (m.notizen||[]).filter(t=>t.date >= ab);
+    const anzahl = tage.reduce((x,t)=>x+(t.items||[]).length, 0);
+    if(!anzahl) return;
+    gesamt += anzahl;
+    /* Der neueste Eintrag als Vorschau - genug, um sich zu erinnern. */
+    const neuster = tage.slice().sort((a,b)=>b.date.localeCompare(a.date))[0];
+    const erst = (neuster.items||[])[0];
+    proModul.push({modul:m, anzahl,
+      letzt: erst ? erst.text.slice(0,60) : fmtDay(neuster.date)});
+  });
+  proModul.sort((a,b)=>b.anzahl - a.anzahl);
+  return {gesamt, proModul};
+}
+
 function renderStudy(c, def){
   const mods = uniModule();
   /* Auswahl: "sem:3" oder eine Modul-ID */
@@ -10014,7 +10220,22 @@ function renderStudy(c, def){
   selectedEntry[def.nodeId] = sel;
 
   const geplant = mods.filter(m=>(m.topics||[]).length).length;
+  const woche = notizenDerWoche(mods);
   c.innerHTML = renderNodeHead(def, `${mods.length} Modul(e) · ${geplant} mit Lernplan`) + `
+    ${woche.gesamt ? `<div class="mnw">
+      <div class="mnw-kopf">
+        <h4>✍️ Notizen der letzten 7 Tage</h4>
+        <span>${woche.gesamt} in ${woche.proModul.length} Modul(en)</span>
+      </div>
+      <div class="mnw-liste">
+        ${woche.proModul.map(e=>`
+          <button class="mnw-modul" data-mnw="${e.modul.id}">
+            <span class="mnw-name">${escapeHtml(e.modul.text)}</span>
+            <span class="mnw-zahl">${e.anzahl}</span>
+            <span class="mnw-letzt">${escapeHtml(e.letzt)}</span>
+          </button>`).join('')}
+      </div>
+    </div>` : ''}
     <div class="entry-layout${showDetailMobile?' show-detail':''}" id="entry-layout">
       <div class="entry-list">
         <div class="entry-list-head"><span class="entry-list-title">Semester &amp; Module</span></div>
@@ -10027,6 +10248,13 @@ function renderStudy(c, def){
       <div class="entry-detail" id="entry-detail"></div>
     </div>
   `;
+  /* Aus der Wochenuebersicht direkt ins Modul springen. */
+  c.querySelectorAll('[data-mnw]').forEach(b=>b.addEventListener('click',()=>{
+    selectedEntry[def.nodeId] = b.dataset.mnw;
+    showDetailMobile = true;
+    renderStudy(c, def);
+  }));
+
   /* Baum: sechs Semester, darunter eingerückt ihre Module */
   const listBody = document.getElementById('entry-list-body');
   for(let s=1; s<=SEMESTER_ANZAHL; s++){
@@ -10138,9 +10366,33 @@ function renderSemesterOverview(host, c, def, sem){
 }
 
 /* Lernplan eines Moduls: Prüfungsdaten, Themen, Tipps, Fokus */
+/* Notizen an einem Modul - derselbe Aufbau wie die Uni-Schnellnotizen:
+   ein Block je Tag, neueste zuerst. Bewusst dieselbe Form, damit Leon
+   nicht zwei Bedienungen lernen muss.
+
+   Warum am Modul und nicht alles in den Schnellnotizen: in der Vorlesung
+   notiert er etwas zu *diesem* Fach. Sucht er es spaeter, sucht er beim
+   Fach - nicht in einer Tagesliste mit allem gemischt. */
+function modulNotizTage(m){
+  if(!Array.isArray(m.notizen)) m.notizen = [];
+  return m.notizen;
+}
+
+function modulNotizTag(m, datum){
+  const tage = modulNotizTage(m);
+  let t = tage.find(x=>x.date===datum);
+  if(!t){
+    t = {date:datum, items:[], zu:false};
+    tage.push(t);
+    tage.sort((x,y)=>String(y.date).localeCompare(String(x.date)));
+  }
+  return t;
+}
+
 function renderModulPlan(host, c, def, m){
   if(!m){ host.innerHTML = '<div class="entry-empty">Modul nicht gefunden.</div>'; return; }
   const f = modulFortschritt(m);
+  const notizen = modulNotizTage(m);
   const ps = pruefStatus(m);
   const st = modulStatusDef(m.status);
 
@@ -10150,7 +10402,7 @@ function renderModulPlan(host, c, def, m){
         <h2 class="detail-title">${escapeHtml(m.text)}
           <span class="trip-badge ${ps.cls}">${ps.label}</span></h2>
         <div class="exp-sum-note" style="margin-top:4px;">
-          ${m.semester?m.semester+'. Semester · ':''}${m.cp||0} CP · ${st.label}</div>
+          ${m.semester?escapeHtml(m.semester)+' · ':''}${m.cp||0} CP · ${st.label}</div>
       </div>
     </div>
 
@@ -10211,6 +10463,17 @@ function renderModulPlan(host, c, def, m){
       <h5>🎯 Fokus &amp; Vorgehen</h5>
       <textarea id="sp-fokus" placeholder="Worauf liegt der Schwerpunkt, wie gehst du vor …">${escapeHtml(m.fokus||'')}</textarea>
     </div>
+
+    <div class="mn-block">
+      <h5>✍️ Notizen zu diesem Modul${
+        notizen.length ? ` <span class="dl-rest">${notizen.reduce((x,t)=>x+t.items.length,0)}</span>` : ''}</h5>
+      <div class="nz-neu">
+        <input type="text" id="mn-text" placeholder="Was war heute wichtig?" maxlength="200">
+        <input type="date" id="mn-datum" value="${isoToday()}" aria-label="Datum">
+        <button class="ib-btn primary" id="mn-add">Notieren</button>
+      </div>
+      <div id="mn-tage"></div>
+    </div>
   `;
 
   /* Prüfungsfelder */
@@ -10255,6 +10518,76 @@ function renderModulPlan(host, c, def, m){
 
   const fokus = host.querySelector('#sp-fokus');
   fokus.addEventListener('blur',()=>{ m.fokus = fokus.value; persist(); });
+
+  /* --- Notizen zum Modul --- */
+  const nWrap = host.querySelector('#mn-tage');
+  const nNeu  = ()=>{ persist(); renderStudy(c, def); renderSidebar(); };
+  const heute = isoToday();
+
+  if(!notizen.length){
+    nWrap.innerHTML = '<div class="empty-mini">Noch nichts notiert. Schreib oben rein, das Datum steht schon auf heute.</div>';
+  }
+  notizen.forEach(t=>{
+    const karte = document.createElement('div');
+    karte.className = 'nz-tag' + (t.zu ? ' zu' : '');
+    const label = t.date===heute ? 'Heute — '+fmtDay(t.date) : fmtDay(t.date);
+    const offen = (t.items||[]).filter(i=>!i.done).length;
+    karte.innerHTML = `
+      <div class="nz-tag-kopf">
+        <button class="nz-klapp" aria-label="Auf- oder zuklappen">${t.zu?'▸':'▾'}</button>
+        <h4>${label}</h4>
+        <span class="nz-zahl">${t.items.length} · ${offen} offen</span>
+        <button class="mini-del nz-tag-del" aria-label="Tag löschen">×</button>
+      </div>
+      <div class="nz-tag-inhalt">
+        <div class="input-row">
+          <input type="text" class="nz-tag-input" placeholder="Notiz für diesen Tag …" maxlength="200">
+          <button class="nz-tag-add">+</button>
+        </div>
+        <ul class="mini-list"></ul>
+      </div>
+    `;
+    const ul = karte.querySelector('ul');
+    const inp = karte.querySelector('.nz-tag-input');
+    renderMiniList(ul, t.items);
+    bindMiniList(ul, t.items, ()=>{ renderMiniList(ul, t.items); persist(); });
+    const dazu = ()=>{
+      const txt = inp.value.trim(); if(!txt) return;
+      t.items.unshift({id:uid(), text:txt, done:false});
+      nNeu();
+    };
+    karte.querySelector('.nz-tag-add').addEventListener('click', dazu);
+    inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') dazu(); });
+    karte.querySelector('.nz-klapp').addEventListener('click',()=>{ t.zu = !t.zu; nNeu(); });
+    const del = karte.querySelector('.nz-tag-del');
+    del.addEventListener('click',()=>{
+      if(del.dataset.sicher !== '1'){
+        del.dataset.sicher='1'; del.textContent='wirklich?'; del.classList.add('fragt');
+        setTimeout(()=>{
+          if(!del.isConnected) return;
+          del.dataset.sicher=''; del.textContent='×'; del.classList.remove('fragt');
+        }, 3000);
+        return;
+      }
+      m.notizen = m.notizen.filter(x=>x.date!==t.date);
+      nNeu();
+    });
+    nWrap.appendChild(karte);
+  });
+
+  function notizAnlegen(){
+    const txt = host.querySelector('#mn-text').value.trim();
+    const dat = host.querySelector('#mn-datum').value || heute;
+    if(!txt) return;
+    const t = modulNotizTag(m, dat);
+    t.items.unshift({id:uid(), text:txt, done:false});
+    t.zu = false;
+    nNeu();
+  }
+  host.querySelector('#mn-add').addEventListener('click', notizAnlegen);
+  host.querySelector('#mn-text').addEventListener('keydown',(e)=>{
+    if(e.key==='Enter') notizAnlegen();
+  });
 }
 
 /* ---------------- TÄGLICHER NOTIZZETTEL ---------------- */
@@ -10628,6 +10961,100 @@ function notizenTag(z, datum){
     z.tage.sort((x,y)=>String(y.date).localeCompare(String(x.date)));
   }
   return t;
+}
+
+/* ---------------- UNI: SEMESTERPLAN ----------------
+   Die Rahmentermine der Hochschule. Keine Pruefungstermine - der Rahmen,
+   in dem sie liegen werden. Solange die echten Termine fehlen, ist das
+   die einzige belastbare Auskunft darueber, worauf Leon hinarbeitet.
+
+   Das laufende Semester steht offen, die kommenden zugeklappt. Innerhalb
+   eines Semesters sind die Bloecke nach Datum sortiert, der aktuelle ist
+   hervorgehoben - man will sehen "wo stehe ich gerade", nicht eine
+   Tabelle lesen. */
+function rahmenLaeuft(b, heute){
+  return heute >= b.von && heute <= b.bis;
+}
+
+/* Tage bis zum Start, oder null wenn schon angefangen. */
+function rahmenTageBis(b, heute){
+  if(heute >= b.von) return null;
+  return Math.round((new Date(b.von+'T12:00:00') - new Date(heute+'T12:00:00')) / 86400000);
+}
+
+function renderUniRahmen(c, def){
+  const z = data.nodes[def.nodeId];
+  if(!z.notiz || typeof z.notiz !== 'object') z.notiz = {};
+  const heute = isoToday();
+  const aktuell = UNI_RAHMEN.find(s=>heute >= s.von && heute <= s.bis);
+
+  /* Was als naechstes ansteht - die eine Zahl, die oben stehen soll. */
+  let naechst = null;
+  UNI_RAHMEN.forEach(sem=>sem.bloecke.forEach(b=>{
+    if(b.bis < heute) return;
+    if(!naechst || b.von < naechst.b.von) naechst = {b, sem};
+  }));
+  const laufend = aktuell
+    ? aktuell.bloecke.filter(b=>rahmenLaeuft(b, heute))
+    : [];
+
+  c.innerHTML = renderNodeHead(def,
+    aktuell ? aktuell.sem : 'Rahmentermine der TH Brandenburg') + `
+    ${laufend.length ? `<div class="rh-jetzt">
+      <span class="rh-jetzt-marke">gerade</span>
+      ${laufend.map(b=>`<strong>${escapeHtml(b.was)}</strong> bis ${fmtDay(b.bis)}`).join(' · ')}
+    </div>` : ''}
+    ${naechst && !laufend.some(b=>b===naechst.b) ? `<div class="rh-naechst">
+      Als Nächstes: <strong>${escapeHtml(naechst.b.was)}</strong>
+      ab ${fmtDay(naechst.b.von)}${
+        rahmenTageBis(naechst.b, heute)!==null
+          ? ` · in ${rahmenTageBis(naechst.b, heute)} Tagen` : ''}
+    </div>` : ''}
+    <div id="rh-liste"></div>
+    <div class="uni-hint rh-hinweis">
+      Das sind die Rahmentermine der Hochschule, keine einzelnen Prüfungstermine.
+      Sobald du deine echten Termine hast, trägst du sie unter
+      „Prüfungstermine“ ein.
+    </div>
+  `;
+
+  const wrap = document.getElementById('rh-liste');
+  UNI_RAHMEN.forEach(sem=>{
+    const vorbei = sem.bis < heute;
+    const ist = sem === aktuell;
+    /* Vergangene und kuenftige Semester zugeklappt - nur das laufende
+       steht offen. Leon kann jedes von Hand aufklappen. */
+    const zu = z.notiz['zu:'+sem.sem] !== undefined
+      ? !!z.notiz['zu:'+sem.sem] : !ist;
+    const sek = document.createElement('section');
+    sek.className = 'rh-sem' + (ist?' ist':'') + (vorbei?' vorbei':'') + (zu?' zu':'');
+    sek.innerHTML = `
+      <button class="rh-sem-kopf" data-rhzu="${escapeHtml(sem.sem)}">
+        <span class="rh-klapp">${zu?'▸':'▾'}</span>
+        <span class="rh-sem-titel">${escapeHtml(sem.sem)}</span>
+        <span class="rh-sem-meta">${ist ? 'läuft' : (vorbei ? 'vorbei' : fmtDay(sem.von))}</span>
+      </button>
+      <div class="rh-sem-body">
+        ${[...sem.bloecke].sort((a,b)=>a.von.localeCompare(b.von)).map(b=>{
+          const jetzt = rahmenLaeuft(b, heute);
+          const weg   = b.bis < heute;
+          const tage  = rahmenTageBis(b, heute);
+          return `<div class="rh-block ${b.art}${jetzt?' jetzt':''}${weg?' weg':''}">
+            <span class="rh-block-was">${escapeHtml(b.was)}</span>
+            <span class="rh-block-zeit">${
+              b.von===b.bis ? fmtDay(b.von) : fmtDay(b.von)+' – '+fmtDay(b.bis)}</span>
+            <span class="rh-block-status">${
+              jetzt ? 'läuft' : (weg ? '' : (tage!==null && tage<=60 ? 'in '+tage+' T' : ''))}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    `;
+    sek.querySelector('[data-rhzu]').addEventListener('click',()=>{
+      z.notiz['zu:'+sem.sem] = !zu;
+      persist(); renderUniRahmen(c, def);
+    });
+    wrap.appendChild(sek);
+  });
 }
 
 function renderNotizen(c, def){
