@@ -30,6 +30,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
 :root{
+  /* Die App ist durchgehend dunkel. Ohne diese Angabe zeichnet der Browser
+     seine eigenen Bedienelemente hell - vor allem die aufgeklappte Liste
+     eines <select> und die Kalender von <input type=date>. Die sind nicht
+     mit CSS erreichbar, nur hierueber. */
+  color-scheme: dark;
   /* Dunkles Grundthema - warme, nicht blaustichige Grautoene passend zur Papier-Optik */
   --paper:#141517;      /* Arbeitsflaeche */
   --card:#1C1E21;       /* Karten, Tabellen, aktive Eintraege */
@@ -47,6 +52,10 @@
      bewusst kuehlere Farbe, damit sie sich von Privat/Business/Uni/Sport abhebt. */
   --app:#9A8FC4; --app-bg:#2A2739;
   --field:#191B1E;      /* Eingabefelder */
+  /* Alias auf --field: an elf Stellen stand var(--bg), ohne dass es die
+     Variable je gab - die Felder blieben dadurch durchsichtig. Statt elf
+     Stellen zu aendern hier einmal definiert. */
+  --bg:#191B1E;
 }
 *{box-sizing:border-box;}
 html,body{height:100%;margin:0;}
@@ -1961,6 +1970,63 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .day-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
 .day-card h4{font-family:'Fraunces',serif;font-size:0.98rem;margin:0 0 8px;color:var(--ink);}
 
+/* ---- Uni: Modul aufklappbar ---- */
+.modrow-klapp{border:none;background:none;color:var(--ink-soft);font-size:0.72rem;
+  cursor:pointer;padding:2px 4px;line-height:1;flex-shrink:0;}
+.modrow-klapp:hover{color:var(--uni);}
+.modrow.auf{background:var(--card-2);border-radius:8px 8px 0 0;
+  margin:0 -9px;padding-left:9px;padding-right:9px;}
+.modrow-marken{display:flex;gap:6px;flex-wrap:wrap;padding:0 0 7px 30px;}
+.modrow.auf + .modrow-marken{background:var(--card-2);margin:0 -9px;
+  padding-left:39px;padding-right:9px;}
+.modmarke{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;
+  color:var(--ink-soft);border:1px solid var(--line);border-radius:20px;
+  padding:1px 8px;}
+.modmarke.bald,.modmarke.heute{color:var(--danger);border-color:var(--danger);}
+.modrow-detail{background:var(--card-2);border-radius:0 0 8px 8px;
+  margin:0 -9px 12px;padding:4px 14px 16px;}
+.modrow-detail .sp-cols{gap:18px;margin-bottom:16px;}
+.modrow-detail .mn-block{margin-top:18px;}
+
+/* ---- Uni: Pruefungsuebersicht ---- */
+.pp-block{background:var(--card);border:1px solid var(--line);border-radius:11px;
+  padding:13px 15px;margin-bottom:11px;}
+.pp-block.bald{border-color:var(--danger);}
+.pp-block.vorbei{opacity:.6;}
+.pp-block-kopf{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+  padding-bottom:7px;margin-bottom:3px;border-bottom:1px solid var(--line-soft);}
+.pp-block-kopf h4{margin:0;font-family:'Fraunces',serif;font-size:0.95rem;color:var(--uni);}
+.pp-block.bald .pp-block-kopf h4{color:var(--danger);}
+.pp-block-kopf span{font-family:'IBM Plex Mono',monospace;font-size:0.63rem;
+  letter-spacing:.04em;color:var(--ink-soft);}
+.pp-zeile{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;
+  padding:9px 0;border-top:1px solid var(--line-soft);cursor:pointer;}
+.pp-block .pp-zeile:first-of-type{border-top:none;}
+.pp-zeile:hover{background:var(--card-2);border-radius:7px;
+  margin:0 -8px;padding-left:8px;padding-right:8px;}
+.pp-name{flex:1;font-size:0.88rem;color:var(--ink);min-width:130px;}
+.pp-sem,.pp-form,.pp-raum{font-family:'IBM Plex Mono',monospace;font-size:0.63rem;
+  color:var(--ink-soft);}
+.pp-datum{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink);}
+.pp-tage{font-family:'IBM Plex Mono',monospace;font-size:0.63rem;color:var(--uni);
+  background:var(--uni-bg);border-radius:20px;padding:1px 8px;}
+.pp-block.bald .pp-tage{color:var(--danger);background:rgba(224,112,140,.13);}
+
+/* ---- Uni: Linkkasten (Moodle, Mail, Stundenplan) ---- */
+.ulk{background:var(--card);border:1px solid var(--line);border-radius:11px;
+  padding:13px 15px;margin-bottom:16px;max-width:760px;}
+.ulk h4{margin:0 0 9px;font-family:'Fraunces',serif;font-size:0.92rem;color:var(--ink);}
+.ulk-zeile{display:flex;align-items:center;gap:11px;text-decoration:none;
+  padding:10px 0;border-top:1px solid var(--line-soft);color:inherit;}
+.ulk h4 + .ulk-zeile,.ulk .ulk-zeile:first-child{border-top:none;}
+.ulk-icon{font-size:1.1rem;flex-shrink:0;}
+.ulk-text{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;}
+.ulk-text strong{font-size:0.87rem;color:var(--uni);font-weight:600;}
+.ulk-text span{font-size:0.76rem;color:var(--ink-soft);line-height:1.45;
+  overflow-wrap:break-word;}
+.ulk-pfeil{color:var(--ink-soft);font-size:0.9rem;flex-shrink:0;}
+.ulk-zeile:hover .ulk-pfeil{color:var(--uni);}
+
 /* ---- Uni: Link zur Hochschulseite ---- */
 .uni-link{display:flex;align-items:flex-start;gap:11px;text-decoration:none;
   background:var(--card);border:1px solid var(--line);border-radius:10px;
@@ -2982,14 +3048,22 @@ const STRUKTUR = {
        relevant, eine Startcheckliste nur einmal. */
     {key:'rahmen',     title:'Semesterplan',    icon:'🗓️', type:'unirahmen'},
     {key:'stundenplan',title:'Stundenplan',     icon:'📅', type:'timetable'},
-    {key:'pruefungen', title:'Prüfungstermine', icon:'📝', type:'exams'},
-    {key:'lernplan',   title:'Lernplan',        icon:'📚', type:'study'},
-    {key:'module',     title:'Module & Noten',  icon:'🎓', type:'modules'},
-    /* Notizen je Modul, nach Woche gebuendelt. Eigener Bereich, weil Leon
-       sie so sucht: "was lief diese Woche in Mathe". Im Lernplan lagen sie
-       zwar auch, aber unten in der Detailansicht - dort findet man sie
-       nicht, wenn man sie sucht. */
+    /* Ein Modul traegt sechzehn Felder: Note, Pruefungsform, Termin, Raum,
+       Themen, Tipps, Notizen. Die lagen auf vier Bereiche verteilt - man
+       musste wissen, in welchem davon man sucht, und "Pruefungstermine"
+       fuehrte sogar eine zweite Liste neben dem Termin am Modul.
+
+       Jetzt ein Bereich: Semester -> Modul -> alles dazu. Das folgt der
+       Regel des Projekts (verschachteln statt auflisten) und der Frage,
+       die man tatsaechlich stellt - die geht immer von einem Fach aus.
+
+       Modul-Notizen bleibt daneben, aber nicht als zweiter Ort fuer
+       dieselben Daten: es ist die Sicht ueber alle Faecher hinweg
+       ("was lief diese Woche"), waehrend Module beim einzelnen Fach
+       beginnt. Zwei Fragen, zwei Ansichten, eine Datenbasis. */
+    {key:'module',     title:'Module',          icon:'🎓', type:'modules'},
     {key:'modnotiz',   title:'Modul-Notizen',   icon:'📝', type:'modnotiz'},
+    {key:'pruefplan',  title:'Prüfungen',       icon:'📋', type:'pruefplan'},
     {key:'kosten',     title:'Semesterkosten',  icon:'🧾', type:'unikosten'},
     /* Schnellnotizen: was in der Vorlesung oder zwischendurch anfaellt und
        sonst nirgends hingehoert. Nach Tag gruppiert, weil Leon spaeter
@@ -3152,6 +3226,48 @@ function uniPdfSpeichern(id){
 }
 
 const STUNDENPLAN_URL = 'https://informatik.th-brandenburg.de/studium/plaene-und-termine/stundenplan/medizininformatik-bachelor/1-semester/';
+
+/* Die Seiten der Hochschule, die Leon regelmaessig braucht. Sie stehen
+   hier einmal und werden an mehreren Stellen eingeblendet - der
+   Stundenplan gehoert zum Stundenplan, Moodle und Mail zu allem.
+
+   Warum ueberhaupt Links statt Inhalte: die App hat keinen Server und
+   kann sich nirgends anmelden. Sie kann also weder Moodle auslesen noch
+   Mails holen. Was sie kann, ist den Weg dorthin kurz halten - ein Tipp
+   statt Adresse tippen oder im Browser suchen. */
+const UNI_LINKS = [
+  {id:'moodle', titel:'Moodle MZI',
+   was:'Kursraum: Lernmaterial, Ankündigungen, Raumänderungen',
+   url:'https://moodle.th-brandenburg.de/course/view.php?id=67', icon:'📚'},
+  {id:'mail', titel:'Hochschul-Mail',
+   was:'Webmail der TH – am iPhone liegt sie auch in der Mail-App',
+   url:'https://webmail.th-brandenburg.de/?RelayState=%2Fmodern%2F', icon:'✉️'},
+  {id:'plan', titel:'Stundenplan der TH',
+   was:'Der offizielle Plan – hier gilt, was die Hochschule sagt',
+   url: STUNDENPLAN_URL, icon:'📅'}
+];
+
+/* Linkkasten, an mehreren Stellen verwendet. `nur` waehlt aus, welche
+   Links gezeigt werden - im Stundenplan steht der Plan zuerst, sonst
+   Moodle und Mail. */
+function uniLinkKasten(nur, titel){
+  /* Reihenfolge nach `nur`, nicht nach UNI_LINKS - im Stundenplan soll
+     der Plan oben stehen, sonst Moodle. */
+  const liste = nur
+    ? nur.map(id=>UNI_LINKS.find(l=>l.id===id)).filter(Boolean)
+    : UNI_LINKS;
+  if(!liste.length) return '';
+  return `<div class="ulk">
+    ${titel ? `<h4>${titel}</h4>` : ''}
+    ${liste.map(l=>`
+      <a class="ulk-zeile" href="${l.url}" target="_blank" rel="noopener">
+        <span class="ulk-icon">${l.icon}</span>
+        <span class="ulk-text"><strong>${escapeHtml(l.titel)}</strong>
+          <span>${escapeHtml(l.was)}</span></span>
+        <span class="ulk-pfeil">↗</span>
+      </a>`).join('')}
+  </div>`;
+}
 
 /* Rahmentermine der TH Brandenburg, aus dem offiziellen PDF
    (SoSe 2026 bis SoSe 2028, Stand 18.09.2026). Das sind keine
@@ -3355,6 +3471,9 @@ function emptyNodeContent(type){
   /* Modul-Notizen: die Notizen selbst haengen am Modul (uni:module), hier
      liegt nur, welches Semester und welche Woche gerade offen sind. */
   if(type==='modnotiz')   return {};
+  /* Pruefungen liest nur die Termine an den Modulen - eigener Inhalt
+     entsteht hier keiner. */
+  if(type==='pruefplan')  return {};
   return {};
 }
 
@@ -3414,11 +3533,7 @@ function beispielDaten(nodes){
     {id:uid(), beispiel:true, titel:'Beispiel: Übung Mathe', tag:2,
      von:'14:00', bis:'15:30', raum:'S12', dozent:''}
   ];
-  nodes['uni:pruefungen'].items = [{
-    id:uid(), beispiel:true, text:'Beispiel: Klausur Mathematik I',
-    date: inTagen(60), zeit:'09:00', raum:'Audimax',
-    anmeldung: inTagen(30), status:'offen', done:false
-  }];
+  /* Kein eigener Pruefungseintrag mehr - der Termin haengt am Modul. */
   nodes['uni:module'].items = [{
     id:uid(), beispiel:true, text:'Beispiel: Mathematik I', cp:6, note:'',
     status:'laeuft', semester:'1. Semester',
@@ -4862,6 +4977,8 @@ function migrateData(){
   /* Alte Lernphasen in die Module ueberfuehren - laeuft erst hier, weil die
      Module oben abgesichert werden mussten. Danach ist der Lernplan datenlos. */
   (function(){
+    /* Laeuft nur noch bei alten Staenden - den Knoten gibt es seit dem
+       Zusammenlegen nicht mehr. */
     const lp = data.nodes['uni:lernplan'], mod = data.nodes['uni:module'];
     if(!lp || !Array.isArray(lp.phases) || !mod) return;
     lp.phases.forEach(ph=>{
@@ -4939,6 +5056,7 @@ function migrateData(){
   mindsetUebernehmen();
   mindsetWeltbild();
   vorDemStartRaus();
+  uniBereicheZusammen();
   missionenUebernehmen();
   jahreszieleUebernehmen();
   schwaechenUebernehmen();
@@ -5050,6 +5168,14 @@ function nodeOpenCount(nodeId, def){
       sum + (t.items||[]).filter(i=>!i.done).length, 0);
   }
   if(def.type==='unirahmen') return 0;   /* Rahmen zeigt Zeitraeume, nichts zum Abhaken */
+  if(def.type==='pruefplan'){
+    /* Pruefungen, die noch kommen und nicht bestanden sind. */
+    const mod = data.nodes['uni:module'];
+    if(!mod || !Array.isArray(mod.items)) return 0;
+    const heute = isoToday();
+    return mod.items.filter(m=>m.pruefdatum && m.pruefdatum >= heute
+      && m.status !== 'bestanden').length;
+  }
   if(def.type==='modnotiz'){
     /* offene Punkte ueber alle Module */
     const mod = data.nodes['uni:module'];
@@ -5659,6 +5785,7 @@ function renderMain(){
   else if(def.type==='notizen')   renderNotizen(c, def);
   else if(def.type==='unirahmen') renderUniRahmen(c, def);
   else if(def.type==='modnotiz')  renderModNotizen(c, def);
+  else if(def.type==='pruefplan') renderPruefPlan(c, def);
 }
 
 function renderBereichOverview(c, key){
@@ -7320,10 +7447,9 @@ const APP_BEREICHE = [
     {t:'Vor dem Start',   d:'Checkliste'},
     {t:'Semesterplan',    d:'Rahmentermine bis 2028 · Kalender-PDFs eingebaut', neu:true},
     {t:'Stundenplan',     d:'Wochenraster · Link zum Plan der TH', neu:true},
-    {t:'Prüfungstermine', d:'mit Datum'},
-    {t:'Lernplan',        d:'Themen, Tipps und Notizen je Modul', neu:true},
-    {t:'Module & Noten',  d:'36 Module, 180 CP, Wahlpflicht, Schnitt'},
+    {t:'Module',          d:'ein Fach aufklappen: Prüfung, Themen, Notizen', neu:true},
     {t:'Modul-Notizen',   d:'nach Woche gebündelt, Filter je Modul', neu:true},
+    {t:'Prüfungen',       d:'alle Termine nach Nähe sortiert', neu:true},
     {t:'Semesterkosten',  d:'je Semester, Beitrag und Online-Module'},
     {t:'Schnellnotizen',  d:'nach Tag gruppiert, Datum frei wählbar', neu:true}
   ]},
@@ -7353,6 +7479,8 @@ const APP_BEREICHE = [
 
 /* Was sich wann geaendert hat - neueste zuerst. Beim Weiterbauen ergaenzen. */
 const APP_VERLAUF = [
+  {v:59, d:'20.09.2026', t:'Uni aufgeräumt',
+   b:'Prüfungstermine, Lernplan und Module lagen getrennt, obwohl alles am Modul hängt. Jetzt ein Bereich „Module“ zum Aufklappen. Dazu Links zu Moodle und Hochschul-Mail.'},
   {v:58, d:'20.09.2026', t:'Modul-Notizen als eigener Bereich',
    b:'Notizen je Modul, nach Woche gebuendelt statt nach Tag. Die laufende Woche steht offen, mit Filter auf ein einzelnes Fach.'},
   {v:57, d:'20.09.2026', t:'PDFs der Hochschule in der App',
@@ -7674,15 +7802,19 @@ function heuteSammeln(){
     });
   }
 
-  /* --- Uni: Pruefungen --- */
-  const pr = data.nodes['uni:pruefungen'];
-  if(pr && Array.isArray(pr.items)){
-    pr.items.forEach(it=>{
-      if(it.done) return;
-      const wann = einordnen(it.date || it.due);
+  /* --- Uni: Pruefungen ---
+     Die Termine haengen am Modul, seit Pruefungstermine und Lernplan dort
+     aufgegangen sind. Ziel ist der Pruefungsbereich - von dort kommt man
+     mit einem Tipp ins Modul. */
+  const mz = data.nodes['uni:module'];
+  if(mz && Array.isArray(mz.items)){
+    mz.items.forEach(m=>{
+      if(!m.pruefdatum || m.status === 'bestanden') return;
+      const wann = einordnen(m.pruefdatum);
       if(!wann) return;
-      raus.push({wann, datum:it.date || it.due, text:it.text, quelle:'Prüfung', icon:'📝',
-                 farbe:'var(--uni)', ziel:'uni:pruefungen'});
+      const was = m.pruefform ? m.pruefform + ' ' + m.text : m.text;
+      raus.push({wann, datum:m.pruefdatum, text:was, quelle:'Prüfung', icon:'📝',
+                 farbe:'var(--uni)', ziel:'uni:pruefplan'});
     });
   }
 
@@ -8811,6 +8943,63 @@ function kontenNamenKlar(){
    aber nur wenn nichts Offenes mehr drinsteht: sonst wuerde die App
    stillschweigend Punkte wegwerfen, die Leon noch braucht. Sind welche
    offen, wandern sie in die Uni-Schnellnotizen von heute. */
+/* Lernplan und Pruefungstermine sind als eigene Bereiche weggefallen -
+   beides steckt jetzt am Modul. Die Knoten wandern raus, aber nur wenn
+   nichts drinsteht, das nirgends sonst existiert:
+
+   - uni:lernplan speicherte nie etwas eigenes, der zeigte nur Moduldaten.
+   - uni:pruefungen hatte eine eigene Liste. Was dort steht, wird auf die
+     Module uebertragen (nach Namen gesucht); was sich nicht zuordnen
+     laesst, landet in den Uni-Schnellnotizen statt im Nichts. */
+const UNILAYOUT_KEY = 'uni-zusammengelegt-2026-09-20';
+function uniBereicheZusammen(){
+  if(data.uebernommen && data.uebernommen[UNILAYOUT_KEY]) return 0;
+  const alt = data.nodes['uni:pruefungen'];
+  const mods = data.nodes['uni:module'];
+  let uebernommen = 0, rest = [];
+
+  if(alt && Array.isArray(alt.items) && mods && Array.isArray(mods.items)){
+    alt.items.forEach(e=>{
+      if(e.beispiel) return;
+      const txt = String(e.text || '').toLowerCase();
+      /* Modul suchen: Name der Pruefung enthaelt meist den Modulnamen. */
+      const treffer = mods.items.find(m=>{
+        const mt = String(m.text || '').toLowerCase();
+        return mt && (txt.indexOf(mt) >= 0 || mt.indexOf(txt) >= 0);
+      });
+      if(treffer){
+        if(e.date && !treffer.pruefdatum) treffer.pruefdatum = e.date;
+        if(e.zeit && !treffer.pruefzeit)  treffer.pruefzeit  = e.zeit;
+        if(e.raum && !treffer.pruefraum)  treffer.pruefraum  = e.raum;
+        uebernommen++;
+      } else {
+        rest.push(e);
+      }
+    });
+  }
+
+  /* Nicht zuzuordnen: in die Schnellnotizen, damit nichts verschwindet. */
+  if(rest.length){
+    const nz = data.nodes['uni:notizen'];
+    if(nz){
+      if(!Array.isArray(nz.tage)) nz.tage = [];
+      const heute = isoToday();
+      let tag = nz.tage.find(t=>t.date === heute);
+      if(!tag){ tag = {date:heute, items:[], zu:false}; nz.tage.unshift(tag); }
+      rest.forEach(e=>{
+        const wann = e.date ? ' (' + e.date + ')' : '';
+        tag.items.push({id:uid(), text:'Pr\u00fcfung: ' + (e.text||'') + wann, done:false});
+      });
+    }
+  }
+
+  delete data.nodes['uni:pruefungen'];
+  delete data.nodes['uni:lernplan'];
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[UNILAYOUT_KEY] = true;
+  return uebernommen + rest.length;
+}
+
 const VORSTART_KEY = 'vor-dem-start-raus-2026-09';
 function vorDemStartRaus(){
   if(data.uebernommen && data.uebernommen[VORSTART_KEY]) return 0;
@@ -9871,12 +10060,11 @@ function renderTimetable(c, def){
     ${slots.length===0 ? `<div class="uni-hint">
       Noch leer. Sobald du deinen Stundenplan hast, trägst du unten die Veranstaltungen ein –
       sie erscheinen dann automatisch im Raster.</div>` : ''}
-    <a class="uni-link" href="${STUNDENPLAN_URL}" target="_blank" rel="noopener">
-      <span class="uni-link-icon">↗</span>
-      <span class="uni-link-text"><strong>Aktueller Plan der TH Brandenburg</strong>
-        <span>Was hier steht, ist deine Abschrift – die Hochschule ändert ihren Plan ohne Bescheid zu sagen.</span>
-      </span>
-    </a>
+    ${uniLinkKasten(['plan','moodle','mail'], 'Seiten der Hochschule')}
+    <div class="uni-hint" style="margin-bottom:16px;">
+      Was unten im Raster steht, ist deine Abschrift. Der Plan der TH gilt –
+      Raumänderungen stehen meist in Moodle.
+    </div>
     <div class="tt-grid-wrap">
       <div class="tt-grid" style="grid-template-rows:auto repeat(${stunden.length}, 56px);">
         <div class="tt-corner"></div>
@@ -10095,6 +10283,10 @@ function modCpHinweis(z){
     im Studium Generale haben die meisten Module nur 2,5 CP, da braucht es zwei.</div>`;
 }
 
+/* Welche Module gerade aufgeklappt sind. Liegt wie zielEbene ausserhalb
+   von `data` - welcher Block offen steht, gehoert nicht in den Export. */
+let modOffen = {};
+
 function renderModules(c, def){
   const z = data.nodes[def.nodeId];
   const bestanden = z.items.filter(m=>m.status==='bestanden');
@@ -10176,7 +10368,13 @@ function renderModules(c, def){
         </button>
         <div class="modsem-body">${ms.map(m=>{
           const st = modulStatusDef(m.status);
-          return `<div class="modrow${m.status==='bestanden'?' done':''}" data-mid="${m.id}">
+          const auf = !!modOffen[m.id];
+          const nAnz = (m.notizen||[]).reduce((x,t)=>x+(t.items||[]).length, 0);
+          const tOffen = (m.topics||[]).filter(t=>!t.done).length;
+          const ps = pruefStatus(m);
+          return `<div class="modrow${m.status==='bestanden'?' done':''}${auf?' auf':''}" data-mid="${m.id}">
+            <button class="modrow-klapp" data-mauf="${m.id}"
+              aria-label="Modul auf- oder zuklappen">${auf?'▾':'▸'}</button>
             <span class="modrow-status" data-mcycle="${m.id}" title="${st.label} – tippen zum Wechseln">
               <span class="tt-dot ${st.dot}"></span></span>
             <span class="modrow-text mg-cell${m.wahl?'':' editable'}" data-mf="text">${escapeHtml(m.text)}${
@@ -10186,14 +10384,37 @@ function renderModules(c, def){
             <span class="modrow-note mg-cell editable" data-mf="note" title="Note – tippen zum Eintragen">${
               m.note ? String(m.note).replace('.',',') : '<i>Note</i>'}</span>
             <button class="mini-del" data-mdel="${m.id}" aria-label="Löschen">×</button>
-          </div>`;
+          </div>
+          <div class="modrow-marken">${
+            m.pruefdatum ? `<span class="modmarke ${ps.cls}">${ps.label}</span>` : ''}${
+            tOffen ? `<span class="modmarke">${tOffen} Thema/Themen offen</span>` : ''}${
+            nAnz ? `<span class="modmarke">${nAnz} Notiz(en)</span>` : ''}</div>
+          ${auf ? `<div class="modrow-detail" data-mdetail="${m.id}"></div>` : ''}`;
         }).join('')}</div>
       </section>`;
     }).join('');
   }
   const refresh = ()=>{ persist(); renderModules(c, def); renderSidebar(); };
+
+  /* Modul auf- und zuklappen. Immer nur eines offen: zwei aufgeklappte
+     Module mit je vier Abschnitten sind am Handy nicht mehr ueberschaubar. */
+  tbody.querySelectorAll('[data-mauf]').forEach(b=>b.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    const id = b.dataset.mauf;
+    const war = !!modOffen[id];
+    modOffen = {};
+    if(!war) modOffen[id] = true;
+    renderModules(c, def);
+  }));
+  /* Den aufgeklappten Teil fuellen - dieselbe Ansicht wie frueher im
+     Lernplan, damit es nur eine Stelle gibt, die ein Modul darstellt. */
+  tbody.querySelectorAll('[data-mdetail]').forEach(host=>{
+    const m = z.items.find(x=>x.id===host.dataset.mdetail);
+    if(m) renderModulPlan(host, c, def, m);
+  });
+
   tbody.querySelectorAll('[data-semzu]').forEach(b=>b.addEventListener('click',(e)=>{
-    if(e.target.closest('.modrow')) return;
+    if(e.target.closest('.modrow') || e.target.closest('.modrow-detail')) return;
     const k = b.dataset.semzu;
     z.zu[k] = !z.zu[k]; refresh();
   }));
@@ -10537,16 +10758,10 @@ function renderModulPlan(host, c, def, m){
   const ps = pruefStatus(m);
   const st = modulStatusDef(m.status);
 
+  /* Kein eigener Kopf mit dem Modulnamen: dieser Teil klappt unter der
+     Modulzeile auf, dort steht der Name schon. Zweimal derselbe Titel
+     untereinander sieht nach einem Fehler aus. */
   host.innerHTML = `
-    <div class="detail-head">
-      <div class="detail-head-main">
-        <h2 class="detail-title">${escapeHtml(m.text)}
-          <span class="trip-badge ${ps.cls}">${ps.label}</span></h2>
-        <div class="exp-sum-note" style="margin-top:4px;">
-          ${m.semester?escapeHtml(m.semester)+' · ':''}${m.cp||0} CP · ${st.label}</div>
-      </div>
-    </div>
-
     <div class="sp-pruef-box">
       <div class="sp-pruef-head">
         <h5>📝 Prüfung</h5>
@@ -11183,6 +11398,107 @@ function notizenNachWoche(mods, nurModul){
       .sort((a,b)=>a.modul.text.localeCompare(b.modul.text))}));
 }
 
+/* ---------------- UNI: PRUEFUNGEN ----------------
+   Alle Pruefungstermine auf einen Blick. Keine eigene Liste: die Termine
+   haengen am Modul (Form, Datum, Zeit, Raum) - hier werden sie nur
+   eingesammelt und nach Zeit sortiert.
+
+   Frueher gab es dafuer einen Bereich mit einer zweiten Liste. Wer dort
+   eine Pruefung eintrug, hatte sie doppelt: einmal frei getippt, einmal
+   am Modul. Das kann nur auseinanderlaufen.
+
+   Gruppen nach Naehe statt nach Datum am Stueck: was diese Woche ist,
+   liest man anders als was im Februar ansteht. */
+function pruefGruppen(mods){
+  const heute = isoToday();
+  const in7 = new Date(); in7.setHours(12,0,0,0); in7.setDate(in7.getDate()+7);
+  const in30 = new Date(); in30.setHours(12,0,0,0); in30.setDate(in30.getDate()+30);
+  const g = {bald:[], monat:[], spaeter:[], ohne:[], vorbei:[]};
+  mods.forEach(m=>{
+    if(!m.pruefdatum){
+      /* Ohne Termin zeigen wir nur, was noch nicht bestanden ist -
+         fertige Module ohne eingetragenes Datum sind kein Problem. */
+      if(m.status !== 'bestanden') g.ohne.push(m);
+      return;
+    }
+    if(m.pruefdatum < heute || m.status === 'bestanden'){ g.vorbei.push(m); return; }
+    if(m.pruefdatum <= isoLocal(in7))  { g.bald.push(m); return; }
+    if(m.pruefdatum <= isoLocal(in30)) { g.monat.push(m); return; }
+    g.spaeter.push(m);
+  });
+  const nachDatum = (a,b)=>String(a.pruefdatum||'').localeCompare(String(b.pruefdatum||''));
+  g.bald.sort(nachDatum); g.monat.sort(nachDatum); g.spaeter.sort(nachDatum);
+  g.vorbei.sort((a,b)=>nachDatum(b,a));
+  g.ohne.sort((a,b)=>(semesterNummer(a.semester)||99)-(semesterNummer(b.semester)||99));
+  return g;
+}
+
+function renderPruefPlan(c, def){
+  const mods = uniModule();
+  const g = pruefGruppen(mods);
+  const anstehend = g.bald.length + g.monat.length + g.spaeter.length;
+
+  const zeile = (m, zeigeDatum)=>{
+    const ps = pruefStatus(m);
+    const tage = m.pruefdatum ? daysUntil(m.pruefdatum) : null;
+    return `<div class="pp-zeile" data-ppmod="${m.id}">
+      <span class="pp-name">${escapeHtml(m.text)}</span>
+      <span class="pp-sem">${escapeHtml(m.semester||'')}</span>
+      ${zeigeDatum && m.pruefdatum ? `<span class="pp-datum">${fmtDay(m.pruefdatum)}${
+        m.pruefzeit ? ', '+escapeHtml(m.pruefzeit) : ''}</span>` : ''}
+      ${m.pruefform ? `<span class="pp-form">${escapeHtml(m.pruefform)}</span>` : ''}
+      ${m.pruefraum ? `<span class="pp-raum">${escapeHtml(m.pruefraum)}</span>` : ''}
+      ${zeigeDatum && tage !== null && tage >= 0
+        ? `<span class="pp-tage">${tage === 0 ? 'heute' : 'in '+tage+' T'}</span>` : ''}
+    </div>`;
+  };
+
+  const block = (titel, hinweis, liste, zeigeDatum, klasse)=>{
+    if(!liste.length) return '';
+    return `<section class="pp-block ${klasse||''}">
+      <div class="pp-block-kopf">
+        <h4>${titel}</h4>
+        <span>${hinweis}</span>
+      </div>
+      ${liste.map(m=>zeile(m, zeigeDatum !== false)).join('')}
+    </section>`;
+  };
+
+  c.innerHTML = renderNodeHead(def,
+    anstehend ? `${anstehend} Termin(e) stehen an` : 'noch kein Termin eingetragen') + `
+    ${!anstehend && !g.ohne.length && !g.vorbei.length ? `<div class="uni-hint">
+      Noch nichts hier. Die Termine tr\u00e4gst du beim Modul ein \u2013 unter
+      \u201eModule\u201c das Fach aufklappen, dann stehen sie hier.</div>` : ''}
+    ${block('Diese Woche', 'in den n\u00e4chsten 7 Tagen', g.bald, true, 'bald')}
+    ${block('N\u00e4chste Wochen', 'in den n\u00e4chsten 30 Tagen', g.monat, true, 'monat')}
+    ${block('Sp\u00e4ter', 'weiter weg', g.spaeter, true, '')}
+    ${block('Ohne Termin', 'steht noch nicht fest', g.ohne, false, 'ohne')}
+    ${block('Vorbei', 'gewesen oder bestanden', g.vorbei, true, 'vorbei')}
+    ${anstehend || g.ohne.length ? `<div class="uni-hint" style="margin-top:18px;">
+      Termine \u00e4nderst du beim Modul. Ein Tipp auf eine Zeile bringt dich hin.
+    </div>` : ''}
+  `;
+
+  /* Aus der Uebersicht ins Modul springen - dort wird geaendert. */
+  c.querySelectorAll('[data-ppmod]').forEach(el=>el.addEventListener('click',()=>{
+    modOffen = {}; modOffen[el.dataset.ppmod] = true;
+    const m = mods.find(x=>x.id===el.dataset.ppmod);
+    const mz = data.nodes['uni:module'];
+    if(m && mz){
+      if(!mz.zu) mz.zu = {};
+      mz.zu[m.semester || 'Ohne Semester'] = false;   /* Semester aufklappen */
+    }
+    data.activeId = 'uni:module';
+    showDetailMobile = true;
+    renderAll();
+    /* Zum aufgeklappten Modul scrollen, sonst sucht man es in der Liste. */
+    setTimeout(()=>{
+      const ziel = document.querySelector('.modrow.auf');
+      if(ziel) ziel.scrollIntoView({block:'center', behavior:'smooth'});
+    }, 50);
+  }));
+}
+
 function renderModNotizen(c, def){
   const mods = uniModule();
   const z = data.nodes[def.nodeId] || {};
@@ -11366,6 +11682,7 @@ function renderUniRahmen(c, def){
           </span>
         </div>`).join('')}
     </div>
+    ${uniLinkKasten(['moodle','mail'], 'Schnell hin')}
     <div class="uni-hint rh-hinweis">
       Das sind die Rahmentermine der Hochschule, keine einzelnen Prüfungstermine.
       Sobald du deine echten Termine hast, trägst du sie unter
