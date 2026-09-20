@@ -2008,6 +2008,53 @@ tr.row-off .tt-num{text-decoration:line-through;}
   color:var(--uni);min-width:44px;text-align:right;}
 .rh-hinweis{margin-top:16px;}
 
+/* ---- Uni: Modul-Notizen nach Woche ---- */
+.mnz-neu{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--card);
+  border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px;}
+.mnz-neu select{flex:1 1 180px;min-width:150px;font-family:inherit;font-size:0.85rem;
+  color:var(--ink);background:var(--bg);border:1px solid var(--line);
+  border-radius:7px;padding:7px 9px;}
+.mnz-neu input[type=text]{flex:2 1 220px;min-width:150px;font-family:inherit;
+  font-size:0.92rem;color:var(--ink);border:none;border-bottom:1.5px solid var(--line);
+  background:transparent;padding:6px 2px;outline:none;}
+.mnz-neu input[type=text]:focus{border-bottom-color:var(--uni);}
+.mnz-neu input[type=date]{font-family:inherit;font-size:0.85rem;color:var(--ink-soft);
+  border:1px solid var(--line);border-radius:7px;background:transparent;padding:6px 8px;}
+.mnz-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.mnz-chip{font-family:inherit;font-size:0.76rem;color:var(--ink-soft);cursor:pointer;
+  background:none;border:1px solid var(--line);border-radius:20px;padding:5px 12px;
+  max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mnz-chip:hover{border-color:var(--uni);color:var(--ink);}
+.mnz-chip.an{background:var(--uni);border-color:var(--uni);color:#fff;}
+.mnz-woche{background:var(--card);border:1px solid var(--line);border-radius:11px;
+  margin-bottom:11px;overflow:hidden;}
+.mnz-woche.neu{border-color:var(--uni);}
+.mnz-woche-kopf{display:flex;align-items:center;gap:10px;width:100%;padding:13px 15px;
+  background:none;border:none;color:inherit;cursor:pointer;text-align:left;font-family:inherit;}
+.mnz-klapp{font-size:0.72rem;color:var(--ink-soft);flex-shrink:0;}
+.mnz-woche-titel{flex:1;font-family:'Fraunces',serif;font-size:0.98rem;color:var(--ink);}
+.mnz-woche.neu .mnz-woche-titel{color:var(--uni);}
+.mnz-woche-meta{font-family:'IBM Plex Mono',monospace;font-size:0.66rem;
+  color:var(--ink-soft);text-align:right;}
+.mnz-woche-body{padding:0 15px 13px;}
+.mnz-woche.zu .mnz-woche-body{display:none;}
+.mnz-modul{padding:11px 0;border-top:1px solid var(--line-soft);}
+.mnz-woche-body .mnz-modul:first-child{border-top:none;padding-top:2px;}
+.mnz-modul-kopf{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:5px;}
+.mnz-modul-kopf h5{margin:0;font-family:'Fraunces',serif;font-size:0.9rem;color:var(--uni);}
+.mnz-modul-kopf span{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;
+  color:var(--ink-soft);}
+.mnz-tag{margin-left:2px;padding-left:11px;border-left:2px solid var(--line-soft);
+  margin-bottom:7px;}
+.mnz-tag:last-child{margin-bottom:0;}
+.mnz-tag-datum{font-family:'IBM Plex Mono',monospace;font-size:0.64rem;
+  color:var(--ink-soft);margin-bottom:1px;}
+@media(max-width:720px){
+  .mnz-neu select,.mnz-neu input[type=text]{flex:1 1 100%;}
+  .mnz-neu input[type=date]{flex:1;}
+  .mnz-woche-meta{font-size:0.6rem;}
+}
+
 /* ---- Uni: eingebettete PDFs ---- */
 .pdf-box{background:var(--card);border:1px solid var(--line);border-radius:11px;
   padding:14px 15px;margin-top:20px;}
@@ -2938,6 +2985,11 @@ const STRUKTUR = {
     {key:'pruefungen', title:'Prüfungstermine', icon:'📝', type:'exams'},
     {key:'lernplan',   title:'Lernplan',        icon:'📚', type:'study'},
     {key:'module',     title:'Module & Noten',  icon:'🎓', type:'modules'},
+    /* Notizen je Modul, nach Woche gebuendelt. Eigener Bereich, weil Leon
+       sie so sucht: "was lief diese Woche in Mathe". Im Lernplan lagen sie
+       zwar auch, aber unten in der Detailansicht - dort findet man sie
+       nicht, wenn man sie sucht. */
+    {key:'modnotiz',   title:'Modul-Notizen',   icon:'📝', type:'modnotiz'},
     {key:'kosten',     title:'Semesterkosten',  icon:'🧾', type:'unikosten'},
     /* Schnellnotizen: was in der Vorlesung oder zwischendurch anfaellt und
        sonst nirgends hingehoert. Nach Tag gruppiert, weil Leon spaeter
@@ -3300,6 +3352,9 @@ function emptyNodeContent(type){
   /* Semesterrahmen: die Daten stehen fest in UNI_RAHMEN, hier liegen nur
      Leons eigene Notizen zu den Bloecken. */
   if(type==='unirahmen')  return {notiz: {}};
+  /* Modul-Notizen: die Notizen selbst haengen am Modul (uni:module), hier
+     liegt nur, welches Semester und welche Woche gerade offen sind. */
+  if(type==='modnotiz')   return {};
   return {};
 }
 
@@ -4995,6 +5050,13 @@ function nodeOpenCount(nodeId, def){
       sum + (t.items||[]).filter(i=>!i.done).length, 0);
   }
   if(def.type==='unirahmen') return 0;   /* Rahmen zeigt Zeitraeume, nichts zum Abhaken */
+  if(def.type==='modnotiz'){
+    /* offene Punkte ueber alle Module */
+    const mod = data.nodes['uni:module'];
+    if(!mod || !Array.isArray(mod.items)) return 0;
+    return mod.items.reduce((s,m)=>s + (m.notizen||[]).reduce(
+      (x,t)=>x + (t.items||[]).filter(i=>!i.done).length, 0), 0);
+  }
   if(def.type==='timetable') return 0;   /* Stundenplan zeigt Anzahl Termine separat */
   if(def.type==='modules')   return 0;   /* Module zeigen Credits */
   if(def.type==='exams')     return (n.items||[]).filter(i=>i.status==='offen').length;
@@ -5596,6 +5658,7 @@ function renderMain(){
   else if(def.type==='cures')     renderCures(c, def);
   else if(def.type==='notizen')   renderNotizen(c, def);
   else if(def.type==='unirahmen') renderUniRahmen(c, def);
+  else if(def.type==='modnotiz')  renderModNotizen(c, def);
 }
 
 function renderBereichOverview(c, key){
@@ -7260,6 +7323,7 @@ const APP_BEREICHE = [
     {t:'Prüfungstermine', d:'mit Datum'},
     {t:'Lernplan',        d:'Themen, Tipps und Notizen je Modul', neu:true},
     {t:'Module & Noten',  d:'36 Module, 180 CP, Wahlpflicht, Schnitt'},
+    {t:'Modul-Notizen',   d:'nach Woche gebündelt, Filter je Modul', neu:true},
     {t:'Semesterkosten',  d:'je Semester, Beitrag und Online-Module'},
     {t:'Schnellnotizen',  d:'nach Tag gruppiert, Datum frei wählbar', neu:true}
   ]},
@@ -7289,6 +7353,8 @@ const APP_BEREICHE = [
 
 /* Was sich wann geaendert hat - neueste zuerst. Beim Weiterbauen ergaenzen. */
 const APP_VERLAUF = [
+  {v:58, d:'20.09.2026', t:'Modul-Notizen als eigener Bereich',
+   b:'Notizen je Modul, nach Woche gebuendelt statt nach Tag. Die laufende Woche steht offen, mit Filter auf ein einzelnes Fach.'},
   {v:57, d:'20.09.2026', t:'PDFs der Hochschule in der App',
    b:'Jahreskalender und Rahmentermine liegen jetzt in der Datei selbst – sie gehen auch ohne Internet auf und lassen sich speichern.'},
   {v:56, d:'20.09.2026', t:'Uni zum Semesterstart',
@@ -11055,6 +11121,203 @@ function rahmenLaeuft(b, heute){
 function rahmenTageBis(b, heute){
   if(heute >= b.von) return null;
   return Math.round((new Date(b.von+'T12:00:00') - new Date(heute+'T12:00:00')) / 86400000);
+}
+
+/* ---------------- UNI: MODUL-NOTIZEN ----------------
+   Notizen je Modul, gebuendelt nach Woche. Die Notizen selbst haengen am
+   Modul (uni:module) - dieser Bereich ist die Ansicht darauf, nicht ein
+   zweiter Speicherort. Dieselben Notizen stehen auch im Lernplan unten
+   am Modul; wer sie dort eintraegt, sieht sie hier.
+
+   Warum Wochen und nicht Tage: in der Uni denkt man in Wochen. Einzelne
+   Tage waeren zu fein - nach einem Semester haette man 90 Tagesblocks.
+
+   Keine KW-Nummern: die Woche heisst "21.-27. September". Eine Nummer
+   muesste man erst nachschlagen.
+
+   Aufbau: Woche -> Modul -> Notizen. Die Woche ist der Oberpunkt, weil
+   die Frage nach der laufenden Woche haeufiger ist als die nach einem
+   einzelnen Fach - dafuer gibt es den Filter oben. */
+function wochenMontag(datum){
+  const d = new Date(datum + 'T12:00:00');
+  const wt = (d.getDay() + 6) % 7;      /* Montag = 0 */
+  d.setDate(d.getDate() - wt);
+  return isoLocal(d);
+}
+
+function wochenLabel(montag){
+  const a = new Date(montag + 'T12:00:00');
+  const b = new Date(montag + 'T12:00:00');
+  b.setDate(b.getDate() + 6);
+  const heuteMo = wochenMontag(isoToday());
+  if(montag === heuteMo) return 'Diese Woche';
+  const vorMo = new Date(heuteMo + 'T12:00:00');
+  vorMo.setDate(vorMo.getDate() - 7);
+  if(montag === isoLocal(vorMo)) return 'Letzte Woche';
+  const tag = d=>d.getDate();
+  const mon = d=>d.toLocaleDateString('de-DE',{month:'short'});
+  return a.getMonth() === b.getMonth()
+    ? `${tag(a)}.\u2013${tag(b)}. ${mon(b)}`
+    : `${tag(a)}. ${mon(a)} \u2013 ${tag(b)}. ${mon(b)}`;
+}
+
+/* Alle Notizen nach Woche gebuendelt, neueste Woche zuerst. */
+function notizenNachWoche(mods, nurModul){
+  const wochen = {};
+  mods.forEach(m=>{
+    if(nurModul && m.id !== nurModul) return;
+    (m.notizen||[]).forEach(t=>{
+      if(!t.items || !t.items.length) return;
+      const mo = wochenMontag(t.date);
+      if(!wochen[mo]) wochen[mo] = {montag:mo, module:{}, anzahl:0};
+      const w = wochen[mo];
+      if(!w.module[m.id]) w.module[m.id] = {modul:m, tage:[], anzahl:0};
+      w.module[m.id].tage.push(t);
+      w.module[m.id].anzahl += t.items.length;
+      w.anzahl += t.items.length;
+    });
+  });
+  return Object.values(wochen)
+    .sort((a,b)=>b.montag.localeCompare(a.montag))
+    .map(w=>({...w, module: Object.values(w.module)
+      .sort((a,b)=>a.modul.text.localeCompare(b.modul.text))}));
+}
+
+function renderModNotizen(c, def){
+  const mods = uniModule();
+  const z = data.nodes[def.nodeId] || {};
+  /* Nur Module mit Notizen stehen im Filter - eine Auswahl mit 36
+     Eintraegen, von denen 33 leer sind, hilft niemandem. */
+  const mitNotiz = mods.filter(m=>(m.notizen||[]).some(t=>(t.items||[]).length));
+  const filter = z.filter && mitNotiz.some(m=>m.id===z.filter) ? z.filter : null;
+  const wochen = notizenNachWoche(mods, filter);
+  const gesamt = wochen.reduce((s,w)=>s+w.anzahl, 0);
+
+  /* Fuers Eintragen: erst das Modul waehlen. Vorbelegt ist das zuletzt
+     benutzte - meistens schreibt man mehrere Notizen zum selben Fach. */
+  const semMods = {};
+  mods.forEach(m=>{
+    const nr = semesterNummer(m.semester) || 0;
+    (semMods[nr] = semMods[nr] || []).push(m);
+  });
+  const letztes = z.letztesModul && mods.some(m=>m.id===z.letztesModul)
+    ? z.letztesModul : (mods[0] ? mods[0].id : '');
+
+  c.innerHTML = renderNodeHead(def,
+    gesamt ? `${gesamt} Notiz(en) \u00b7 ${wochen.length} Woche(n)` : 'noch nichts notiert') + `
+    <div class="mnz-neu">
+      <select id="mnz-modul" aria-label="Modul">
+        ${Object.keys(semMods).sort().map(nr=>`
+          <optgroup label="${nr>0 ? nr+'. Semester' : 'Ohne Semester'}">
+            ${semMods[nr].map(m=>`<option value="${m.id}"${
+              m.id===letztes?' selected':''}>${escapeHtml(m.text)}</option>`).join('')}
+          </optgroup>`).join('')}
+      </select>
+      <input type="text" id="mnz-text" placeholder="Was war wichtig?" maxlength="200">
+      <input type="date" id="mnz-datum" value="${isoToday()}" aria-label="Datum">
+      <button class="ib-btn primary" id="mnz-add">Notieren</button>
+    </div>
+    ${mitNotiz.length > 1 ? `<div class="mnz-filter">
+      <button class="mnz-chip${!filter?' an':''}" data-mnzfilter="">Alle Module</button>
+      ${mitNotiz.map(m=>`<button class="mnz-chip${filter===m.id?' an':''}"
+        data-mnzfilter="${m.id}">${escapeHtml(m.text)}</button>`).join('')}
+    </div>` : ''}
+    <div id="mnz-wochen"></div>
+  `;
+
+  const neu = ()=>{ persist(); renderModNotizen(c, def); renderSidebar(); };
+
+  c.querySelectorAll('[data-mnzfilter]').forEach(b=>b.addEventListener('click',()=>{
+    z.filter = b.dataset.mnzfilter || null;
+    data.nodes[def.nodeId] = z;
+    neu();
+  }));
+
+  function anlegen(){
+    const mid = document.getElementById('mnz-modul').value;
+    const txt = document.getElementById('mnz-text').value.trim();
+    const dat = document.getElementById('mnz-datum').value || isoToday();
+    if(!txt || !mid) return;
+    const m = mods.find(x=>x.id===mid); if(!m) return;
+    if(!Array.isArray(m.notizen)) m.notizen = [];
+    let tag = m.notizen.find(t=>t.date===dat);
+    if(!tag){
+      tag = {date:dat, items:[], zu:false};
+      m.notizen.push(tag);
+      m.notizen.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+    }
+    tag.items.unshift({id:uid(), text:txt, done:false});
+    z.letztesModul = mid;
+    data.nodes[def.nodeId] = z;
+    neu();
+  }
+  document.getElementById('mnz-add').addEventListener('click', anlegen);
+  document.getElementById('mnz-text').addEventListener('keydown',(e)=>{
+    if(e.key==='Enter') anlegen();
+  });
+
+  const wrap = document.getElementById('mnz-wochen');
+  if(!wochen.length){
+    wrap.innerHTML = `<div class="empty-mini">${
+      filter ? 'Zu diesem Modul ist noch nichts notiert.'
+             : 'Noch nichts notiert. W\u00e4hl oben ein Modul und schreib los \u2013 das Datum steht schon auf heute.'}</div>`;
+    return;
+  }
+
+  if(!z.zu || typeof z.zu !== 'object') z.zu = {};
+  wochen.forEach((w, i)=>{
+    /* Die neueste Woche steht offen, aeltere zugeklappt - nach einem
+       Semester will man nicht 15 Wochen am Stueck scrollen. */
+    const zu = z.zu[w.montag] !== undefined ? !!z.zu[w.montag] : i > 0;
+    const sek = document.createElement('section');
+    sek.className = 'mnz-woche' + (zu?' zu':'') + (i===0?' neu':'');
+    sek.innerHTML = `
+      <button class="mnz-woche-kopf" data-mnzzu="${w.montag}">
+        <span class="mnz-klapp">${zu?'\u25b8':'\u25be'}</span>
+        <span class="mnz-woche-titel">${wochenLabel(w.montag)}</span>
+        <span class="mnz-woche-meta">${w.module.length} Modul(e) \u00b7 ${w.anzahl} Notiz(en)</span>
+      </button>
+      <div class="mnz-woche-body"></div>
+    `;
+    const body = sek.querySelector('.mnz-woche-body');
+    w.module.forEach(e=>{
+      const kasten = document.createElement('div');
+      kasten.className = 'mnz-modul';
+      kasten.innerHTML = `
+        <div class="mnz-modul-kopf">
+          <h5>${escapeHtml(e.modul.text)}</h5>
+          <span>${escapeHtml(e.modul.semester||'')}</span>
+        </div>
+      `;
+      /* Innerhalb des Moduls nach Tag, neueste zuerst - damit man sieht,
+         ob etwas von Montag oder Freitag stammt. */
+      e.tage.slice().sort((a,b)=>b.date.localeCompare(a.date)).forEach(t=>{
+        const tagBox = document.createElement('div');
+        tagBox.className = 'mnz-tag';
+        tagBox.innerHTML = `<div class="mnz-tag-datum">${fmtDay(t.date)}</div>
+          <ul class="mini-list"></ul>`;
+        const ul = tagBox.querySelector('ul');
+        renderMiniList(ul, t.items);
+        bindMiniList(ul, t.items, ()=>{
+          /* Leert sich der Tag, verschwindet er - ein leeres Datum ohne
+             Inhalt ist nur Rauschen. */
+          if(!t.items.length){
+            e.modul.notizen = e.modul.notizen.filter(x=>x.date!==t.date);
+            neu(); return;
+          }
+          renderMiniList(ul, t.items); persist(); renderSidebar();
+        });
+        kasten.appendChild(tagBox);
+      });
+      body.appendChild(kasten);
+    });
+    sek.querySelector('[data-mnzzu]').addEventListener('click',()=>{
+      z.zu[w.montag] = !zu;
+      data.nodes[def.nodeId] = z;
+      neu();
+    });
+    wrap.appendChild(sek);
+  });
 }
 
 function renderUniRahmen(c, def){
