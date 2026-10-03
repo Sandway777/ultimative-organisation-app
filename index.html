@@ -5250,6 +5250,7 @@ function migrateData(){
   uniBereicheZusammen();
   kurenUebernehmen();
   kurenDublettenWeg();
+  kurTeeloeffelKorrektur();
   missionenUebernehmen();
   jahreszieleUebernehmen();
   schwaechenUebernehmen();
@@ -7712,7 +7713,7 @@ const APP_BEREICHE = [
   ]},
   {saeule:'Sport und Gesundheit', farbe:'var(--sport)', punkte:[
     {t:'Trainingsübersicht', d:'ein Wochenplan je Monat'},
-    {t:'Kuren',              d:'Ablauf einrichten, dann täglich abhaken'}
+    {t:'Kuren',              d:'mit festem Ende oder solange der Vorrat reicht', neu:true}
   ]},
   {saeule:'Übergreifend', farbe:'var(--idea)', punkte:[
     {t:'Heute',           d:'was quer aus allen Bereichen ansteht', neu:true},
@@ -7736,6 +7737,8 @@ const APP_BEREICHE = [
 
 /* Was sich wann geaendert hat - neueste zuerst. Beim Weiterbauen ergaenzen. */
 const APP_VERLAUF = [
+  {v:63, d:'03.10.2026', t:'Doppelte Kuren zusammengelegt',
+   b:'Durch den Cloud-Abgleich standen Kuren zweimal da, zwei davon fälschlich als abgeschlossen. Die App legt gleichnamige jetzt zusammen – abgehakte Tage bleiben erhalten.'},
   {v:62, d:'03.10.2026', t:'Kuren ohne festes Ende',
    b:'Manche Kuren laufen, solange der Vorrat reicht – dafür gibt es jetzt den Knopf „Packung leer“ statt eines erfundenen Enddatums. Schwarzkümmelöl, Zeolith und Chlorella sind eingetragen.'},
   {v:61, d:'03.10.2026', t:'Termine statt nur Prüfungen',
@@ -9296,6 +9299,31 @@ function uniBereicheZusammen(){
    Dass seine laufenden Kuren als "abgeschlossen" galten, hat denselben
    Grund: die alte Fassung hatte ein Enddatum, das inzwischen vorbei ist.
    Beim Zusammenlegen wird daraus wieder eine offene Kur. */
+/* Schwarzkuemmeloel: Leon nimmt einen Teeloeffel, nicht einen Essloeffel.
+   Die Uebernahme war schon gelaufen, der falsche Wert steht also in den
+   Daten - hier wird er nachgezogen. Nur, wenn dort noch der alte Wert
+   steht: hat Leon selbst etwas eingetragen, bleibt das stehen. */
+const KUR_TEELOEFFEL_KEY = 'kur-schwarzkuemmel-teeloeffel';
+function kurTeeloeffelKorrektur(){
+  if(data.uebernommen && data.uebernommen[KUR_TEELOEFFEL_KEY]) return 0;
+  const n = data.nodes['sport:kuren'];
+  let geaendert = 0;
+  if(n && Array.isArray(n.cures)){
+    n.cures.forEach(k=>{
+      if(String(k.title||'').toLowerCase().indexOf('schwarzk') < 0) return;
+      (k.items||[]).forEach(it=>{
+        if(String(it.dose||'').trim().toLowerCase() === '1 essl\u00f6ffel'){
+          it.dose = '1 Teel\u00f6ffel';
+          geaendert++;
+        }
+      });
+    });
+  }
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[KUR_TEELOEFFEL_KEY] = true;
+  return geaendert;
+}
+
 const KUREN_DUBLETTEN_KEY = 'kuren-dubletten-2026-10';
 function kurenDublettenWeg(){
   if(data.uebernommen && data.uebernommen[KUREN_DUBLETTEN_KEY]) return 0;
@@ -9369,7 +9397,7 @@ function kurenUebernehmen(){
       title: 'Schwarzk\u00fcmmel\u00f6l',
       offen: true, dateFrom: heute, dateTo: '', reichtBis: '',
       items: [
-        {id:uid(), text:'Schwarzk\u00fcmmel\u00f6l', dose:'1 Essl\u00f6ffel',
+        {id:uid(), text:'Schwarzk\u00fcmmel\u00f6l', dose:'1 Teel\u00f6ffel',
          zeiten:['morgens'], days:[]}
       ]
     },
