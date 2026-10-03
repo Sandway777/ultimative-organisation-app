@@ -5249,6 +5249,7 @@ function migrateData(){
   vorDemStartRaus();
   uniBereicheZusammen();
   kurenUebernehmen();
+  kurenDublettenWeg();
   missionenUebernehmen();
   jahreszieleUebernehmen();
   schwaechenUebernehmen();
@@ -9283,6 +9284,74 @@ function uniBereicheZusammen(){
    acht. Zusammen also 13 in der ersten Woche (= 91) und danach 20 taeglich.
    Die restlichen 1159 reichen 58 Tage - zusammen rund 65 Tage ab Start.
    Das Datum steht als Schaetzung drin, beendet wird trotzdem von Hand. */
+/* Aufraeumen nach dem Zusammenlegen: Auf Leons Geraet lagen schon Kuren
+   mit denselben Namen, als die Uebernahme lief. Der Dublettenschutz dort
+   greift nur beim Anlegen - war die Kur vorher schon da und kam der neue
+   Stand ueber die Cloud dazu, stehen zwei nebeneinander.
+
+   Zusammengelegt wird nach Namen: die abgehakten Tage aller Dubletten
+   wandern in eine Kur, der frueheste Starttag gewinnt. Nichts geht
+   verloren, auch nicht die Haken aus der aelteren Fassung.
+
+   Dass seine laufenden Kuren als "abgeschlossen" galten, hat denselben
+   Grund: die alte Fassung hatte ein Enddatum, das inzwischen vorbei ist.
+   Beim Zusammenlegen wird daraus wieder eine offene Kur. */
+const KUREN_DUBLETTEN_KEY = 'kuren-dubletten-2026-10';
+function kurenDublettenWeg(){
+  if(data.uebernommen && data.uebernommen[KUREN_DUBLETTEN_KEY]) return 0;
+  const n = data.nodes['sport:kuren'];
+  if(!n || !Array.isArray(n.cures)) return 0;
+
+  /* Nur Leons drei Kuren anfassen - alles andere bleibt, wie es ist. */
+  const betrifft = ['schwarzk\u00fcmmel\u00f6l', 'zeolith', 'chlorella'];
+  const nachName = {};
+  let zusammengelegt = 0;
+
+  n.cures.forEach(k=>{
+    const name = String(k.title||'').trim().toLowerCase();
+    if(!betrifft.includes(name)) return;
+    if(!nachName[name]){ nachName[name] = []; }
+    nachName[name].push(k);
+  });
+
+  Object.keys(nachName).forEach(name=>{
+    const gruppe = nachName[name];
+    if(gruppe.length < 2) return;
+    /* Die Kur mit den meisten Anwendungen fuehrt - sie ist die
+       vollstaendigere. Bei Gleichstand die zuerst angelegte. */
+    gruppe.sort((a,b)=>(b.items||[]).length - (a.items||[]).length);
+    const haupt = gruppe[0];
+    gruppe.slice(1).forEach(alt=>{
+      /* Haken uebernehmen - sie haengen am Datum, nicht an der Kur-Id,
+         darum passen sie weiter. */
+      Object.keys(alt.done||{}).forEach(ds=>{
+        if(!haupt.done) haupt.done = {};
+        haupt.done[ds] = Object.assign({}, alt.done[ds], haupt.done[ds] || {});
+      });
+      /* Frueherer Start gewinnt. */
+      if(alt.dateFrom && (!haupt.dateFrom || alt.dateFrom < haupt.dateFrom)){
+        haupt.dateFrom = alt.dateFrom;
+      }
+      n.cures = n.cures.filter(x=>x.id !== alt.id);
+      zusammengelegt++;
+    });
+  });
+
+  /* Leons drei laufen ohne Ende - ein altes Enddatum macht sie sonst
+     faelschlich "abgeschlossen". */
+  n.cures.forEach(k=>{
+    const name = String(k.title||'').trim().toLowerCase();
+    if(!betrifft.includes(name)) return;
+    if(k.beendet) return;        /* von Hand beendet bleibt beendet */
+    k.offen = true;
+    k.dateTo = '';
+  });
+
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[KUREN_DUBLETTEN_KEY] = true;
+  return zusammengelegt;
+}
+
 const KUREN_KEY = 'kuren-oktober-2026';
 function kurenUebernehmen(){
   if(data.uebernommen && data.uebernommen[KUREN_KEY]) return 0;
