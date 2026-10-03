@@ -2038,12 +2038,33 @@ tr.row-off .tt-num{text-decoration:line-through;}
   .wp-tag-neu input{border-top:none;}
 }
 
+/* ---- Uni: Termine ---- */
+.pp-tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.pp-tab{font-family:inherit;font-size:0.8rem;color:var(--ink-soft);cursor:pointer;
+  background:none;border:1px solid var(--line);border-radius:20px;padding:6px 14px;}
+.pp-tab:hover{border-color:var(--uni);color:var(--ink);}
+.pp-tab.an{background:var(--uni);border-color:var(--uni);color:#fff;}
+/* display:flex der Eingabezeile sticht das hidden-Attribut aus - ohne
+   diese Regel stuenden beide Formulare untereinander. */
+.pp-neu[hidden]{display:none;}
+.pp-icon{font-size:0.85rem;flex-shrink:0;}
+.pp-zeile.frei .pp-name{color:var(--ink);}
+.pp-tage.eng{color:var(--danger);background:rgba(224,112,140,.13);}
+.pp-fertig{border:1px solid var(--line);background:none;color:var(--ink-soft);
+  border-radius:6px;width:26px;height:24px;cursor:pointer;font-size:0.8rem;
+  line-height:1;flex-shrink:0;padding:0;}
+.pp-fertig:hover{border-color:var(--sport);color:var(--sport);}
+.pp-link{background:none;border:none;color:var(--uni);cursor:pointer;
+  font-family:inherit;font-size:inherit;text-decoration:underline;padding:0;}
+
 /* ---- Uni: Pruefungstermin eintragen ---- */
 .pp-neu{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--card);
   border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:16px;}
 .pp-neu select,.pp-neu input{font-family:inherit;font-size:0.85rem;color:var(--ink);
   background:var(--field);border:1px solid var(--line);border-radius:7px;padding:7px 9px;}
 .pp-neu #pp-modul{flex:1 1 220px;min-width:170px;}
+.pp-neu #pt-titel{flex:2 1 220px;min-width:170px;}
+.pp-neu #pt-was{flex:1 1 150px;min-width:120px;}
 .pp-neu #pp-form{flex:0 1 130px;}
 .pp-neu #pp-raum{flex:0 1 100px;min-width:80px;}
 .pp-neu select:focus,.pp-neu input:focus{border-color:var(--uni);outline:none;}
@@ -2480,6 +2501,10 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .beispiel-her.confirm{border-color:var(--idea);color:var(--idea);border-style:solid;}
 
 /* ---- Cloud-Sync ---- */
+.cloud-warnung{background:rgba(224,112,140,.1);border:1px solid var(--danger);
+  border-radius:9px;padding:12px 14px;margin-bottom:16px;
+  font-size:0.84rem;line-height:1.55;color:var(--ink);}
+.cloud-warnung strong{color:var(--danger);}
 .cloud-status{width:100%;background:none;border:1px solid var(--sidebar-line);border-radius:7px;
   color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;font-size:0.7rem;
   padding:7px 10px;margin-bottom:8px;cursor:pointer;text-align:left;letter-spacing:.02em;}
@@ -2847,13 +2872,15 @@ tr.row-off .tt-num{text-decoration:line-through;}
     <p class="cloud-text">Damit stehen deine Notizen auf Handy und Rechner gleich.
       Gespeichert wird in einer <b>privaten</b> Datei in deinem GitHub-Konto – kostenlos.</p>
 
+    <div class="cloud-warnung" id="cloud-warnung" hidden></div>
+
     <div class="cloud-schritt">
       <div class="cloud-schritt-kopf"><span class="kur-schritt-nr">1</span>
         <span class="kur-schritt-titel">Zugangs-Schlüssel holen</span></div>
       <p class="cloud-text">Einmalig: Link öffnen, ganz unten <b>„Generate token"</b> klicken,
         den Schlüssel kopieren. Alles ist schon voreingestellt.</p>
       <a class="ib-btn primary cloud-link" id="cloud-tokenlink" target="_blank" rel="noopener"
-         href="https://github.com/settings/tokens/new?scopes=gist&description=Notizblock%20Sync">
+         href="https://github.com/settings/tokens/new?scopes=gist&description=Notizblock%20Sync&default_expires_at=none">
         Schlüssel bei GitHub erstellen →</a>
     </div>
 
@@ -2967,6 +2994,14 @@ function cloudProblemMelden(status){
   if(k) k.className = 'kopf-cloud aus';
   const el = document.getElementById('cloud-status');
   if(el){ el.textContent = '⚠ Cloud getrennt'; el.className = 'cloud-status err'; }
+  /* Grund merken, damit die Maske ihn beim naechsten Oeffnen zeigt. Eine
+     Einblendung ist nach Sekunden weg - der Grund bleibt aber bestehen. */
+  try{
+    const c = cloudCfg();
+    c.problem = status === 401 ? 'schluessel' : 'datei';
+    c.problemZeit = new Date().toISOString();
+    cloudCfgSet(c);
+  }catch(e){}
   showSaveToast(status===401
     ? 'Zugangs-Schlüssel gilt nicht mehr – neu verbinden'
     : 'Cloud-Datei nicht gefunden – neu verbinden', true);
@@ -3105,6 +3140,7 @@ async function cloudVerbinden(token){
     meld('Lege Cloud-Datei an …');
     gistId = await cloudGistAnlegen(token);
   }
+  /* Verbindung steht wieder - alter Fehlergrund ist damit erledigt. */
   cloudCfgSet({token, gistId, stand:new Date().toISOString()});
 
   if(neu){
@@ -3185,7 +3221,12 @@ const STRUKTUR = {
     /* Wochenplan: was bis wann zu erledigen ist, als Kalender. Anders als
        die Modul-Notizen (was war) blickt er nach vorne (was kommt). */
     {key:'wochenplan', title:'Wochenplan',      icon:'🗓️', type:'wochenplan'},
-    {key:'pruefplan',  title:'Prüfungen',       icon:'📋', type:'pruefplan'},
+    /* Hiess "Pruefungen" und zeigte nur die Termine an den Modulen. Alles
+       andere mit Datum - Buchrueckgabe, Abgabe, Anmeldefrist - hatte keinen
+       Ort. Statt eines zehnten Unterpunkts nimmt dieser Bereich beides auf:
+       die Frage ist dieselbe ("was kommt wann"), nur die Quelle ist eine
+       andere. */
+    {key:'pruefplan',  title:'Termine',         icon:'📋', type:'pruefplan'},
     {key:'kosten',     title:'Semesterkosten',  icon:'🧾', type:'unikosten'},
     /* Schnellnotizen: was in der Vorlesung oder zwischendurch anfaellt und
        sonst nirgends hingehoert. Nach Tag gruppiert, weil Leon spaeter
@@ -3593,9 +3634,9 @@ function emptyNodeContent(type){
   /* Modul-Notizen: die Notizen selbst haengen am Modul (uni:module), hier
      liegt nur, welches Semester und welche Woche gerade offen sind. */
   if(type==='modnotiz')   return {};
-  /* Pruefungen liest nur die Termine an den Modulen - eigener Inhalt
-     entsteht hier keiner. */
-  if(type==='pruefplan')  return {};
+  /* Pruefungstermine haengen an den Modulen; `termine` sind die freien
+     Eintraege, die zu keinem Modul gehoeren. */
+  if(type==='pruefplan')  return {termine: []};
   /* Links: die festen stehen in UNI_LINKS, hier nur eigene dazu. */
   if(type==='unilinks')   return {eigene: []};
   /* Wochenplan: wochen: {"YYYY-MM-DD" (Montag): {tage:{0..6:[...]}, notiz}} */
@@ -5028,6 +5069,8 @@ function migrateData(){
             if(typeof p.freiwillig!=='boolean') p.freiwillig = false;
           });
         });
+      } else if(def.type==='pruefplan'){
+        if(!Array.isArray(n.termine)) n.termine = [];
       } else if(def.type==='wochenplan'){
         if(!n.wochen || typeof n.wochen !== 'object') n.wochen = {};
         Object.values(n.wochen).forEach(w=>{
@@ -5309,12 +5352,14 @@ function nodeOpenCount(nodeId, def){
       s + (arr||[]).filter(x=>!x.done).length, 0);
   }
   if(def.type==='pruefplan'){
-    /* Pruefungen, die noch kommen und nicht bestanden sind. */
-    const mod = data.nodes['uni:module'];
-    if(!mod || !Array.isArray(mod.items)) return 0;
+    /* Was noch kommt: Pruefungen an den Modulen plus eigene Termine. */
     const heute = isoToday();
-    return mod.items.filter(m=>m.pruefdatum && m.pruefdatum >= heute
-      && m.status !== 'bestanden').length;
+    const mod = data.nodes['uni:module'];
+    const pr = (mod && Array.isArray(mod.items))
+      ? mod.items.filter(m=>m.pruefdatum && m.pruefdatum >= heute
+          && m.status !== 'bestanden').length : 0;
+    const frei = (n.termine||[]).filter(t=>!t.done && t.datum >= heute).length;
+    return pr + frei;
   }
   if(def.type==='modnotiz'){
     /* offene Punkte ueber alle Module */
@@ -7642,7 +7687,7 @@ const APP_BEREICHE = [
     {t:'Module',          d:'ein Fach aufklappen: Prüfung, Themen, Notizen', neu:true},
     {t:'Modul-Notizen',   d:'nach Woche gebündelt, Filter je Modul', neu:true},
     {t:'Wochenplan',      d:'sieben Tage als Tabelle, je Tag was ansteht', neu:true},
-    {t:'Prüfungen',       d:'Termin eintragen, alles nach Nähe sortiert', neu:true},
+    {t:'Termine',         d:'Prüfungen, Abgaben, Fristen – nach Nähe sortiert', neu:true},
     {t:'Links',           d:'Moodle, Hochschul-Mail, eigene', neu:true},
     {t:'Unterlagen',      d:'Jahreskalender und Rahmentermine als PDF', neu:true},
     {t:'Semesterkosten',  d:'je Semester, Beitrag und Online-Module'},
@@ -7674,6 +7719,8 @@ const APP_BEREICHE = [
 
 /* Was sich wann geaendert hat - neueste zuerst. Beim Weiterbauen ergaenzen. */
 const APP_VERLAUF = [
+  {v:61, d:'03.10.2026', t:'Termine statt nur Prüfungen',
+   b:'Alles mit Datum an einem Ort – Abgaben, Rückgaben, Fristen neben den Prüfungen. Dazu ein klarer Hinweis, wenn der Cloud-Schlüssel abgelaufen ist.'},
   {v:60, d:'20.09.2026', t:'Zurück-Knopf und Wochenplan',
    b:'Die App hat jetzt einen Weg zurück. Dazu ein Wochenplan als Tabelle, Prüfungstermine direkt eintragbar, Links an einem Ort und Modul-Notizen nach Woche statt Tag.'},
   {v:59, d:'20.09.2026', t:'Uni aufgeräumt',
@@ -8011,6 +8058,18 @@ function heuteSammeln(){
       if(!wann) return;
       const was = m.pruefform ? m.pruefform + ' ' + m.text : m.text;
       raus.push({wann, datum:m.pruefdatum, text:was, quelle:'Prüfung', icon:'📝',
+                 farbe:'var(--uni)', ziel:'uni:pruefplan'});
+    });
+  }
+
+  /* --- Uni: eigene Termine (Abgabe, Rueckgabe, Frist) --- */
+  const tz = data.nodes['uni:pruefplan'];
+  if(tz && Array.isArray(tz.termine)){
+    tz.termine.forEach(t=>{
+      if(t.done || !t.datum) return;
+      const wann = einordnen(t.datum);
+      if(!wann) return;
+      raus.push({wann, datum:t.datum, text:t.titel, quelle:'Termin', icon:'📌',
                  farbe:'var(--uni)', ziel:'uni:pruefplan'});
     });
   }
@@ -11630,22 +11689,71 @@ function pruefGruppen(mods){
   return g;
 }
 
+/* Alles mit Datum in eine Liste: Prüfungen hängen an den Modulen, freie
+   Termine (Buchrückgabe, Abgabe, Anmeldefrist) liegen im Bereich selbst.
+   Beide werden hier zu einer Sicht zusammengeführt - die Frage "was kommt
+   wann" unterscheidet nicht nach Herkunft. */
+function termineSammeln(mods, eigene){
+  const raus = [];
+  mods.forEach(m=>{
+    if(!m.pruefdatum || m.status === 'bestanden') return;
+    raus.push({art:'pruefung', id:m.id, modul:m,
+      titel:m.text, datum:m.pruefdatum, zeit:m.pruefzeit || '',
+      ort:m.pruefraum || '', zusatz:m.pruefform || '', sem:m.semester || ''});
+  });
+  (eigene||[]).forEach(t=>{
+    if(t.done) return;
+    raus.push({art:'frei', id:t.id, eintrag:t,
+      titel:t.titel, datum:t.datum, zeit:t.zeit || '',
+      ort:'', zusatz:t.was || '', sem:''});
+  });
+  return raus;
+}
+
+function terminGruppen(liste){
+  const heute = isoToday();
+  const in7  = new Date(); in7.setHours(12,0,0,0);  in7.setDate(in7.getDate()+7);
+  const in30 = new Date(); in30.setHours(12,0,0,0); in30.setDate(in30.getDate()+30);
+  const g = {bald:[], monat:[], spaeter:[], vorbei:[]};
+  liste.forEach(e=>{
+    if(e.datum < heute){ g.vorbei.push(e); return; }
+    if(e.datum <= isoLocal(in7)) { g.bald.push(e); return; }
+    if(e.datum <= isoLocal(in30)){ g.monat.push(e); return; }
+    g.spaeter.push(e);
+  });
+  const nachDatum = (a,b)=>String(a.datum).localeCompare(String(b.datum));
+  g.bald.sort(nachDatum); g.monat.sort(nachDatum); g.spaeter.sort(nachDatum);
+  g.vorbei.sort((a,b)=>nachDatum(b,a));
+  return g;
+}
+
 function renderPruefPlan(c, def){
   const mods = uniModule();
-  const g = pruefGruppen(mods);
-  const anstehend = g.bald.length + g.monat.length + g.spaeter.length;
+  const z = data.nodes[def.nodeId] || {};
+  if(!Array.isArray(z.termine)) z.termine = [];
+  data.nodes[def.nodeId] = z;
 
-  const zeile = (m)=>{
-    const tage = m.pruefdatum ? daysUntil(m.pruefdatum) : null;
-    return `<div class="pp-zeile" data-ppmod="${m.id}">
-      <span class="pp-name">${escapeHtml(m.text)}</span>
-      <span class="pp-sem">${escapeHtml(m.semester||'')}</span>
-      <span class="pp-datum">${fmtDay(m.pruefdatum)}${
-        m.pruefzeit ? ', '+escapeHtml(m.pruefzeit) : ''}</span>
-      ${m.pruefform ? `<span class="pp-form">${escapeHtml(m.pruefform)}</span>` : ''}
-      ${m.pruefraum ? `<span class="pp-raum">${escapeHtml(m.pruefraum)}</span>` : ''}
+  const alle = termineSammeln(mods, z.termine);
+  const g = terminGruppen(alle);
+  const erledigt = z.termine.filter(t=>t.done);
+  const anstehend = g.bald.length + g.monat.length + g.spaeter.length;
+  const ohneTermin = mods.filter(m=>!m.pruefdatum && m.status !== 'bestanden').length;
+
+  const zeile = (e)=>{
+    const tage = daysUntil(e.datum);
+    const dringend = tage !== null && tage >= 0 && tage <= 7;
+    return `<div class="pp-zeile ${e.art}" data-ppart="${e.art}" data-ppid="${e.id}">
+      <span class="pp-icon">${e.art === 'pruefung' ? '📝' : '📌'}</span>
+      <span class="pp-name">${escapeHtml(e.titel)}</span>
+      ${e.sem ? `<span class="pp-sem">${escapeHtml(e.sem)}</span>` : ''}
+      <span class="pp-datum">${fmtDay(e.datum)}${e.zeit ? ', '+escapeHtml(e.zeit) : ''}</span>
+      ${e.zusatz ? `<span class="pp-form">${escapeHtml(e.zusatz)}</span>` : ''}
+      ${e.ort ? `<span class="pp-raum">${escapeHtml(e.ort)}</span>` : ''}
       ${tage !== null && tage >= 0
-        ? `<span class="pp-tage">${tage === 0 ? 'heute' : 'in '+tage+' T'}</span>` : ''}
+        ? `<span class="pp-tage${dringend?' eng':''}">${
+            tage === 0 ? 'heute' : (tage === 1 ? 'morgen' : 'in '+tage+' T')}</span>` : ''}
+      ${e.art === 'frei'
+        ? `<button class="pp-fertig" data-ppdone="${e.id}" title="Erledigt">✓</button>` : ''}
     </div>`;
   };
 
@@ -11660,18 +11768,26 @@ function renderPruefPlan(c, def){
     </section>`;
   };
 
-  /* Module ohne Termin werden nicht mehr aufgelistet - das waren alle 36
-     und damit dieselbe Liste wie unter "Module", nur ohne Nutzen. Statt
-     dessen ein Eingabefeld: Modul waehlen, Datum setzen, fertig. Damit
-     ist dieser Bereich der Ort, an dem Termine entstehen, und nicht nur
-     eine zweite Ansicht auf dieselben Daten. */
   c.innerHTML = renderNodeHead(def,
-    anstehend ? `${anstehend} Termin(e) stehen an` : 'noch kein Termin eingetragen') + `
-    <div class="pp-neu">
+    anstehend ? `${anstehend} Termin(e) stehen an` : 'noch kein Termin') + `
+    <div class="pp-tabs">
+      <button class="pp-tab an" data-pptab="frei">Termin eintragen</button>
+      <button class="pp-tab" data-pptab="pruef">Prüfungstermin am Modul</button>
+    </div>
+
+    <div class="pp-neu" id="pp-form-frei">
+      <input type="text" id="pt-titel" placeholder="Was? z. B. Buch zurückgeben" maxlength="80">
+      <input type="date" id="pt-datum" aria-label="Datum">
+      <input type="time" id="pt-zeit" aria-label="Uhrzeit (optional)">
+      <input type="text" id="pt-was" placeholder="Notiz (optional)" maxlength="120">
+      <button class="ib-btn primary" id="pt-add">Eintragen</button>
+    </div>
+
+    <div class="pp-neu" id="pp-form-pruef" hidden>
       <select id="pp-modul" aria-label="Modul">
         ${mods.filter(m=>m.status !== 'bestanden')
-          .map(m=>`<option value="${m.id}"${m.pruefdatum?' data-hat="1"':''}>${
-            escapeHtml(m.text)}${m.pruefdatum ? ' – ' + fmtDay(m.pruefdatum) : ''}</option>`).join('')}
+          .map(m=>`<option value="${m.id}">${escapeHtml(m.text)}${
+            m.pruefdatum ? ' – ' + fmtDay(m.pruefdatum) : ''}</option>`).join('')}
       </select>
       <select id="pp-form" aria-label="Prüfungsform">
         <option value="">– Form –</option>
@@ -11684,19 +11800,62 @@ function renderPruefPlan(c, def){
     </div>
 
     ${!anstehend && !g.vorbei.length ? `<div class="uni-hint">
-      Noch kein Termin. Sobald du einen hast, trägst du ihn oben ein –
-      er steht dann auch beim Modul und auf „Heute“.</div>` : ''}
+      Noch kein Termin. Alles mit Datum kommt hierher – Prüfungen, Abgaben,
+      Rückgaben, Fristen. Was bald ansteht, steht oben.</div>` : ''}
     ${block('Diese Woche', 'in den nächsten 7 Tagen', g.bald, 'bald')}
     ${block('Nächste Wochen', 'in den nächsten 30 Tagen', g.monat, 'monat')}
     ${block('Später', 'weiter weg', g.spaeter, '')}
-    ${block('Vorbei', 'gewesen oder bestanden', g.vorbei, 'vorbei')}
-    ${g.ohne.length ? `<div class="uni-hint" style="margin-top:16px;">
-      ${g.ohne.length} Modul(e) haben noch keinen Termin. Sie stehen unter „Module“.
+    ${block('Vorbei', 'gewesen', g.vorbei, 'vorbei')}
+    ${erledigt.length ? `<div class="uni-hint" style="margin-top:14px;">
+      ${erledigt.length} erledigt · <button class="pp-link" id="pp-weg">aufräumen</button>
+    </div>` : ''}
+    ${ohneTermin ? `<div class="uni-hint" style="margin-top:12px;">
+      ${ohneTermin} Modul(e) haben noch keinen Prüfungstermin. Sie stehen unter „Module“.
     </div>` : ''}
   `;
 
-  /* Beim Wechsel des Moduls die vorhandenen Werte einsetzen - so ändert
-     man einen Termin, statt ihn blind zu überschreiben. */
+  const neu = ()=>{ persist(); renderPruefPlan(c, def); renderSidebar(); };
+
+  /* Umschalten zwischen den beiden Eingaben. Ein freier Termin ist der
+     häufigere Fall, darum steht er vorn. */
+  c.querySelectorAll('[data-pptab]').forEach(b=>b.addEventListener('click',()=>{
+    const frei = b.dataset.pptab === 'frei';
+    c.querySelectorAll('.pp-tab').forEach(x=>x.classList.toggle('an', x === b));
+    document.getElementById('pp-form-frei').hidden  = !frei;
+    document.getElementById('pp-form-pruef').hidden = frei;
+  }));
+
+  /* --- Freier Termin --- */
+  function terminAnlegen(){
+    const titel = document.getElementById('pt-titel').value.trim();
+    const datum = document.getElementById('pt-datum').value;
+    if(!titel){ document.getElementById('pt-titel').focus(); return; }
+    if(!datum){ document.getElementById('pt-datum').focus(); return; }
+    z.termine.push({id:uid(), titel, datum,
+      zeit: document.getElementById('pt-zeit').value,
+      was:  document.getElementById('pt-was').value.trim(), done:false});
+    neu();
+  }
+  document.getElementById('pt-add').addEventListener('click', terminAnlegen);
+  ['pt-titel','pt-datum','pt-was'].forEach(id=>
+    document.getElementById(id).addEventListener('keydown',(e)=>{
+      if(e.key==='Enter') terminAnlegen();
+    }));
+
+  /* Erledigt: bleibt stehen, bis aufgeräumt wird - so sieht man noch, dass
+     man es gemacht hat. */
+  c.querySelectorAll('[data-ppdone]').forEach(b=>b.addEventListener('click',(ev)=>{
+    ev.stopPropagation();
+    const t = z.termine.find(x=>x.id === b.dataset.ppdone);
+    if(t){ t.done = true; neu(); }
+  }));
+  const weg = document.getElementById('pp-weg');
+  if(weg) weg.addEventListener('click',()=>{
+    z.termine = z.termine.filter(t=>!t.done);
+    neu();
+  });
+
+  /* --- Prüfungstermin am Modul --- */
   const sel = document.getElementById('pp-modul');
   const felder = ()=>{
     const m = mods.find(x=>x.id === sel.value);
@@ -11706,27 +11865,43 @@ function renderPruefPlan(c, def){
     document.getElementById('pp-zeit').value  = m.pruefzeit || '';
     document.getElementById('pp-raum').value  = m.pruefraum || '';
   };
-  sel.addEventListener('change', felder);
-  felder();
-
-  document.getElementById('pp-add').addEventListener('click',()=>{
-    const m = mods.find(x=>x.id === sel.value);
-    if(!m) return;
-    const d = document.getElementById('pp-datum').value;
-    if(!d){ document.getElementById('pp-datum').focus(); return; }
-    m.pruefform  = document.getElementById('pp-form').value;
-    m.pruefdatum = d;
-    m.pruefzeit  = document.getElementById('pp-zeit').value;
-    m.pruefraum  = document.getElementById('pp-raum').value.trim();
-    persist(); renderPruefPlan(c, def); renderSidebar();
-  });
-
-  /* Ein Tipp auf eine Zeile setzt sie oben ins Formular - ändern passiert
-     hier, nicht in einem anderen Bereich. */
-  c.querySelectorAll('[data-ppmod]').forEach(el=>el.addEventListener('click',()=>{
-    sel.value = el.dataset.ppmod;
+  if(sel){
+    sel.addEventListener('change', felder);
     felder();
-    sel.scrollIntoView({block:'center', behavior:'smooth'});
+    document.getElementById('pp-add').addEventListener('click',()=>{
+      const m = mods.find(x=>x.id === sel.value);
+      if(!m) return;
+      const d = document.getElementById('pp-datum').value;
+      if(!d){ document.getElementById('pp-datum').focus(); return; }
+      m.pruefform  = document.getElementById('pp-form').value;
+      m.pruefdatum = d;
+      m.pruefzeit  = document.getElementById('pp-zeit').value;
+      m.pruefraum  = document.getElementById('pp-raum').value.trim();
+      neu();
+    });
+  }
+
+  /* Ein Tipp auf eine Zeile setzt sie oben ins Formular - geändert wird
+     hier, nicht in einem anderen Bereich. */
+  c.querySelectorAll('[data-ppid]').forEach(el=>el.addEventListener('click',()=>{
+    if(el.dataset.ppart === 'pruefung'){
+      c.querySelector('[data-pptab="pruef"]').click();
+      sel.value = el.dataset.ppid;
+      felder();
+    } else {
+      const t = z.termine.find(x=>x.id === el.dataset.ppid);
+      if(!t) return;
+      c.querySelector('[data-pptab="frei"]').click();
+      document.getElementById('pt-titel').value = t.titel;
+      document.getElementById('pt-datum').value = t.datum;
+      document.getElementById('pt-zeit').value  = t.zeit || '';
+      document.getElementById('pt-was').value   = t.was || '';
+      /* Der alte Eintrag geht raus - beim Speichern entsteht der neue.
+         Sonst stünde er doppelt da. */
+      z.termine = z.termine.filter(x=>x.id !== t.id);
+      persist();
+    }
+    document.querySelector('.pp-tabs').scrollIntoView({block:'center', behavior:'smooth'});
   }));
 }
 
@@ -13992,7 +14167,29 @@ function cloudModalOeffnen(){
   cloudModalFuellen();
   const m = document.getElementById('cloud-meldung');
   if(m){ m.textContent=''; m.className='cloud-meldung'; }
+  cloudWarnungZeigen();
   document.getElementById('cloud-modal').hidden = false;
+}
+
+/* Warum die Verbindung weg ist - steht dauerhaft in der Maske, bis sie
+   wieder steht. Ohne das sucht man den Fehler beim Abtippen, obwohl der
+   Schluessel einfach abgelaufen ist. GitHub laesst klassische Schluessel
+   nach 30 Tagen oder bei einem Jahr ohne Nutzung verfallen. */
+function cloudWarnungZeigen(){
+  const el = document.getElementById('cloud-warnung');
+  if(!el) return;
+  const c = cloudCfg();
+  if(!c.problem){ el.hidden = true; el.innerHTML = ''; return; }
+  const wann = c.problemZeit
+    ? ' (zuletzt ' + fmtDay(String(c.problemZeit).slice(0,10)) + ')' : '';
+  el.innerHTML = c.problem === 'schluessel'
+    ? '<strong>Der Schl\u00fcssel gilt nicht mehr' + wann + '.</strong> '
+      + 'GitHub l\u00e4sst Schl\u00fcssel ablaufen. Hol dir unten einen neuen \u2013 '
+      + 'setz dabei <b>Expiration</b> auf <b>No expiration</b>, dann h\u00e4lt er. '
+      + 'Deine Daten sind davon nicht betroffen.'
+    : '<strong>Die Cloud-Datei wurde nicht gefunden' + wann + '.</strong> '
+      + 'Verbinde neu \u2013 die App legt sie dann wieder an.';
+  el.hidden = false;
 }
 /* Beispiele entfernen - erscheint nur, solange welche da sind. Zwei Klicks. */
 function beispieleZaehlen(){
