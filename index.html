@@ -2778,6 +2778,21 @@ tr.row-off .tt-num{text-decoration:line-through;}
 /* Tabellen-Ansicht: Titelzeile mit "Kur ändern", Ablauf unten nur zum Nachlesen. */
 .kur-head-zeile{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
 .kur-head-zeile .detail-title{flex:1;min-width:0;}
+/* Packung leer - beendet eine offene Kur. Zurueckhaltend gestaltet: das
+   ist kein Knopf, den man taeglich drueckt. */
+.kur-leer{margin-top:10px;font-family:inherit;font-size:0.8rem;
+  color:var(--ink-soft);background:none;border:1px solid var(--line);
+  border-radius:8px;padding:7px 14px;cursor:pointer;}
+.kur-leer:hover{border-color:var(--sport);color:var(--sport);}
+.kur-leer.fragt{border-color:var(--danger);color:var(--danger);}
+.kur-beendet{margin-top:10px;font-size:0.8rem;color:var(--ink-soft);}
+/* Zwei Sorten Kur zur Auswahl. */
+.kur-art{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;}
+.kur-art-wahl{font-family:inherit;font-size:0.8rem;color:var(--ink-soft);
+  cursor:pointer;background:none;border:1px solid var(--line);
+  border-radius:20px;padding:6px 14px;}
+.kur-art-wahl:hover{border-color:var(--sport);color:var(--ink);}
+.kur-art-wahl.an{background:var(--sport);border-color:var(--sport);color:#12210F;}
 .ib-btn.kur-aendern{background:var(--field);border:1px solid var(--line);
   color:var(--ink-soft);flex-shrink:0;}
 .ib-btn.kur-aendern:hover{border-color:var(--sport);color:var(--sport);}
@@ -5233,6 +5248,7 @@ function migrateData(){
   mindsetWeltbild();
   vorDemStartRaus();
   uniBereicheZusammen();
+  kurenUebernehmen();
   missionenUebernehmen();
   jahreszieleUebernehmen();
   schwaechenUebernehmen();
@@ -7719,6 +7735,8 @@ const APP_BEREICHE = [
 
 /* Was sich wann geaendert hat - neueste zuerst. Beim Weiterbauen ergaenzen. */
 const APP_VERLAUF = [
+  {v:62, d:'03.10.2026', t:'Kuren ohne festes Ende',
+   b:'Manche Kuren laufen, solange der Vorrat reicht – dafür gibt es jetzt den Knopf „Packung leer“ statt eines erfundenen Enddatums. Schwarzkümmelöl, Zeolith und Chlorella sind eingetragen.'},
   {v:61, d:'03.10.2026', t:'Termine statt nur Prüfungen',
    b:'Alles mit Datum an einem Ort – Abgaben, Rückgaben, Fristen neben den Prüfungen. Dazu ein klarer Hinweis, wenn der Cloud-Schlüssel abgelaufen ist.'},
   {v:60, d:'20.09.2026', t:'Zurück-Knopf und Wochenplan',
@@ -9254,6 +9272,70 @@ function uniBereicheZusammen(){
   if(!data.uebernommen) data.uebernommen = {};
   data.uebernommen[UNILAYOUT_KEY] = true;
   return uebernommen + rest.length;
+}
+
+/* Leons laufende Kuren, von ihm am 03.10.2026 durchgegeben. Zwei davon
+   haben kein Enddatum - sie laufen, solange der Vorrat reicht. Die dritte
+   laesst sich ausrechnen, weil Dosis und Packungsgroesse feststehen.
+
+   Chlorella-Rechnung: 500 g Packung bei 400 mg je Tablette = 1250 Tabletten.
+   Leon nimmt in Woche 1 sieben am Tag, danach zwoelf; Nika sechs, danach
+   acht. Zusammen also 13 in der ersten Woche (= 91) und danach 20 taeglich.
+   Die restlichen 1159 reichen 58 Tage - zusammen rund 65 Tage ab Start.
+   Das Datum steht als Schaetzung drin, beendet wird trotzdem von Hand. */
+const KUREN_KEY = 'kuren-oktober-2026';
+function kurenUebernehmen(){
+  if(data.uebernommen && data.uebernommen[KUREN_KEY]) return 0;
+  const n = data.nodes['sport:kuren'];
+  if(!n) return 0;
+  if(!Array.isArray(n.cures)) n.cures = [];
+
+  const heute = isoToday();
+  /* Chlorella-Ende aus der Rechnung oben: 65 Tage ab heute. */
+  const ende = new Date(heute + 'T12:00:00');
+  ende.setDate(ende.getDate() + 65);
+
+  const neu = [
+    {
+      title: 'Schwarzk\u00fcmmel\u00f6l',
+      offen: true, dateFrom: heute, dateTo: '', reichtBis: '',
+      items: [
+        {id:uid(), text:'Schwarzk\u00fcmmel\u00f6l', dose:'1 Essl\u00f6ffel',
+         zeiten:['morgens'], days:[]}
+      ]
+    },
+    {
+      title: 'Zeolith',
+      offen: true, dateFrom: heute, dateTo: '', reichtBis: '',
+      items: [
+        {id:uid(), text:'Zeolith', dose:'', zeiten:['morgens'], days:[]}
+      ]
+    },
+    {
+      title: 'Chlorella',
+      offen: true, dateFrom: heute, dateTo: '', reichtBis: isoLocal(ende),
+      items: [
+        {id:uid(), text:'Chlorella \u2013 Leon', dose:'Woche 1: 3\u20134 Tabletten, danach 6',
+         zeiten:['mittags','abends'], days:[]},
+        {id:uid(), text:'Chlorella \u2013 Nika', dose:'Woche 1: 3 Tabletten, danach 4',
+         zeiten:['mittags','abends'], days:[]}
+      ]
+    }
+  ];
+
+  const da = new Set(n.cures.map(k=>String(k.title||'').trim().toLowerCase()));
+  let dazu = 0;
+  neu.forEach(k=>{
+    if(da.has(k.title.toLowerCase())) return;
+    n.cures.push({id:uid(), title:k.title, offen:k.offen,
+      dateFrom:k.dateFrom, dateTo:k.dateTo, reichtBis:k.reichtBis,
+      items:k.items, done:{}});
+    dazu++;
+  });
+
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[KUREN_KEY] = true;
+  return dazu;
 }
 
 const VORSTART_KEY = 'vor-dem-start-raus-2026-09';
@@ -11487,9 +11569,38 @@ function isoLocal(d){
 function isoToday(){ return isoLocal(new Date()); }
 /* Wochentag eines ISO-Datums, Mo=0. */
 function isoWeekday(ds){ return (new Date(ds+'T00:00:00').getDay() + 6) % 7; }
+/* Laeuft diese Kur ohne festes Ende? Dann zaehlt nicht ein Datum, sondern
+   der Vorrat: sie laeuft, bis die Packung leer ist. Das ist bei Oelen und
+   Pulvern der Normalfall - ein erfundenes Enddatum waere nur geraten.
+
+   `beendet` haelt fest, wann Leon "Packung leer" gedrueckt hat. Erst dann
+   gilt die Kur als abgeschlossen. */
+function kurOffen(k){
+  return !!k.offen && !k.beendet;
+}
+
+/* Bis wann rechnen wir? Bei offenen Kuren bis heute, sonst bis zum Ende. */
+function kurBis(k){
+  if(k.beendet) return k.beendet;
+  if(kurOffen(k)) return isoToday();
+  return k.dateTo || '';
+}
+
 /* Alle Tage der Kur als ISO-Strings. */
 function cureDays(k){
-  if(!k.dateFrom || !k.dateTo) return [];
+  if(!k.dateFrom) return [];
+  if(kurOffen(k) || k.beendet){
+    const out = [];
+    const d = new Date(k.dateFrom+'T00:00:00');
+    const bis = new Date(kurBis(k)+'T00:00:00');
+    let schutz = 0;
+    while(d <= bis && schutz++ < 2000){
+      out.push(isoLocal(d));
+      d.setDate(d.getDate()+1);
+    }
+    return out;
+  }
+  if(!k.dateTo) return [];
   const out = [];
   const d = new Date(k.dateFrom+'T00:00:00');
   const bis = new Date(k.dateTo+'T00:00:00');
@@ -11527,21 +11638,43 @@ function cureIsDone(k, ds, key){
 /* Offene Anwendungen von heute - nur wenn die Kur gerade laeuft. */
 function cureTodayOpen(k){
   const t = isoToday();
-  if(!k.dateFrom || !k.dateTo || t < k.dateFrom || t > k.dateTo) return 0;
+  if(!k.dateFrom || t < k.dateFrom) return 0;
+  if(kurOffen(k)){
+    return cureSlotsForDay(k, t).filter(s=>!cureIsDone(k, t, s.key)).length;
+  }
+  const ende = k.beendet || k.dateTo;
+  if(!ende || t > ende) return 0;
   return cureSlotsForDay(k, t).filter(s=>!cureIsDone(k, t, s.key)).length;
 }
 function cureStatus(k){
   const t = isoToday();
-  if(!k.dateFrom || !k.dateTo) return {cls:'future', text:'Kein Zeitraum'};
+  if(k.beendet) return {cls:'past', text:'Beendet ' + fmtDay(k.beendet)};
+  if(!k.dateFrom) return {cls:'future', text:'Kein Startdatum'};
   if(t < k.dateFrom) return {cls:'future', text:'Startet noch'};
-  if(t > k.dateTo)   return {cls:'past',   text:'Abgeschlossen'};
+  if(kurOffen(k)){
+    /* Ohne Ende gibt es kein "Tag 5 von 20" - nur, der wievielte Tag es
+       ist. Steht ein geschaetztes Ende fest, kommt es dazu. */
+    const nr = cureDays(k).length;
+    const rest = k.reichtBis ? daysUntil(k.reichtBis) : null;
+    return {cls:'now', text: rest !== null && rest >= 0
+      ? `Tag ${nr} · noch ca. ${rest} Tage`
+      : `Tag ${nr} · laufend`};
+  }
+  if(!k.dateTo) return {cls:'future', text:'Kein Zeitraum'};
+  if(t > k.dateTo) return {cls:'past', text:'Abgeschlossen'};
   const tage = cureDays(k);
   const nr = tage.indexOf(t) + 1;
   return {cls:'now', text:`Tag ${nr} von ${tage.length}`};
 }
 function cureRangeText(k){
-  if(!k.dateFrom || !k.dateTo) return 'Zeitraum offen';
   const f = ds=>new Date(ds+'T00:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'short'});
+  if(k.beendet && k.dateFrom) return f(k.dateFrom) + ' – ' + f(k.beendet);
+  if(kurOffen(k) && k.dateFrom){
+    return k.reichtBis
+      ? 'ab ' + f(k.dateFrom) + ' · reicht bis ca. ' + f(k.reichtBis)
+      : 'ab ' + f(k.dateFrom) + ' · ohne festes Ende';
+  }
+  if(!k.dateFrom || !k.dateTo) return 'Zeitraum offen';
   return f(k.dateFrom) + ' – ' + f(k.dateTo);
 }
 /* Wie konsequent die Kur bisher lief - nur bis heute gezaehlt. */
@@ -12510,7 +12643,10 @@ function openCureForm(c, def, z){
    2. TABELLE - erst wenn beides steht, wird der Kalender daraus erzeugt.
    Der Wechsel zurueck ins Einrichten geht ueber "Kur ändern". */
 function renderCureDetail(host, c, def, z, k){
-  const fertigEingerichtet = !!(k.dateFrom && k.dateTo && (k.items||[]).length);
+  /* Offene Kuren brauchen kein Enddatum, um fertig eingerichtet zu sein -
+     Startdatum und Ablauf reichen. */
+  const fertigEingerichtet = !!(k.dateFrom && (k.dateTo || kurOffen(k) || k.beendet)
+    && (k.items||[]).length);
   if(!fertigEingerichtet || kurEinrichten[k.id]){
     return renderCureSetup(host, c, def, z, k);
   }
@@ -12534,19 +12670,38 @@ function renderCureSetup(host, c, def, z, k){
     <div class="kur-schritt${hatZeitraum?' fertig':' aktiv'}">
       <div class="kur-schritt-kopf">
         <span class="kur-schritt-nr">${hatZeitraum?'✓':'1'}</span>
-        <span class="kur-schritt-titel">Von wann bis wann läuft die Kur?</span>
+        <span class="kur-schritt-titel">Wie lange läuft die Kur?</span>
       </div>
       <div class="kur-schritt-inhalt">
+        <!-- Zwei Sorten Kur: eine mit festem Ende (21 Tage Zeolith) und
+             eine, die laeuft solange der Vorrat reicht (Schwarzkuemmeloel).
+             Fuer die zweite ein Datum zu erfinden waere geraten. -->
+        <div class="kur-art">
+          <button class="kur-art-wahl${!kurOffen(k)?' an':''}" data-kurart="fest">
+            Bis zu einem Datum</button>
+          <button class="kur-art-wahl${kurOffen(k)?' an':''}" data-kurart="offen">
+            Solange der Vorrat reicht</button>
+        </div>
         <div class="kur-zeitraum">
           <label class="kur-datefield">
             <span class="kur-datelabel">Erster Tag</span>
             <input type="date" id="kz-from" value="${k.dateFrom||''}">
           </label>
+          ${kurOffen(k) ? `
+          <label class="kur-datefield">
+            <span class="kur-datelabel">Reicht voraussichtlich bis</span>
+            <input type="date" id="kz-reicht" value="${k.reichtBis||''}">
+          </label>
+          <span class="kur-zeitraum-info">${
+            k.reichtBis ? 'geschätzt – die Kur endet, wenn du „Packung leer“ drückst'
+                        : 'optional – nur als Anhaltspunkt'}</span>
+          ` : `
           <label class="kur-datefield">
             <span class="kur-datelabel">Letzter Tag</span>
             <input type="date" id="kz-to" value="${k.dateTo||''}">
           </label>
           ${hatZeitraum?`<span class="kur-zeitraum-info">${tage.length} Tage</span>`:''}
+          `}
         </div>
       </div>
     </div>
@@ -12611,15 +12766,33 @@ function renderCureSetup(host, c, def, z, k){
     </div>
   `;
 
+  /* Art der Kur umschalten */
+  host.querySelectorAll('[data-kurart]').forEach(b=>b.addEventListener('click',()=>{
+    const offen = b.dataset.kurart === 'offen';
+    k.offen = offen;
+    /* Beim Wechsel das jeweils andere Feld leeren, damit kein Rest
+       stehenbleibt, der dann falsch rechnet. */
+    if(offen) k.dateTo = '';
+    else      k.reichtBis = '';
+    if(!k.dateFrom) k.dateFrom = isoToday();
+    delete kurMonSel[k.id]; delete kurTagSel[k.id];
+    persist(); renderMain(); renderSidebar();
+  }));
+
   /* Zeitraum */
-  ['kz-from','kz-to'].forEach(id=>{
+  ['kz-from','kz-to','kz-reicht'].forEach(id=>{
     const el = document.getElementById(id);
     if(!el) return;
     el.addEventListener('change',()=>{
       const von = document.getElementById('kz-from').value;
-      const bis = document.getElementById('kz-to').value;
       k.dateFrom = von;
-      k.dateTo = (von && bis && bis < von) ? von : bis;
+      const bisEl = document.getElementById('kz-to');
+      if(bisEl){
+        const bis = bisEl.value;
+        k.dateTo = (von && bis && bis < von) ? von : bis;
+      }
+      const rEl = document.getElementById('kz-reicht');
+      if(rEl) k.reichtBis = rEl.value;
       delete kurMonSel[k.id]; delete kurTagSel[k.id];
       persist(); renderMain(); renderSidebar();
     });
@@ -12694,6 +12867,12 @@ function renderCureTable(host, c, def, z, k){
         <span class="kur-range">${cureRangeText(k)}</span>
         ${pr.soll>0?`<span class="kur-quote">${pr.done}/${pr.soll} erledigt</span>`:''}
       </div>
+      ${kurOffen(k) ? `<button class="kur-leer" id="kur-leer">
+        Packung leer – Kur beenden</button>` : ''}
+      ${k.beendet ? `<div class="kur-beendet">
+        Beendet am ${fmtDay(k.beendet)} ·
+        <button class="pp-link" id="kur-weiter">doch weiterführen</button>
+      </div>` : ''}
     </div>
 
     <div class="kur-buehne">
@@ -12704,9 +12883,9 @@ function renderCureTable(host, c, def, z, k){
       </div>
       <div class="kur-cal">
         ${TR_TAGE_KURZ.map(d=>`<div class="kur-cal-wt">${d}</div>`).join('')}
-        ${kurMonatZellen(kalYm, k.dateFrom, k.dateTo).map(ds=>{
+        ${kurMonatZellen(kalYm, k.dateFrom, kurBis(k)).map(ds=>{
           if(!ds) return `<div class="kur-cal-leer"></div>`;
-          const drin = ds>=k.dateFrom && ds<=k.dateTo;
+          const drin = ds>=k.dateFrom && ds<=kurBis(k);
           const items = drin ? cureSlotsForDay(k, ds) : [];
           const fertig = items.filter(x=>cureIsDone(k,ds,x.key)).length;
           /* Heute gilt nie als verpasst - der Tag laeuft noch. */
@@ -12788,6 +12967,33 @@ function renderCureTable(host, c, def, z, k){
   /* Zurueck in den Einrichten-Schritt */
   document.getElementById('kur-aendern').addEventListener('click',()=>{
     kurEinrichten[k.id] = true; renderMain(); });
+
+  /* Packung leer: die Kur endet heute. Zwei Klicks, weil damit der Haken
+     fuer alle kommenden Tage wegfaellt - und weil Leon sonst aus Versehen
+     eine laufende Kur beendet. Rueckgaengig geht es trotzdem. */
+  const leer = document.getElementById('kur-leer');
+  if(leer) leer.addEventListener('click',()=>{
+    if(leer.dataset.sicher !== '1'){
+      leer.dataset.sicher = '1';
+      leer.textContent = 'Wirklich beenden?';
+      leer.classList.add('fragt');
+      setTimeout(()=>{
+        if(!leer.isConnected) return;
+        leer.dataset.sicher = '';
+        leer.textContent = 'Packung leer \u2013 Kur beenden';
+        leer.classList.remove('fragt');
+      }, 4000);
+      return;
+    }
+    k.beendet = isoToday();
+    persist(); renderMain(); renderSidebar();
+  });
+
+  const weiter = document.getElementById('kur-weiter');
+  if(weiter) weiter.addEventListener('click',()=>{
+    delete k.beendet;
+    persist(); renderMain(); renderSidebar();
+  });
 
   /* Monat blaettern */
   const mp = document.getElementById('kur-mprev');
