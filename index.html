@@ -1473,6 +1473,10 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .gm-topf-zeile.offen .gm-zeile-body{display:block;}
 .gm-topf-zeile.ein{border-color:var(--business);}
 .gm-topf-zeile.uni{border-color:var(--uni);}
+.gm-topf-zeile.kaution{border-color:var(--privat);}
+.kt-nr{font-family:'IBM Plex Mono',monospace;font-size:0.74rem;color:var(--privat);
+  width:18px;flex-shrink:0;}
+.gm-posten.offen .kt-datum{border-style:dashed;}
 
 .gm-posten{display:flex;align-items:center;gap:7px;padding:4px 0;}
 .gm-label{flex:1;min-width:0;padding:8px 10px;border-radius:8px;
@@ -1488,6 +1492,11 @@ tr.row-off .tt-num{text-decoration:line-through;}
 .gm-plus:hover{color:var(--privat);border-color:var(--privat);}
 .gm-leer{font-size:0.74rem;color:var(--ink-soft);line-height:1.45;
   padding:5px 0;opacity:.75;}
+/* Fester Anteil an einem geteilten Posten - eingerueckt unter dem Posten,
+   damit man sieht, wozu die Zahl gehoert. */
+.gm-anteil{display:flex;align-items:center;justify-content:flex-end;gap:8px;
+  padding:0 0 6px;font-size:0.7rem;color:var(--ink-soft);}
+.gm-anteil .gm-betrag{width:110px;padding:6px 9px;font-size:0.76rem;}
 .gm-halb{font-family:'IBM Plex Mono',monospace;font-size:0.63rem;
   color:var(--ink-soft);margin-top:8px;padding-top:7px;
   border-top:1px solid var(--line-soft);}
@@ -5257,6 +5266,7 @@ function migrateData(){
   /* Nochmal: fixkostenSeptember und Konsorten legen eigene Monate an. */
   einnahmenFaecherSichern();
   kindergeldAugustOffen();
+  neueWohnungUebernehmen();
 
   /* Ganz zum Schluss, wenn auch die uebernommenen Kategorien stehen: alle
      Idee-Board-Karten einmal zuklappen. Weiter oben lief das ins Leere, weil
@@ -5494,6 +5504,10 @@ function renderKonten(c, def, node){
     ? expenseSums(naechst).meins + moebelMonatMeins(node, naechstYm) : 0;
   const monatEin = naechst ? einnahmeSumme(naechst).alles : 0;
   const monatName = naechstYm ? fmtYm(naechstYm) : null;
+  /* Kautionsraten, die seit dem letzten Kontostand rausgingen - die sind
+     weg, auch wenn Leon die Konten noch nicht nachgetragen hat. */
+  const kt = kautionNode(node);
+  const kautionWeg = kt ? kautionSummen(kt, k.stand).nachStand : 0;
   host.innerHTML = `
     ${k.liste.map(e=>`
       <div class="konto-zeile" data-kid="${e.id}">
@@ -5510,9 +5524,10 @@ function renderKonten(c, def, node){
     ${summe && naechst ? `
     <div class="konten-rechnung">
       <div class="sum-zeile"><span>auf allen Konten heute</span><b>${eur(summe)}</b></div>
+      ${kautionWeg ? `<div class="sum-zeile minus"><span>− Kaution an ${escapeHtml(kt.an||'Nika')} <i>seit dem Stand gezahlt</i></span><b>− ${eur(kautionWeg)}</b></div>` : ''}
       <div class="sum-zeile minus"><span>− ${monatName} kostet dich</span><b>− ${eur(monatKosten)}</b></div>
       ${monatEin ? `<div class="sum-zeile plus"><span>+ kommt noch rein</span><b>+ ${eur(monatEin)}</b></div>` : ''}
-      <div class="sum-zeile summe"><span>bleibt nach ${monatName}</span><b>${eur(summe - monatKosten + monatEin)}</b></div>
+      <div class="sum-zeile summe"><span>bleibt nach ${monatName}</span><b>${eur(summe - kautionWeg - monatKosten + monatEin)}</b></div>
     </div>
     <div class="konten-datum">${k.stand ? `Stand ${fmtDate(k.stand)}` : 'noch kein Stand eingetragen'}</div>`
     : summe ? `<div class="konten-datum">${k.stand ? `Stand ${fmtDate(k.stand)}` : ''} · leg einen Monat an, dann wird gerechnet</div>` : ''}
@@ -5631,7 +5646,11 @@ function getExpenseMonth(node, ym, autoCreate){
   if(vorher){
     EXPENSE_CATS.filter(c=>c.mode==='fixed').forEach(cat=>{
       cats[cat.key] = (node.months[vorher].cats[cat.key]||[])
-        .map(e=>({id:uid(), label:e.label, amount:e.amount}));
+        .map(e=>{
+          const neu = {id:uid(), label:e.label, amount:e.amount};
+          if(typeof e.anteil === 'number') neu.anteil = e.anteil;   /* Miete: fester Teil wandert mit */
+          return neu;
+        });
     });
   }
   /* Feste Einnahmen laufen weiter wie die Fixkosten - BAfoeG und
@@ -5676,10 +5695,31 @@ function expenseSums(monat){
   EXPENSE_CATS.forEach(cat=>{
     if(cat.shared) istGemeinsam += proKat[cat.key]; else istEigene += proKat[cat.key];
   });
-  return {proKat, proKatPlan, proGruppe, gemeinsam, eigene,
-          meins: gemeinsam/2 + eigene, alles: gemeinsam + eigene,
+  /* Leons Teil je Topf. Geteilt heisst halbe-halbe - ausser ein Posten traegt
+     einen festen Anteil: die Miete ist 1.045 EUR, Leon zahlt davon 445, weil
+     er weniger verdient. Darum je Posten rechnen statt den Topf zu halbieren. */
+  const proKatMeins = {}, proKatIstMeins = {};
+  let meins = 0, istMeins = 0;
+  EXPENSE_CATS.forEach(cat=>{
+    const liste = monat && monat.cats && Array.isArray(monat.cats[cat.key]) ? monat.cats[cat.key] : [];
+    let ist = proKat[cat.key], plan = proKatPlan[cat.key];
+    if(cat.shared){
+      ist = liste.reduce((s,e)=>s + meinTeil(e), 0);
+      plan = cat.budget ? Math.max(cat.budget/2, ist) : ist;
+    }
+    proKatIstMeins[cat.key] = ist;
+    proKatMeins[cat.key] = plan;
+    istMeins += ist; meins += plan;
+  });
+  return {proKat, proKatPlan, proKatMeins, proKatIstMeins, proGruppe, gemeinsam, eigene,
+          meins, alles: gemeinsam + eigene,
           istGemeinsam, istEigene,
-          istMeins: istGemeinsam/2 + istEigene, istAlles: istGemeinsam + istEigene};
+          istMeins, istAlles: istGemeinsam + istEigene};
+}
+/* Leons Teil an einem geteilten Posten: fester Anteil, sonst die Haelfte. */
+function meinTeil(e){
+  if(typeof e.anteil === 'number') return e.anteil;
+  return (Number(e.amount)||0) / 2;
 }
 
 /* Was von Leons Haelfte wirklich noch da ist: sein Anteil am Budget minus
@@ -5777,6 +5817,30 @@ function moebelHaelften(moebel){
     rest: budget - (meins + ihrs)
   };
 }
+/* ---- Kaution ----
+   2.610 EUR fuer die neue Wohnung, Leons Haelfte 1.305 EUR. Er zahlt sie an
+   Nika in drei Raten, wann genau entscheidet er selbst - darum je Rate nur
+   Betrag und "gezahlt am". Leer = noch offen.
+   Kommt aus dem Ersparten wie der Moebeltopf, zaehlt also nicht zum Monat.
+   Abgezogen wird in der Kontorechnung, und zwar nur Raten, die NACH dem
+   letzten Kontostand gezahlt wurden - fruehere stecken schon im Stand. */
+function kautionNode(node){
+  if(!node.kaution || typeof node.kaution !== 'object') return null;
+  if(!Array.isArray(node.kaution.raten)) node.kaution.raten = [];
+  return node.kaution;
+}
+function kautionSummen(kt, stand){
+  let gezahlt = 0, offen = 0, nachStand = 0;
+  kt.raten.forEach(r=>{
+    const b = Number(r.betrag)||0;
+    if(r.datum){
+      gezahlt += b;
+      if(!stand || r.datum > stand) nachStand += b;
+    } else offen += b;
+  });
+  return {gezahlt, offen, nachStand, meins: gezahlt + offen};
+}
+
 function fmtYm(ym){
   const [y,m] = ym.split('-');
   return new Date(Number(y), Number(m)-1, 1)
@@ -8383,8 +8447,10 @@ function renderExpenses(c, def){
             dem Ersparten – zählt darum nicht zum Monat.</i></span><b></b></div>
         </div>
       </button>` : ''}
+      <div id="kaution-box"></div>
     </div>
   `;
+  renderKaution(node);
 
   renderKonten(c, def, node);
   const kKlapp = document.getElementById('konten-klapp');
@@ -8444,6 +8510,60 @@ function renderExpenses(c, def){
   });
 }
 
+/* Kaution: eine aufklappbare Zeile wie die Toepfe. Zu sieht man nur, was
+   noch offen ist - darum geht es beim Draufschauen. */
+function renderKaution(node){
+  const host = document.getElementById('kaution-box');
+  const kt = kautionNode(node);
+  if(!host || !kt) return;
+  const ks = kautionSummen(kt, null);
+  const fertig = ks.offen < 0.005;
+  host.innerHTML = `
+    <div class="gm-topf-zeile kaution${kt.zu === false ? ' offen' : ''}">
+      <div class="gm-zeile-kopf" id="kaution-klapp">
+        <span class="gm-zeile-titel">🔑 Kaution <i>an ${escapeHtml(kt.an||'Nika')}</i></span>
+        <span class="gm-zeile-wert${fertig ? ' plus' : ''}">${fertig
+          ? '✓ bezahlt' : `${eur(ks.offen)} <i>offen</i>`}</span>
+      </div>
+      <div class="gm-zeile-body">
+        <div class="gm-budget">
+          <div class="mod-bar"><div class="mod-bar-fill" style="width:${
+            ks.meins > 0 ? Math.min(100, ks.gezahlt/ks.meins*100) : 0}%;background:var(--privat);"></div></div>
+          <div class="gm-budget-text">${eur(ks.gezahlt)} von ${eur(ks.meins)} gezahlt ·
+            Gesamt ${eur(Number(kt.gesamt)||0)}, deine Hälfte</div>
+        </div>
+        ${kt.raten.map((r,i)=>`
+          <div class="gm-posten${r.datum ? '' : ' offen'}">
+            <span class="kt-nr">${i+1}.</span>
+            <input type="text" class="gm-betrag" data-ktbetrag="${r.id}"
+              inputmode="decimal" value="${String(r.betrag ?? '').replace('.',',')}">
+            <input type="date" class="gm-label kt-datum" data-ktdatum="${r.id}"
+              value="${r.datum||''}" title="gezahlt am – leer lassen, solange offen">
+          </div>`).join('')}
+        <div class="gm-leer">Datum eintragen, sobald eine Rate raus ist – dann
+          geht sie oben in der Kontorechnung ab. Leer heißt offen.</div>
+      </div>
+    </div>`;
+
+  document.getElementById('kaution-klapp').addEventListener('click',()=>{
+    kt.zu = kt.zu === false;
+    persist(); renderMain();
+  });
+  host.querySelectorAll('[data-ktbetrag]').forEach(i=>i.addEventListener('change',()=>{
+    const r = kt.raten.find(x=>x.id===i.dataset.ktbetrag);
+    if(!r) return;
+    const v = parseAmount(i.value);
+    r.betrag = v === null ? 0 : v;
+    persist(); renderMain();
+  }));
+  host.querySelectorAll('[data-ktdatum]').forEach(i=>i.addEventListener('change',()=>{
+    const r = kt.raten.find(x=>x.id===i.dataset.ktdatum);
+    if(!r) return;
+    r.datum = i.value || '';
+    persist(); renderMain();
+  }));
+}
+
 /* Die Topf-Zeilen eines Monats. Jede Zeile: Name, was drin ist, aufklappbar
    zum Bearbeiten. Fixkosten sind vorbelegt und aenderbar, variable Toepfe
    sammeln Belege. */
@@ -8492,7 +8612,10 @@ function renderGeldMonat(c, def, node, monat, ym){
     ${EXPENSE_CATS.map(cat=>{
       const roh = s.proKatPlan[cat.key]||0;
       const aus = s.proKat[cat.key]||0;
-      const anteil = cat.shared ? roh/2 : roh;
+      const anteil = s.proKatMeins[cat.key]||0;
+      /* Nur geteilte Fixkosten bekommen das Anteil-Feld - bei Essensbelegen
+         ist halbe-halbe immer richtig, dort wuerde es nur stoeren. */
+      const mitAnteil = cat.shared && cat.mode === 'fixed';
       const posten = monat.cats[cat.key]||[];
       const offen = monat.katZu && monat.katZu[cat.key] === false;
       return `<div class="gm-topf-zeile${offen?' offen':''}" data-topf="${cat.key}">
@@ -8518,10 +8641,17 @@ function renderGeldMonat(c, def, node, monat, ym){
                 inputmode="decimal" value="${String(e.amount ?? '').replace('.',',')}" ${zu?'disabled':''}>
               ${zu?'':`<button class="mini-del" data-pdel2="${cat.key}|${e.id}">×</button>`}
             </div>
+            ${mitAnteil ? `
+            <div class="gm-anteil">
+              <span>dein Teil</span>
+              <input type="text" class="gm-betrag" data-panteil="${cat.key}|${e.id}"
+                inputmode="decimal" placeholder="½ = ${eur((Number(e.amount)||0)/2)}"
+                value="${typeof e.anteil === 'number' ? String(e.anteil).replace('.',',') : ''}" ${zu?'disabled':''}>
+            </div>` : ''}
           `).join('') || `<div class="gm-leer">${cat.hint}</div>`}
           ${zu?'':`<button class="gm-plus" data-padd="${cat.key}">+ ${
             cat.mode === 'fixed' ? 'Fixkosten' : 'Ausgabe'}</button>`}
-          ${cat.shared ? `<div class="gm-halb">Gesamt ${eur(roh)} · deine Hälfte ${eur(anteil)}</div>` : ''}
+          ${cat.shared ? `<div class="gm-halb">Gesamt ${eur(roh)} · dein Teil ${eur(anteil)}</div>` : ''}
         </div>
       </div>`;
     }).join('')}
@@ -8577,6 +8707,15 @@ function renderGeldMonat(c, def, node, monat, ym){
     const [k, id] = i.dataset.pbetrag.split('|');
     const e = (monat.cats[k]||[]).find(x=>x.id===id);
     if(e){ const v = parseAmount(i.value); e.amount = v === null ? 0 : v; neuZeichnen(); }
+  }));
+  /* Leer heisst wieder halbe-halbe - darum das Feld loeschen statt 0 setzen. */
+  host.querySelectorAll('[data-panteil]').forEach(i=>i.addEventListener('change',()=>{
+    const [k, id] = i.dataset.panteil.split('|');
+    const e = (monat.cats[k]||[]).find(x=>x.id===id);
+    if(!e) return;
+    const v = parseAmount(i.value);
+    if(v === null) delete e.anteil; else e.anteil = v;
+    neuZeichnen();
   }));
   host.querySelectorAll('[data-pdel2]').forEach(b=>b.addEventListener('click',(e)=>{
     e.stopPropagation();
@@ -8701,10 +8840,10 @@ function renderExpenseMonth(host, c, def, node, ym){
           const roh = s.proKatPlan[cat.key]||0;
           const aus = s.proKat[cat.key]||0;
           if(!roh) return '';
-          const anteil = cat.shared ? roh/2 : roh;
+          const anteil = s.proKatMeins[cat.key]||0;
           const hinweis = cat.budget
             ? ` <i>Budget · ${eur(aus)} ausgegeben</i>`
-            : (cat.shared ? ` <i>½ von ${eur(roh)}</i>` : '');
+            : (cat.shared ? ` <i>dein Teil von ${eur(roh)}</i>` : '');
           return `<div class="sum-zeile"><span>${cat.icon} ${cat.title}${hinweis}</span><b>${eur(anteil)}</b></div>`;
         }).join('')}
         ${moMonat ? `<div class="sum-zeile"><span>🛋️ Wohnungseinrichtung <i>dieser Monat</i></span><b>${eur(moMonat)}</b></div>` : ''}
@@ -9788,6 +9927,68 @@ function fixkostenSeptember(){
   if(!data.uebernommen) data.uebernommen = {};
   data.uebernommen[FIX_SEP_KEY] = true;
   return 1;
+}
+
+/* Neue Wohnung (Stand 29.10.2026): andere Fixkosten ab November, die
+   Einrichtungskaeufe und die Kaution.
+   - Miete 1.045 EUR, Leon traegt 445 (fester Anteil, nicht die Haelfte)
+   - Strom 91 EUR und Internet 30 EUR geteilt
+   - Handy 5 EUR billiger: 11,49 EUR
+   - Einkaeufe laut Abrechnung mit Nika, zusammen 2.240,21 EUR, geteilt
+   - Internet-Versand/Anschluss einmalig 19,99 EUR, geteilt
+   - Kaution 2.610 EUR, Leons Haelfte 1.305 in drei Raten zu 435 */
+const NEUE_WOHNUNG_KEY = 'neue-wohnung-2026-10-29';
+function neueWohnungUebernehmen(){
+  if(data.uebernommen && data.uebernommen[NEUE_WOHNUNG_KEY]) return 0;
+  const n = data.nodes['privat:ausgaben'];
+  if(!n || !n.months) return 0;
+  let dazu = 0;
+
+  const m = getExpenseMonth(n, '2026-11', true);
+  if(!m.cats) m.cats = {};
+  if(!Array.isArray(m.cats.wohnen)) m.cats.wohnen = [];
+  if(!Array.isArray(m.cats.sonstiges)) m.cats.sonstiges = [];
+  /* Vorhandene Posten anpassen statt doppelt anlegen. */
+  const setze = (liste, name, werte)=>{
+    const e = liste.find(x=>(x.label||'').toLowerCase().trim() === name.toLowerCase());
+    if(e) Object.assign(e, werte);
+    else liste.push(Object.assign({id:uid(), label:name}, werte));
+    dazu++;
+  };
+  setze(m.cats.wohnen, 'Miete',    {amount:1045, anteil:445});
+  setze(m.cats.wohnen, 'Strom',    {amount:91});
+  setze(m.cats.wohnen, 'Internet', {amount:30});
+  setze(m.cats.sonstiges, 'Handy', {amount:11.49});
+
+  if(!n.moebel || typeof n.moebel !== 'object') n.moebel = {budget:10000, items:[]};
+  if(!Array.isArray(n.moebel.items)) n.moebel.items = [];
+  /* Dubletten ueber Name + Betrag - "Amazon" gibt es schon mit anderem Betrag. */
+  const da = new Set(n.moebel.items.map(e=>(e.label||'').toLowerCase().trim()+'|'+Number(e.amount)));
+  [
+    {label:'Tisch',         amount:146.98, ym:'2026-10'},
+    {label:'Waschmaschine', amount:553.31, ym:'2026-10'},
+    {label:'Couch',         amount:893.99, ym:'2026-10'},
+    {label:'Amazon',        amount:145.93, ym:'2026-10'},
+    {label:'Lale',          amount:500,    ym:'2026-10'},
+    {label:'Internet: Versand und Anschluss (einmalig)', amount:19.99, ym:'2026-11'}
+  ].forEach(e=>{
+    if(da.has(e.label.toLowerCase()+'|'+e.amount)) return;
+    n.moebel.items.push({id:uid(), ...e, wer:'geteilt'});
+    dazu++;
+  });
+
+  if(!n.kaution){
+    n.kaution = {an:'Nika', gesamt:2610, zu:true, raten:[
+      {id:uid(), betrag:435, datum:''},
+      {id:uid(), betrag:435, datum:''},
+      {id:uid(), betrag:435, datum:''}
+    ]};
+    dazu++;
+  }
+
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[NEUE_WOHNUNG_KEY] = true;
+  return dazu;
 }
 
 /* Akzeptiert "12,50" und "12.50" */
