@@ -1616,7 +1616,13 @@ tr.row-off .tt-num{text-decoration:line-through;}
   margin-bottom:11px;opacity:.8;}
 
 .konto-zeile{display:flex;align-items:center;gap:8px;padding:4px 0;}
-.konto-icon{font-size:0.95rem;flex-shrink:0;width:20px;text-align:center;}
+.konto-icon{font-size:0.95rem;flex-shrink:0;width:28px;height:34px;text-align:center;
+  background:none;border:none;padding:0;cursor:pointer;}
+/* "Nur Ansicht": liegt auf dem Konto, ist aber nicht (nur) Leons Geld -
+   C24 Essen fuellen beide. Blass, damit man sieht, dass es nicht mitzaehlt. */
+.konto-zeile.ansicht .konto-name,.konto-zeile.ansicht .konto-stand{opacity:.5;}
+.konto-zeile.ansicht .konto-icon{filter:grayscale(1);opacity:.6;}
+.konto-ansicht-text{font-size:0.64rem;color:var(--ink-soft);padding:0 0 4px 36px;}
 .konto-name{flex:1;min-width:0;padding:8px 10px;border-radius:8px;
   border:1px solid var(--line);background:var(--field);color:var(--ink);
   font-family:'IBM Plex Sans',sans-serif;font-size:0.82rem;}
@@ -5267,6 +5273,7 @@ function migrateData(){
   einnahmenFaecherSichern();
   kindergeldAugustOffen();
   neueWohnungUebernehmen();
+  einmalkostenNovember();
 
   /* Ganz zum Schluss, wenn auch die uebernommenen Kategorien stehen: alle
      Idee-Board-Karten einmal zuklappen. Weiter oben lief das ins Leere, weil
@@ -5462,8 +5469,10 @@ function kontenNode(){
   return n.konten;
 }
 
+/* Konten mit nurAnsicht zaehlen nicht mit - C24 Essen ist gemeinsames
+   Essensgeld, die Essenskosten stehen ohnehin schon im Monat. */
 function kontenSumme(k){
-  return (k.liste||[]).reduce((s,e)=>s + (Number(e.stand)||0), 0);
+  return (k.liste||[]).reduce((s,e)=>e.nurAnsicht ? s : s + (Number(e.stand)||0), 0);
 }
 
 /* Der Einrichtungstopf ist zweckgebunden - er liegt zwar auf einem Konto,
@@ -5501,17 +5510,24 @@ function renderKonten(c, def, node){
     .find(k => k > isoToday().slice(0,7));
   const naechst = naechstYm ? node.months[naechstYm] : null;
   const monatKosten = naechst
-    ? expenseSums(naechst).meins + moebelMonatMeins(node, naechstYm) : 0;
+    ? expenseSums(naechst).meins + moebelMonatMeins(node, naechstYm)
+      + kautionMonatSumme(node, naechstYm) : 0;
   const monatEin = naechst ? einnahmeSumme(naechst).alles : 0;
   const monatName = naechstYm ? fmtYm(naechstYm) : null;
   /* Kautionsraten, die seit dem letzten Kontostand rausgingen - die sind
-     weg, auch wenn Leon die Konten noch nicht nachgetragen hat. */
+     weg, auch wenn Leon die Konten noch nicht nachgetragen hat. Raten im
+     naechsten Monat stecken schon in dessen Kosten, spaetere zaehlen noch
+     nicht - die gehoeren zu ihrem Monat. */
   const kt = kautionNode(node);
-  const kautionWeg = kt ? kautionSummen(kt, k.stand).nachStand : 0;
+  const kautionWeg = kt ? kt.raten.filter(r=>r.datum
+      && (!k.stand || r.datum > k.stand)
+      && (!naechstYm || r.datum.slice(0,7) < naechstYm))
+    .reduce((s,r)=>s + (Number(r.betrag)||0), 0) : 0;
   host.innerHTML = `
     ${k.liste.map(e=>`
-      <div class="konto-zeile" data-kid="${e.id}">
-        <span class="konto-icon">${e.icon || '🏦'}</span>
+      <div class="konto-zeile${e.nurAnsicht ? ' ansicht' : ''}" data-kid="${e.id}">
+        <button class="konto-icon" data-kansicht="${e.id}"
+          title="Tippen: zählt mit / nur Ansicht">${e.icon || '🏦'}</button>
         <input type="text" class="konto-name" data-kname="${e.id}"
           value="${escapeHtml(e.name||'')}" placeholder="Konto">
         <input type="text" class="konto-stand" data-kstand="${e.id}"
@@ -5519,6 +5535,7 @@ function renderKonten(c, def, node){
           placeholder="0,00">
         <button class="mini-del" data-kdel="${e.id}" aria-label="Löschen">×</button>
       </div>
+      ${e.nurAnsicht ? `<div class="konto-ansicht-text">nur Ansicht – zählt nicht zu deinem Geld</div>` : ''}
     `).join('')}
     <button class="konten-plus" id="konten-add">+ Konto</button>
     ${summe && naechst ? `
@@ -5548,6 +5565,13 @@ function renderKonten(c, def, node){
     /* Wann zuletzt eingetragen - sonst weiss man nach Wochen nicht mehr,
        wie alt die Zahl ist. */
     k.stand = isoToday();
+    neuZeichnen();
+  }));
+
+  host.querySelectorAll('[data-kansicht]').forEach(b=>b.addEventListener('click',()=>{
+    const e = k.liste.find(x=>x.id===b.dataset.kansicht);
+    if(!e) return;
+    e.nurAnsicht = !e.nurAnsicht;
     neuZeichnen();
   }));
 
@@ -5839,6 +5863,17 @@ function kautionSummen(kt, stand){
     } else offen += b;
   });
   return {gezahlt, offen, nachStand, meins: gezahlt + offen};
+}
+/* Gezahlte Raten gehoeren in den Monat ihres Datums - dort stehen sie bei
+   den Ausgaben, damit "Bleibt dir" stimmt. */
+function kautionImMonat(node, ym){
+  const kt = kautionNode(node);
+  if(!kt || !ym) return [];
+  return kt.raten.map((r,i)=>({...r, nr:i+1}))
+    .filter(r=>r.datum && r.datum.slice(0,7) === ym);
+}
+function kautionMonatSumme(node, ym){
+  return kautionImMonat(node, ym).reduce((s,r)=>s + (Number(r.betrag)||0), 0);
 }
 
 function fmtYm(ym){
@@ -8382,9 +8417,8 @@ function renderExpenses(c, def){
   /* Was der Monat laufend kostet - ohne Moebel, der Topf laeuft ueber
      Jahre und wird aus dem Ersparten bezahlt. Uni-Kosten zaehlen mit,
      sie gehen im selben Monat vom selben Konto ab. */
-  const kostet = (s ? s.meins : 0) + uniKosten;
+  const kostet = (s ? s.meins : 0) + uniKosten + (ym ? kautionMonatSumme(node, ym) : 0);
   const bleibt = ein.alles - kostet;
-  const moebelH = moebelHaelften(node.moebel);
 
   c.innerHTML = renderNodeHead(def, ym ? fmtYm(ym) : 'noch kein Monat') + `
     <!-- 1. Wie viel habe ich? Die einzige grosse Zahl der Seite. -->
@@ -8401,7 +8435,8 @@ function renderExpenses(c, def){
       </button>
       <div class="kontostand-body">
         <div class="konten-hinweis">Was wirklich auf den Konten liegt –
-          am besten am Monatsanfang nachtragen.</div>
+          am besten am Monatsanfang nachtragen. Symbol antippen: Konto zählt
+          mit oder ist nur zur Ansicht.</div>
         <div id="konten-liste"></div>
       </div>
     </section>
@@ -8435,18 +8470,9 @@ function renderExpenses(c, def){
 
     <div class="gm-fuss">
       <button class="gm-neu" id="gm-neu">+ Neuer Monat</button>
-      ${moebelH.meins || moebelH.ihrs ? `
-      <button class="gm-topf aufklapp" data-rechnung="moebel">
-        <span class="gm-topf-titel">🛋️ Wohnungseinrichtung</span>
-        <span class="gm-topf-wert">${eur(moebelH.restMeins)} <i>übrig</i></span>
-        <div class="sum-rechnung" id="rechnung-moebel">
-          <div class="sum-zeile"><span>deine Hälfte</span><b>${eur(moebelH.proKopf)}</b></div>
-          <div class="sum-zeile minus"><span>− ausgegeben</span><b>− ${eur(moebelH.meins)}</b></div>
-          <div class="sum-zeile summe"><span>bleibt</span><b>${eur(moebelH.restMeins)}</b></div>
-          <div class="sum-zeile hinweis"><span><i>Läuft über Jahre, kommt aus
-            dem Ersparten – zählt darum nicht zum Monat.</i></span><b></b></div>
-        </div>
-      </button>` : ''}
+      <!-- Die Kachel "Wohnungseinrichtung" (Rest vom 10.000-EUR-Topf) ist
+           raus: Leon will keinen Topf, sondern dass Einrichtungskaeufe im
+           Monat abgehen und der Kontostand stimmt (29.10.2026). -->
       <div id="kaution-box"></div>
     </div>
   `;
@@ -8473,7 +8499,7 @@ function renderExpenses(c, def){
     box.innerHTML = alleYm.map(k=>{
       const ms = expenseSums(node.months[k]);
       const me = einnahmeSumme(node.months[k]).alles;
-      const kos = ms.meins + uniKostenSumme(k);
+      const kos = ms.meins + uniKostenSumme(k) + kautionMonatSumme(node, k);
       const bl = me - kos;
       return `<button class="gm-monat-eintrag${k===ym?' aktiv':''}" data-gmym="${k}">
         <span>${fmtYm(k)}</span>
@@ -8541,7 +8567,7 @@ function renderKaution(node){
               value="${r.datum||''}" title="gezahlt am – leer lassen, solange offen">
           </div>`).join('')}
         <div class="gm-leer">Datum eintragen, sobald eine Rate raus ist – dann
-          geht sie oben in der Kontorechnung ab. Leer heißt offen.</div>
+          steht sie in diesem Monat bei den Ausgaben. Leer heißt offen.</div>
       </div>
     </div>`;
 
@@ -8560,6 +8586,13 @@ function renderKaution(node){
     const r = kt.raten.find(x=>x.id===i.dataset.ktdatum);
     if(!r) return;
     r.datum = i.value || '';
+    /* Der Monat der Zahlung muss existieren, sonst stuende die Rate
+       nirgends in den Ausgaben. Wird gezeigt, damit man sieht, wo sie landet. */
+    if(r.datum){
+      const zielYm = r.datum.slice(0,7);
+      getExpenseMonth(node, zielYm, true);
+      selectedEntry['privat:ausgaben'] = zielYm;
+    }
     persist(); renderMain();
   }));
 }
@@ -8670,6 +8703,21 @@ function renderGeldMonat(c, def, node, monat, ym){
         <div class="gm-leer">Kommt aus dem Uni-Bereich – dort abhaken, hier erscheint es.</div>
       </div>
     </div>` : ''}
+
+    ${kautionImMonat(node, ym).length ? `
+    <div class="gm-topf-zeile kaution" data-topf="__kaution">
+      <div class="gm-zeile-kopf">
+        <span class="gm-zeile-titel">🔑 Kaution</span>
+        <span class="gm-zeile-wert">${eur(kautionMonatSumme(node, ym))}</span>
+      </div>
+      <div class="gm-zeile-body">
+        ${kautionImMonat(node, ym).map(r=>`<div class="gm-uni-posten">
+          <span>${r.nr}. Rate · ${fmtDate(r.datum)}</span>
+          <b>${eur(Number(r.betrag)||0)}</b>
+        </div>`).join('')}
+        <div class="gm-leer">Kommt aus dem Kaution-Feld unten – dort ändern.</div>
+      </div>
+    </div>` : ''}
   `;
 
   /* Zeile auf/zu */
@@ -8678,7 +8726,7 @@ function renderGeldMonat(c, def, node, monat, ym){
     const key = zeile.dataset.topf;
     zeile.classList.toggle('offen');
     if(key === '__ein'){ monat.einZu = !zeile.classList.contains('offen'); }
-    else if(key !== '__uni'){
+    else if(key !== '__uni' && key !== '__kaution'){
       if(!monat.katZu) monat.katZu = {};
       monat.katZu[key] = !zeile.classList.contains('offen');
     }
@@ -9960,22 +10008,9 @@ function neueWohnungUebernehmen(){
   setze(m.cats.wohnen, 'Internet', {amount:30});
   setze(m.cats.sonstiges, 'Handy', {amount:11.49});
 
-  if(!n.moebel || typeof n.moebel !== 'object') n.moebel = {budget:10000, items:[]};
-  if(!Array.isArray(n.moebel.items)) n.moebel.items = [];
-  /* Dubletten ueber Name + Betrag - "Amazon" gibt es schon mit anderem Betrag. */
-  const da = new Set(n.moebel.items.map(e=>(e.label||'').toLowerCase().trim()+'|'+Number(e.amount)));
-  [
-    {label:'Tisch',         amount:146.98, ym:'2026-10'},
-    {label:'Waschmaschine', amount:553.31, ym:'2026-10'},
-    {label:'Couch',         amount:893.99, ym:'2026-10'},
-    {label:'Amazon',        amount:145.93, ym:'2026-10'},
-    {label:'Lale',          amount:500,    ym:'2026-10'},
-    {label:'Internet: Versand und Anschluss (einmalig)', amount:19.99, ym:'2026-11'}
-  ].forEach(e=>{
-    if(da.has(e.label.toLowerCase()+'|'+e.amount)) return;
-    n.moebel.items.push({id:uid(), ...e, wer:'geteilt'});
-    dazu++;
-  });
+  /* Die Einrichtungskaeufe standen hier zuerst im Moebeltopf - Leon will
+     sie aber im November abgezogen sehen. Das macht jetzt
+     einmalkostenNovember(). */
 
   if(!n.kaution){
     n.kaution = {an:'Nika', gesamt:2610, zu:true, raten:[
@@ -9988,6 +10023,68 @@ function neueWohnungUebernehmen(){
 
   if(!data.uebernommen) data.uebernommen = {};
   data.uebernommen[NEUE_WOHNUNG_KEY] = true;
+  return dazu;
+}
+
+/* Einmalkosten der neuen Wohnung im November statt im Moebeltopf, dazu
+   die Kontostaende vom 29.10.2026.
+   Leon will im Monat sehen, was wirklich abgeht - ein Topf mit "noch
+   uebrig" sagt ihm nichts. Im Monat steht nur seine Haelfte, deshalb unter
+   Sonstiges (nur ich) und nicht als geteilter Posten.
+   C24 Essen ist gemeinsames Essensgeld mit Nika: nur zur Ansicht, zaehlt
+   nicht zu seinem Geld. */
+const EINMAL_NOV_KEY = 'einmalkosten-november-2026-10-29';
+const EINRICHTUNG_NOV = [
+  {label:'Tisch',         amount:146.98},
+  {label:'Waschmaschine', amount:553.31},
+  {label:'Couch',         amount:893.99},
+  {label:'Amazon',        amount:145.93},
+  {label:'Lale',          amount:500},
+  {label:'Internet: Versand und Anschluss (einmalig)', amount:19.99}
+];
+function einmalkostenNovember(){
+  if(data.uebernommen && data.uebernommen[EINMAL_NOV_KEY]) return 0;
+  const n = data.nodes['privat:ausgaben'];
+  if(!n || !n.months) return 0;
+  let dazu = 0;
+
+  /* Falls die erste Fassung sie schon in den Moebeltopf gelegt hat: raus,
+     sonst zaehlen sie doppelt. */
+  if(n.moebel && Array.isArray(n.moebel.items)){
+    const weg = new Set(EINRICHTUNG_NOV.map(e=>e.label.toLowerCase()+'|'+e.amount));
+    n.moebel.items = n.moebel.items.filter(e=>
+      !(['2026-10','2026-11'].includes(e.ym)
+        && weg.has((e.label||'').toLowerCase().trim()+'|'+Number(e.amount))));
+  }
+
+  const m = getExpenseMonth(n, '2026-11', true);
+  if(!m.cats) m.cats = {};
+  if(!Array.isArray(m.cats.privatvar)) m.cats.privatvar = [];
+  const da = new Set(m.cats.privatvar.map(e=>(e.label||'').toLowerCase().trim()));
+  [
+    {label:'Einrichtung neue Wohnung – deine Hälfte von 2.240,21 €', amount:1120.11},
+    {label:'Internet Versand/Anschluss – deine Hälfte von 19,99 €',  amount:10.00}
+  ].forEach(e=>{
+    if(da.has(e.label.toLowerCase())) return;
+    m.cats.privatvar.push({id:uid(), ...e, date:'2026-11-01'});
+    dazu++;
+  });
+
+  const k = kontenNode();
+  if(k){
+    const staende = {giro:3423.72, n26:603.75, c24pocket:97.71,
+                     c24smart:1707, c24gem:0.01, paypal:0};
+    Object.keys(staende).forEach(id=>{
+      const e = k.liste.find(x=>x.id===id);
+      if(e){ e.stand = staende[id]; dazu++; }
+    });
+    const essen = k.liste.find(x=>x.id==='c24pocket');
+    if(essen) essen.nurAnsicht = true;
+    k.stand = '2026-10-29';
+  }
+
+  if(!data.uebernommen) data.uebernommen = {};
+  data.uebernommen[EINMAL_NOV_KEY] = true;
   return dazu;
 }
 
